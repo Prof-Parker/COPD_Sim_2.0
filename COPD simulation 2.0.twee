@@ -1,5 +1,5 @@
 :: StoryTitle
-COPD simulation 2.0
+COPD simulation 2.0.1
 
 
 
@@ -218,6 +218,8 @@ Once you are there, what temperature will you set the water to?
 
 Please coordinate with your partner. One of you must be the Patient, and the other must be the Observer.
 
+<div id="host-invite-slot"></div>
+
 <span id="wrap-patient">
     <<button "I am the Patient (COPD)">>
         <<run SimApp.setRole("patient")>>
@@ -232,6 +234,7 @@ Please coordinate with your partner. One of you must be the Patient, and the oth
 
 <<script>>
     if (window.SimApp) {
+        SimApp.mountHostInviteButton("host-invite-slot", "Show Invite QR Code");
         SimApp.refreshRoleButtons();
         if (window.roleRefreshInterval) {
             clearInterval(window.roleRefreshInterval);
@@ -324,7 +327,7 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 
 !! To start the game 
 * Have one player click the "Connect to Multiplayer" button below. This will connect you to the game lobby.
-* Once in the game lobby the second player can scan the invite QR code on their phone to pair up and form a team.
+* Once in the game lobby the second player can scan the invite QR code on their phone to pair up and form a team. If you leave the lobby before your partner joins, the host can tap **Show Invite QR Code** on the role selection screen to display it again.
 * Once you've both joined the game your have an opportunity to practice using the controls and familarize yourselves with the interface before the game starts.
 
 //Don't bother spending time customizing your avatar or player names. These won't be used in the game//
@@ -380,6 +383,8 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
     You are the **Observer**. Please wait for your Patient to be ready.
 <</if>>
 
+<div id="host-invite-slot-wait"></div>
+
 <div id="status-message">Waiting for partner to select their role...</div>
 
 <div id="conflict-container" class="hidden" style="margin-top: 20px; padding: 15px; border: 2px solid #dc3545; border-radius: 8px; background-color: #f8d7da; color: #721c24;">
@@ -401,6 +406,10 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 </div>
 
 <<script>>
+    if (window.SimApp) {
+        SimApp.mountHostInviteButton("host-invite-slot-wait", "Show Invite QR Code");
+    }
+
     /* We attach the interval to the window object so the button script can clear it safely */
     window.waitingInterval = setInterval(function() {
         if (SimApp.checkReadyState()) {
@@ -720,6 +729,129 @@ window.SimApp = {
         return this.myRole || State.variables.myRole || "";
     },
 
+    /** Count connected peers (including this device) */
+    getPlayerCount: function () {
+        var count = Object.keys(this.players || {}).length;
+        if (count > 0) {
+            return count;
+        }
+        if (typeof Playroom !== "undefined" && Playroom.myPlayer()) {
+            return 1;
+        }
+        return 0;
+    },
+
+    isPlayroomHost: function () {
+        return typeof Playroom !== "undefined" && Playroom.isHost();
+    },
+
+    /** Join URL Playroom reads on load (#r=roomCode) */
+    getInviteUrl: function () {
+        var base = window.location.href.split("#")[0];
+        if (typeof Playroom === "undefined") {
+            return base;
+        }
+        var code = Playroom.getRoomCode();
+        if (!code) {
+            return base;
+        }
+        return base + "#r=" + encodeURIComponent(code);
+    },
+
+    ensureInviteModal: function () {
+        if ($("#sim-invite-modal").length) {
+            return;
+        }
+        var self = this;
+        var html =
+            '<div id="sim-invite-modal" class="sim-invite-modal hidden" role="dialog" aria-modal="true" aria-labelledby="sim-invite-title">' +
+            '<div class="sim-invite-backdrop"></div>' +
+            '<div class="sim-invite-panel">' +
+            '<button type="button" id="sim-invite-close" class="sim-invite-close" aria-label="Close">&times;</button>' +
+            '<h2 id="sim-invite-title">Invite Your Partner</h2>' +
+            '<p id="sim-invite-status" class="sim-invite-status">Have your partner scan this QR code to join your room.</p>' +
+            '<img id="sim-invite-qr" class="sim-invite-qr" alt="Join room QR code" />' +
+            '<p class="sim-invite-room">Room code: <code id="sim-invite-code"></code></p>' +
+            '<button type="button" id="sim-invite-copy" class="sim-invite-copy">Copy Join Link</button>' +
+            "</div></div>";
+        $("body").append(html);
+
+        $("#sim-invite-close, #sim-invite-modal .sim-invite-backdrop").on("click", function () {
+            self.hideInviteModal();
+        });
+        $("#sim-invite-copy").on("click", function () {
+            var url = self.getInviteUrl();
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function () {
+                    $("#sim-invite-copy").text("Link Copied!");
+                    setTimeout(function () {
+                        $("#sim-invite-copy").text("Copy Join Link");
+                    }, 2000);
+                }).catch(function () {
+                    window.prompt("Copy this join link:", url);
+                });
+            } else {
+                window.prompt("Copy this join link:", url);
+            }
+        });
+    },
+
+    refreshInviteModal: function () {
+        if (!$("#sim-invite-modal").length || $("#sim-invite-modal").hasClass("hidden")) {
+            return;
+        }
+        var count = this.getPlayerCount();
+        if (count >= 2) {
+            $("#sim-invite-status").text("Partner connected! Close this window and choose your roles.");
+            this.hideInviteModal();
+            return;
+        }
+        $("#sim-invite-status").text(
+            "Waiting for your partner (" + count + " of 2 connected). Have them scan this QR code."
+        );
+    },
+
+    showInviteModal: function () {
+        if (!this.isPlayroomHost()) {
+            alert("Only the room host can show the invite QR code.");
+            return;
+        }
+        this.ensureInviteModal();
+        var url = this.getInviteUrl();
+        var code = typeof Playroom !== "undefined" ? Playroom.getRoomCode() : "";
+        $("#sim-invite-code").text(code || "—");
+        $("#sim-invite-qr").attr(
+            "src",
+            "https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=" + encodeURIComponent(url)
+        );
+        this.refreshInviteModal();
+        $("#sim-invite-modal").removeClass("hidden");
+    },
+
+    hideInviteModal: function () {
+        $("#sim-invite-modal").addClass("hidden");
+    },
+
+    /** Host-only button for lobby passages (Role_Selection, Waiting_Room) */
+    mountHostInviteButton: function (containerId, label) {
+        var $slot = $("#" + containerId);
+        if (!$slot.length) {
+            return;
+        }
+        $slot.empty();
+        if (!this.isPlayroomHost()) {
+            return;
+        }
+        var self = this;
+        $("<button>", {
+            type: "button",
+            class: "host-invite-btn",
+            text: label || "Show Invite QR Code"
+        }).on("click", function () {
+            self.showInviteModal();
+        }).appendTo($slot);
+    },
+
     /** Connect to Playroom lobby, init room if new, resume if reconnecting */
     connect: async function () {
         if (typeof Playroom === "undefined") {
@@ -743,6 +875,12 @@ window.SimApp = {
 
             self.startSyncLoop();
             self.resumeSession();
+
+            if (Playroom.isHost() && self.getPlayerCount() < 2) {
+                setTimeout(function () {
+                    self.showInviteModal();
+                }, Engine.minDomActionDelay || 40);
+            }
         } catch (e) {
             console.error("Failed to connect to Playroom:", e);
             alert("Connection error. Please refresh and try again.");
@@ -1027,11 +1165,13 @@ window.SimApp = {
             self.players[playerState.id] = playerState;
             playerState.onQuit(function () {
                 delete self.players[playerState.id];
+                self.refreshInviteModal();
             });
             if (Playroom.isHost()) {
                 self.syncLobbyRolesFromPlayers();
             }
             self.refreshRoleButtons();
+            self.refreshInviteModal();
         });
     },
 
@@ -1648,6 +1788,18 @@ window.SimApp = {
 }());
 
 /* Load Playroom Kit via SugarCube CDN importer */
+(function () {
+    "use strict";
+    /* iOS safe-area + real-device viewport (GitHub Pages / mobile Safari) */
+    var vp = document.querySelector('meta[name="viewport"]');
+    if (vp) {
+        vp.setAttribute(
+            "content",
+            "width=device-width, initial-scale=1, viewport-fit=cover"
+        );
+    }
+}());
+
 importScripts("https://unpkg.com/playroomkit/multiplayer.full.umd.js")
     .then(function () {
         window.SimApp.isPlayroomLoaded = true;
@@ -1679,27 +1831,35 @@ body, html {
     margin: 0;
     padding: 0;
     height: 100%;
-    overflow: hidden; /* Locks the viewport so it doesn't bounce on mobile */
+    width: 100%;
+    overflow-x: hidden; /* Prevent horizontal drift on real iOS devices */
+    -webkit-text-size-adjust: 100%;
 }
 
 #story {
     margin: 0;
     padding: 0;
     width: 100%;
+    max-width: 100%;
     height: 100dvh;
-	overflow-y: auto; /* Only the middle content scrolls */
-  	padding-top: 60px; /* Clears the 50px fixed top header */
-    display: flex;
-    justify-content: center;
+    overflow-x: hidden;
+	overflow-y: auto;
+  	padding-top: calc(60px + env(safe-area-inset-top, 0px));
     box-sizing: border-box;
-    display: block; 
+    display: block;
 }
 
 #passages {
-    max-width: 600px; /* Optimal reading width for tablets/phones */
+    max-width: 600px;
     width: 100%;
+    margin: 0 auto;
     padding: 20px;
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
     box-sizing: border-box;
+    overflow-x: hidden;
+    overflow-wrap: anywhere;
+    word-wrap: break-word;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: 18px;
     line-height: 1.6;
@@ -1762,8 +1922,13 @@ a.macro-link:hover {
     position: fixed;
     top: 0;
     left: 0;
+    right: 0;
     width: 100%;
-    height: 50px;
+    max-width: 100%;
+    height: calc(50px + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
     background-color: #1e272e;
     color: #ffffff; 
     display: flex;
@@ -1771,7 +1936,6 @@ a.macro-link:hover {
     align-items: center;
     font-size: clamp(0.75em, 2.5dvw, 1.1em);
     white-space: nowrap;
-    padding: 0 10px;
     box-sizing: border-box;
     z-index: 1000;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -1780,6 +1944,102 @@ a.macro-link:hover {
 /* 4. Utility Classes */
 .hidden {
     display: none !important;
+}
+
+/* Host invite modal — reopen Playroom QR after leaving the lobby */
+.sim-invite-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    box-sizing: border-box;
+}
+
+.sim-invite-modal.hidden {
+    display: none !important;
+}
+
+.sim-invite-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.sim-invite-panel {
+    position: relative;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 24px 20px 20px;
+    max-width: 320px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
+}
+
+.sim-invite-panel h2 {
+    margin: 0 0 12px;
+    font-size: 1.25em;
+}
+
+.sim-invite-status {
+    margin: 0 0 16px;
+    font-size: 0.95em;
+    line-height: 1.4;
+}
+
+.sim-invite-qr {
+    display: block;
+    width: 240px;
+    height: 240px;
+    max-width: 100%;
+    margin: 0 auto 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.sim-invite-room {
+    margin: 0 0 16px;
+    font-size: 0.95em;
+}
+
+.sim-invite-room code {
+    font-size: 1.1em;
+    letter-spacing: 0.05em;
+}
+
+.sim-invite-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 4px 10px !important;
+    font-size: 1.5em !important;
+    line-height: 1;
+    background: transparent !important;
+    color: #555 !important;
+    box-shadow: none !important;
+}
+
+.sim-invite-copy {
+    background-color: #27ae60 !important;
+}
+
+.sim-invite-copy:hover {
+    background-color: #219a52 !important;
+}
+
+button.host-invite-btn {
+    background-color: #3498db;
+    margin-bottom: 16px;
+}
+
+button.host-invite-btn:hover {
+    background-color: #2980b9;
 }
 
 #loading-overlay {
@@ -1798,11 +2058,14 @@ a.macro-link:hover {
     bottom: 0;
     left: 0;
     right: 0;
+    width: 100%;
+    max-width: 100%;
     background-color: black; 
     color: white;
-    padding: 5px 10px env(safe-area-inset-bottom, 15px) 10px;
+    padding: 5px max(10px, env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left));
     border-top: 2px solid #333;
     z-index: 1000;
+    box-sizing: border-box;
 }
 
 .eval-grid {
@@ -1922,15 +2185,14 @@ a.macro-link:hover {
     bottom: 0;
     left: 0;
     right: 0;
+    width: 100%;
+    max-width: 100%;
     background-color: #1e272e;
     color: #ffffff;
-    padding: 8px 10px env(safe-area-inset-bottom, 15px) 10px;
+    padding: 8px max(10px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left));
     border-top: 2px solid #333;
     z-index: 1000;
-    max-width: 800px;
-    margin: 0 auto;
-    left: 0;
-    right: 0;
+    box-sizing: border-box;
 }
 
 .patient-footer-heading {
@@ -2061,9 +2323,9 @@ a.macro-link:hover {
 
 /* Room for fixed footers */
 body.role-observer #passages {
-    padding-bottom: 45dvh;
+    padding-bottom: calc(45dvh + env(safe-area-inset-bottom, 0px));
 }
 
 body.role-patient #passages {
-    padding-bottom: 38dvh;
+    padding-bottom: calc(38dvh + env(safe-area-inset-bottom, 0px));
 }
