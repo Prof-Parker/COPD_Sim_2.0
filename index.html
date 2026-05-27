@@ -104,7 +104,7 @@ var LZString=function(){var r=String.fromCharCode,o="ABCDEFGHIJKLMNOPQRSTUVWXYZa
 		<div id="init-lacking"><p>Browser lacks capabilities required to play.</p><p>Upgrade or switch to another browser.</p></div>
 		<div id="init-loading"><div>Loading&hellip;</div></div>
 	</div>
-	<tw-storydata name="COPD simulation 2.0.2" startnode="11" creator="Twine" creator-version="2.11.1" format="SugarCube" format-version="2.37.3" ifid="D9CFA1E4-05AF-4B80-B2B9-95D847D4C534" options="" tags="" zoom="1" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* 1. Hide default SugarCube Sidebar and reset layout */
+	<tw-storydata name="COPD simulation 2.0.2" startnode="9" creator="Twine" creator-version="2.11.1" format="SugarCube" format-version="2.37.3" ifid="D9CFA1E4-05AF-4B80-B2B9-95D847D4C534" options="" tags="" zoom="1" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css">/* 1. Hide default SugarCube Sidebar and reset layout */
 #ui-bar {
     display: none;
 }
@@ -1990,29 +1990,7 @@ Once they are fully standing, click the appropriate evaluation below.
 &gt;&gt;
 &lt;&lt;/if&gt;&gt;
 
-&lt;!--[[Showering]]--&gt;</tw-passagedata><tw-passagedata pid="4" name="Showering" tags="simulation activity" position="1800,450" size="100,100">! Showering
-&lt;hr&gt;\
-&lt;&lt;if $myRole == &quot;patient&quot;&gt;&gt;
-First things first — you could use a shower. Walk over to the shower station.
-
-Once you are there, what temperature will you set the water to?
-
-&lt;&lt;patient-choices &quot;Water temperature&quot;
-  &quot;Hot Water | -4 | hot | red | All the steam from the hot water makes it hard to breathe! But at least you are clean.&quot;
-  &quot;Warm Water | -1 | warm | green | The warm water is soothing and doesn&#39;t stress your lungs.&quot;
-  &quot;Cold Water | -2 | cold | red | The sudden shock of the cold water makes you gasp for air!&quot;
-&gt;&gt;
-
-&lt;&lt;patient-next &quot;Continue Your Day&quot; &quot;Simulation_Hub&quot;&gt;&gt;
-
-&lt;&lt;else&gt;&gt;
-@@.holland;Mr. Holland@@ is at the shower. Observe how he sets the water temperature and how his breathing responds.
-
-&lt;&lt;dynamic-eval &quot;Activity: Showering&quot;
-  &quot;They showered sitting down | 0 | 1 | satAndRested | green&quot;
-  &quot;They showered standing up | -2 | 1 | standing | red&quot;
-&gt;&gt;
-&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="5" name="PassageFooter" tags="" position="500,600" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;!--[[Showering]]--&gt;</tw-passagedata><tw-passagedata pid="4" name="PassageFooter" tags="" position="500,600" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;if tags().includes(&quot;simulation&quot;) and State.variables.myRole == &quot;observer&quot;&gt;&gt;
     &lt;div id=&quot;observer-footer&quot;&gt;
         
@@ -2075,7 +2053,7 @@ Once you are there, what temperature will you set the water to?
         &lt;div id=&quot;patient-footer-next&quot;&gt;&lt;/div&gt;
     &lt;/div&gt;
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="6" name="PassageHeader" tags="" position="500,200" size="100,100">&lt;&lt;nobr&gt;&gt;
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="5" name="PassageHeader" tags="" position="500,200" size="100,100">&lt;&lt;nobr&gt;&gt;
 &lt;&lt;script&gt;&gt;
     /* Restore role CSS class after SugarCube passage transitions */
     var role = window.SimApp &amp;&amp; (window.SimApp.myRole || State.variables.myRole);
@@ -2126,7 +2104,7 @@ Once you are there, what temperature will you set the water to?
         &lt;&lt;/repeat&gt;&gt;
     &lt;&lt;/silently&gt;&gt;
 &lt;&lt;/if&gt;&gt;
-&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="7" name="Role_Selection" tags="" position="1100,300" size="100,100">! Choose Your Role
+&lt;&lt;/nobr&gt;&gt;</tw-passagedata><tw-passagedata pid="6" name="Role_Selection" tags="" position="1100,300" size="100,100">! Choose Your Role
 
 Please coordinate with your partner. One of you must be the Patient, and the other must be the Observer.
 
@@ -2159,7 +2137,29 @@ Please coordinate with your partner. One of you must be the Patient, and the oth
             SimApp.refreshRoleButtons();
         }, 1000);
     }
-&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="8" name="Simulation_Hub" tags="simulation briefing" position="1200,450" size="100,100">! Tutorial &amp; Controls Practice
+&lt;&lt;/script&gt;&gt;</tw-passagedata><tw-passagedata pid="7" name="Showering" tags="simulation activity" position="1800,450" size="100,100">! Showering
+&lt;hr&gt;\
+&lt;&lt;if $myRole == &quot;patient&quot;&gt;&gt;
+First things first — you could use a shower. Walk over to the shower station.
+
+Once you are there, what temperature will you set the water to?
+
+&lt;&lt;patient-choices &quot;Water temperature&quot;
+  &quot;Hot Water | -4 | hot | red | All the steam from the hot water makes it hard to breathe! But at least you are clean.&quot;
+  &quot;Warm Water | -1 | warm | green | The warm water is soothing and doesn&#39;t stress your lungs.&quot;
+  &quot;Cold Water | -2 | cold | red | The sudden shock of the cold water makes you gasp for air!&quot;
+&gt;&gt;
+
+&lt;&lt;patient-next &quot;Continue Your Day&quot; &quot;Simulation_Hub&quot;&gt;&gt;
+
+&lt;&lt;else&gt;&gt;
+@@.holland;Mr. Holland@@ is at the shower. Observe how he sets the water temperature and how his breathing responds.
+
+&lt;&lt;dynamic-eval &quot;Activity: Showering&quot;
+  &quot;They showered sitting down | 0 | 1 | satAndRested | green&quot;
+  &quot;They showered standing up | -2 | 1 | standing | red&quot;
+&gt;&gt;
+&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="8" name="Simulation_Hub" tags="simulation briefing" position="1200,450" size="100,100">! Tutorial &amp; Controls Practice
 
 &lt;&lt;if State.variables.myRole == &quot;patient&quot;&gt;&gt;
 @@.holland;Mr. Holland@@, this is what your user interface will look like when you start the game. At the top of your screen you will see your heads up display (HUD) showing the time elapsed in the simulation, your current work of breathing, and whether you have your rescue inhaler with you.
@@ -2192,51 +2192,8 @@ For some activities, you will be provided with different options that automatica
 Once you feel comfortable with the controls and @@.holland;Mr. Holland@@ is comfortable with the practice activities, they will start the simulation from their screen.
 &lt;&lt;/if&gt;&gt;
 
-&lt;!--[[Tutorial_Jumping_Jacks]]--&gt;</tw-passagedata><tw-passagedata pid="9" name="Tutorial_Jumping_Jacks" tags="simulation briefing activity" position="1350,450" size="100,100">! Practice: Jumping Jacks
-
-&lt;&lt;if State.variables.myRole == &quot;patient&quot;&gt;&gt;
-You are breathing great right now — look at the top of the page. How about trying **5 jumping jacks**?
-
-Go ahead and do them now, then tap the button below when you are finished.
-
-&lt;&lt;patient-choices &quot;Practice Activity&quot;
-  &quot;Do 5 jumping jacks (click when done) | 0 | blue | green | &quot;
-&gt;&gt;
-
-&lt;&lt;patient-next &quot;Continue&quot; &quot;Tutorial_Rest&quot;&gt;&gt;
-
-&lt;&lt;else&gt;&gt;
-Watch @@.holland;Mr. Holland@@ perform the practice activity. Once they finish, record your assessment below.
-
-&lt;&lt;dynamic-eval &quot;Practice: Jumping Jacks&quot;
-  &quot;They did 5 jumping jacks | -9 | 0 | none | red | What were you thinking?! You have advanced COPD! You can&#39;t exercise like you used to in High School!&quot;
-&gt;&gt;
-&lt;&lt;/if&gt;&gt;
-
-&lt;!--[[Tutorial_Rest]]--&gt;</tw-passagedata><tw-passagedata pid="10" name="Tutorial_Rest" tags="simulation briefing activity" position="1500,450" size="100,100">! Practice: Catch Your Breath
-
-&lt;&lt;if State.variables.myRole == &quot;patient&quot;&gt;&gt;
-That was a lot of work! How about you try **sitting down and leaning over a table** to do some pursed lip breathing and catch your breath?
-
-Once you are seated and breathing, tap the button below.
-
-&lt;&lt;patient-choices &quot;Practice Activity&quot;
-  &quot;Sit down and do pursed lip breathing (click when done) | 0 | green | green | &quot;
-&gt;&gt;
-
-&lt;&lt;patient-next &quot;Start Simulation&lt;br&gt;Good Morning Mr. Holland&quot; &quot;Good_Morning_Mr._Holland&quot; &quot;reset&quot;&gt;&gt;
-
-&lt;&lt;else&gt;&gt;
-@@.holland;Mr. Holland@@ should sit and rest. Evaluate their recovery technique below.
-
-&lt;&lt;dynamic-eval &quot;Practice: Rest &amp; Recovery&quot;
-  &quot;Sat and did pursed lip breathing | 4 | 0 | pursedLip | green | green| That feels a little better. You are still winded, but not as bad.&quot;
-&gt;&gt;
-
-Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, they will start the simulation from their screen.
-&lt;&lt;/if&gt;&gt;
-
-&lt;!--[[Good_Morning_Mr._Holland]]--&gt;</tw-passagedata><tw-passagedata pid="11" name="Start" tags="" position="800,400" size="200,200">&lt;div class=&quot;center-heading1&quot;&gt;@@.holland;Mr Holland&#39;s@@ Grand Day Out&lt;/div&gt;\
+&lt;!--[[Tutorial_Jumping_Jacks]]--&gt;</tw-passagedata><tw-passagedata pid="9" name="Start" tags="" position="800,400" size="200,200">! MANUAL TEST
+&lt;div class=&quot;center-heading1&quot;&gt;@@.holland;Mr Holland&#39;s@@ Grand Day Out&lt;/div&gt;\
 &lt;div class=&quot;center-heading3&quot;&gt;Version &lt;&lt;print Story.title.replace(/^COPD simulation\s+/i, &quot;&quot;)&gt;&gt;&lt;/div&gt;\
 &lt;hr&gt;\
 &lt;div class=&quot;center-heading2&quot;&gt;An interactive augmented reality simulation by Robin Parker, MSN, RN, PCCN&lt;/div&gt;\
@@ -2300,7 +2257,7 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 * Once in the game lobby the second player can scan the invite QR code on their phone to pair up and form a team. If you leave the lobby before your partner joins, the host can tap **Show Invite QR Code** on the role selection screen to display it again.
 * Once you&#39;ve both joined the game your have an opportunity to practice using the controls and familarize yourselves with the interface before the game starts.
 
-//Don&#39;t bother spending time customizing your avatar or player names. These won&#39;t be used in the game//</tw-passagedata><tw-passagedata pid="12" name="StoryInit" tags="" position="700,200" size="100,100">/* Multiplayer / role fallbacks (offline testing) */
+//Don&#39;t bother spending time customizing your avatar or player names. These won&#39;t be used in the game//</tw-passagedata><tw-passagedata pid="10" name="StoryInit" tags="" position="700,200" size="100,100">/* Multiplayer / role fallbacks (offline testing) */
 &lt;&lt;set $myRole to &quot;&quot;&gt;&gt;
 &lt;&lt;set $evalComplete to false&gt;&gt;
 &lt;&lt;set $patientFeedback to &quot;&quot;&gt;&gt;
@@ -2336,7 +2293,51 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 /* Inventory Fallbacks */
 &lt;&lt;set $hasInhaler to true&gt;&gt;
 &lt;&lt;set $hasMedications to false&gt;&gt;
-&lt;&lt;set $hasToy to false&gt;&gt;</tw-passagedata><tw-passagedata pid="13" name="Waiting_Room" tags="" position="1100,600" size="100,100">! Waiting for Partner...
+&lt;&lt;set $hasToy to false&gt;&gt;</tw-passagedata><tw-passagedata pid="11" name="Tutorial_Jumping_Jacks" tags="simulation briefing activity" position="1350,450" size="100,100">! Practice: Jumping Jacks
+
+&lt;&lt;if State.variables.myRole == &quot;patient&quot;&gt;&gt;
+You are breathing great right now — look at the top of the page. How about trying **5 jumping jacks**?
+
+Go ahead and do them now, then tap the button below when you are finished.
+
+&lt;&lt;patient-choices &quot;Practice Activity&quot;
+  &quot;Do 5 jumping jacks (click when done) | 0 | blue | green | &quot;
+&gt;&gt;
+
+&lt;&lt;patient-next &quot;Continue&quot; &quot;Tutorial_Rest&quot;&gt;&gt;
+
+&lt;&lt;else&gt;&gt;
+Watch @@.holland;Mr. Holland@@ perform the practice activity. Once they finish, record your assessment below.
+
+&lt;&lt;dynamic-eval &quot;Practice: Jumping Jacks&quot;
+  &quot;They did 5 jumping jacks | -9 | 0 | none | red | What were you thinking?! You have advanced COPD! You can&#39;t exercise like you used to in High School!&quot;
+&gt;&gt;
+&lt;&lt;/if&gt;&gt;
+
+&lt;!--[[Tutorial_Rest]]--&gt;</tw-passagedata><tw-passagedata pid="12" name="Tutorial_Rest" tags="simulation briefing activity" position="1500,450" size="100,100">! Practice: Catch Your Breath
+
+&lt;&lt;if State.variables.myRole == &quot;patient&quot;&gt;&gt;
+That was a lot of work! How about you try &#39;&#39;sitting down and leaning over a table&#39;&#39; to do some pursed lip breathing and catch your breath?
+
+Once you are seated and breathing, tap the button below.
+
+&lt;&lt;patient-choices &quot;Practice Activity&quot;
+  &quot;Sit down and do pursed lip breathing (click when done) | 0 | green | green | &quot;
+&gt;&gt;
+
+&lt;&lt;patient-next &quot;Start Simulation&lt;br&gt;Good Morning Mr. Holland&quot; &quot;Good_Morning_Mr._Holland&quot; &quot;reset&quot;&gt;&gt;
+
+&lt;&lt;else&gt;&gt;
+@@.holland;Mr. Holland@@ should sit and rest. Evaluate their recovery technique below.
+
+&lt;&lt;dynamic-eval &quot;Practice: Rest &amp; Recovery&quot;
+  &quot;Sat and did pursed lip breathing | 4 | 0 | pursedLip | green | green| That feels a little better. You are still winded, but not as bad.&quot;
+&gt;&gt;
+
+Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, they will start the simulation from their screen.
+&lt;&lt;/if&gt;&gt;
+
+&lt;!--[[Good_Morning_Mr._Holland]]--&gt;</tw-passagedata><tw-passagedata pid="13" name="Waiting_Room" tags="" position="1100,600" size="100,100">! Waiting for Partner...
 
 &lt;&lt;if State.variables.myRole == &quot;patient&quot;&gt;&gt;
     You are the **Patient**. Please wait for your Observer to be ready.
