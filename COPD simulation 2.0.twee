@@ -1,6 +1,5 @@
 :: StoryTitle
-COPD simulation 2.0.1
-
+COPD simulation 2.0.2
 
 
 :: StoryData
@@ -12,7 +11,8 @@ COPD simulation 2.0.1
   "tag-colors": {
     "simulation": "red",
     "widget": "purple",
-    "activity": "green"
+    "activity": "green",
+    "briefing": "orange"
   },
   "zoom": 1
 }
@@ -30,7 +30,7 @@ You are very short of breath and can barely breath. You collapse on the ground a
 Your heart is racing and feels like it is about to jump out of your chest. It hurts to breath and move. You curl up on the ground and a bystander calls an ambulance.
 
 
-:: Good_Morning_Mr._Holland [simulation activity] {"position":"1500,450","size":"100,100"}
+:: Good_Morning_Mr._Holland [simulation activity] {"position":"1650,450","size":"100,100"}
 ! Good Morning
 <hr>\
 Your alarm wakes you and its time to get up. You get the strangest feeling that this was the same song you woke up to yesterday morning...
@@ -57,35 +57,7 @@ Once they are fully standing, click the appropriate evaluation below.
 >>
 <</if>>
 
-
-
-
-:: Showering [simulation activity] {"position":"1700,450","size":"100,100"}
-! Showering
-<hr>\
-<<if $myRole == "patient">>
-First things first — you could use a shower. Walk over to the shower station.
-
-Once you are there, what temperature will you set the water to?
-
-<<patient-choices "Water temperature"
-  "Hot Water | -4 | hot | red | All the steam from the hot water makes it hard to breathe! But at least you are clean."
-  "Warm Water | -1 | warm | green | The warm water is soothing and doesn't stress your lungs."
-  "Cold Water | -2 | cold | red | The sudden shock of the cold water makes you gasp for air!"
->>
-
-<<patient-next "Continue Your Day" "Simulation_Hub">>
-
-<<else>>
-@@.holland;Mr. Holland@@ is at the shower. Observe how he sets the water temperature and how his breathing responds.
-
-<<dynamic-eval "Activity: Showering"
-  "They showered sitting down | 0 | 1 | satAndRested | green"
-  "They showered standing up | -2 | 1 | standing | red"
->>
-<</if>>
-
-
+<!--[[Showering]]-->
 
 
 :: PassageFooter {"position":"500,600","size":"100,100"}
@@ -155,8 +127,6 @@ Once you are there, what temperature will you set the water to?
 <</nobr>>
 
 
-
-
 :: PassageHeader {"position":"500,200","size":"100,100"}
 <<nobr>>
 <<script>>
@@ -212,7 +182,6 @@ Once you are there, what temperature will you set the water to?
 <</nobr>>
 
 
-
 :: Role_Selection {"position":"1100,300","size":"100,100"}
 ! Choose Your Role
 
@@ -250,27 +219,75 @@ Please coordinate with your partner. One of you must be the Patient, and the oth
 <</script>>
 
 
+:: Showering [simulation activity] {"position":"1800,450","size":"100,100"}
+! Showering
+<hr>\
+<<if $myRole == "patient">>
+First things first — you could use a shower. Walk over to the shower station.
 
-:: Simulation_Hub [simulation] {"position":"1300,450","size":"100,100"}
-! Simulation Ready!
-The simulation will start once the Mr. Holland is lying comfortably in bed and clicks the start button on their screen.
- 
-<<if State.variables.myRole == "patient">>
-    You are the Patient. Get ready to start your day.
-    <<button" ''Start Simulation'' <br>Good Morning @@.holland;Mr. Holland@@">>
-        <<run SimApp.nextPassage("Good_Morning_Mr._Holland")>>
-    <</button>>
+Once you are there, what temperature will you set the water to?
+
+<<patient-choices "Water temperature"
+  "Hot Water | -4 | hot | red | All the steam from the hot water makes it hard to breathe! But at least you are clean."
+  "Warm Water | -1 | warm | green | The warm water is soothing and doesn't stress your lungs."
+  "Cold Water | -2 | cold | red | The sudden shock of the cold water makes you gasp for air!"
+>>
+
+<<patient-next "Continue Your Day" "Simulation_Hub">>
+
 <<else>>
-    You are the Observer. Watch your patient closely and prepare to evaluate their actions.
+@@.holland;Mr. Holland@@ is at the shower. Observe how he sets the water temperature and how his breathing responds.
+
+<<dynamic-eval "Activity: Showering"
+  "They showered sitting down | 0 | 1 | satAndRested | green"
+  "They showered standing up | -2 | 1 | standing | red"
+>>
 <</if>>
 
+
+:: Simulation_Hub [simulation briefing] {"position":"1200,450","size":"100,100"}
+! Tutorial & Controls Practice
+
+<<if State.variables.myRole == "patient">>
+@@.holland;Mr. Holland@@, this is what your user interface will look like when you start the game. At the top of your screen you will see your heads up display (HUD) showing the time elapsed in the simulation, your current work of breathing, and whether you have your rescue inhaler with you.
+
+The clock is running now so you can see the real HUD in action. It will reset to zero when you start the actual simulation.
+
+If you have your rescue inhaler with you, during the simulation you may demonstrate correct inhaler technique to your @@.observer;Observer@@ and they will add some energy. Don't forget to keep track of how many times you have used it during the simulation. You can only use it 6 times per day according to the doctor.
+
+For now, use the **Practice Activity** button at the bottom of your screen to try a sample action and see how it impacts your work of breathing.
+
+    <<patient-next "Begin Practice Activity" "Tutorial_Jumping_Jacks">>
+
+<<else>>
+!! Welcome to the game @@.observer;Observer@@!
+
+You will be following along with @@.holland;Mr. Holland@@ and assessing how well he conserves his energy as he goes about his day.
+
+!!! How the Simulation Works
+* ''Hidden Stats:'' The student playing @@.holland;Mr. Holland@@ cannot see their exact energy or inhaler uses. They will only see a rough estimate of their breathing status.
+* ''Gaining Energy:'' They can use energy-conserving techniques to regain energy.
+* ''Inhaler Use:'' They can use their albuterol rescue inhaler to regain energy, but make sure your partner actually demonstrates correct technique for it to count.
+* ''Losing Energy:'' They will lose energy if they rush, don't take breaks, or bend over (which compresses their lungs and makes it harder to breathe).
+* ''Button Limits:'' The assessment buttons in the footer can only be used once per activity, but they will reset at the next station.
+
+!!! Practice Area
+Try clicking the buttons at the bottom of the screen in ''General Observations'' right now to see how they affect @@.holland;Mr. Holland's@@ energy level!
+
+For some activities, you will be provided with different options that automatically assign points and energy based on how @@.holland;Mr. Holland@@ performed.
+
+Once you feel comfortable with the controls and @@.holland;Mr. Holland@@ is comfortable with the practice activities, they will start the simulation from their screen.
+<</if>>
+
+<!--[[Tutorial_Jumping_Jacks]]-->
 
 
 :: Start {"position":"800,400","size":"200,200"}
 <div class="center-heading1">@@.holland;Mr Holland's@@ Grand Day Out</div>\
+<div class="center-heading3">Version <<print Story.title.replace(/^COPD simulation\s+/i, "")>></div>\
 <hr>\
 <div class="center-heading2">An interactive augmented reality simulation by Robin Parker, MSN, RN, PCCN</div>\
-<div class="center-heading3">Google Gemini was used to assist with coding and debugging</div>\
+<div class="center-heading3">Cursor AI was used to assist with coding and debugging</div>\
 
 <div id="loading-overlay">Loading multiplayer services...</div>
 <div id="connect-container" class="hidden">
@@ -333,13 +350,12 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 //Don't bother spending time customizing your avatar or player names. These won't be used in the game//
 
 
-
-
-
 :: StoryInit {"position":"700,200","size":"100,100"}
 /* Multiplayer / role fallbacks (offline testing) */
 <<set $myRole to "">>
 <<set $evalComplete to false>>
+<<set $patientFeedback to "">>
+<<set $patientFeedbackColor to "">>
 
 /* Score Keeping Fallbacks */
 <<set $Energy to 10>>
@@ -372,6 +388,58 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 <<set $hasInhaler to true>>
 <<set $hasMedications to false>>
 <<set $hasToy to false>>
+
+
+:: Tutorial_Jumping_Jacks [simulation briefing activity] {"position":"1350,450","size":"100,100"}
+! Practice: Jumping Jacks
+
+<<if State.variables.myRole == "patient">>
+You are breathing great right now — look at the top of the page. How about trying **5 jumping jacks**?
+
+Go ahead and do them now, then tap the button below when you are finished.
+
+<<patient-choices "Practice Activity"
+  "Do 5 jumping jacks (click when done) | 0 | blue | green | "
+>>
+
+<<patient-next "Continue" "Tutorial_Rest">>
+
+<<else>>
+Watch @@.holland;Mr. Holland@@ perform the practice activity. Once they finish, record your assessment below.
+
+<<dynamic-eval "Practice: Jumping Jacks"
+  "They did 5 jumping jacks | -9 | 0 | none | red | What were you thinking?! You have advanced COPD! You can't exercise like you used to in High School!"
+>>
+<</if>>
+
+<!--[[Tutorial_Rest]]-->
+
+
+:: Tutorial_Rest [simulation briefing activity] {"position":"1500,450","size":"100,100"}
+! Practice: Catch Your Breath
+
+<<if State.variables.myRole == "patient">>
+That was a lot of work! How about you try ''sitting down and leaning over a table'' to do some pursed lip breathing and catch your breath?
+
+Once you are seated and breathing, tap the button below.
+
+<<patient-choices "Practice Activity"
+  "Sit down and do pursed lip breathing (click when done) | 0 | green | green | "
+>>
+
+<<patient-next "Start Simulation<br>Good Morning Mr. Holland" "Good_Morning_Mr._Holland" "reset">>
+
+<<else>>
+@@.holland;Mr. Holland@@ should sit and rest. Evaluate their recovery technique below.
+
+<<dynamic-eval "Practice: Rest & Recovery"
+  "Sat and did pursed lip breathing | 4 | 0 | pursedLip | green | green| That feels a little better. You are still winded, but not as bad."
+>>
+
+Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, they will start the simulation from their screen.
+<</if>>
+
+<!--[[Good_Morning_Mr._Holland]]-->
 
 
 :: Waiting_Room {"position":"1100,600","size":"100,100"}
@@ -426,7 +494,6 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 <</script>>
 
 
-
 :: Widgets [widget] {"position":"500,400","size":"100,100"}
 <<nobr>>
 /* SMART WIDGET: Energy changes sync to Playroom; triggers shared game over */
@@ -441,7 +508,7 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
     <<run SimApp.setVal("Energy", _newEnergy)>>
     <<run $("#energy-display").text(_newEnergy)>>
 
-    <<if _newEnergy <= 0>>
+    <<if _newEnergy <= 0 and !tags().includes("briefing")>>
         <<run SimApp.goToSharedPassage("Game_Over_Energy")>>
     <</if>>
 <</widget>>
@@ -456,7 +523,7 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 
     <<Adjust_Energy 2>>
 
-    <<if _newInhaler >= 7>>
+    <<if _newInhaler >= 7 and !tags().includes("briefing")>>
         <<run SimApp.goToSharedPassage("Game_Over_Inhaler")>>
     <</if>>
 <</widget>>
@@ -709,6 +776,7 @@ window.SimApp = {
     /** Keys mirrored from Playroom global state → State.variables */
     STATE_KEYS: [
         "Energy", "Points", "Inhaler", "win", "evalComplete",
+        "patientFeedback", "patientFeedbackColor",
         "satAndRested", "pursedLip", "rushed", "bentOver",
         "stairs", "elevator", "standing",
         "wildCarded", "wildRoll", "yourItem", "hisItem",
@@ -727,6 +795,55 @@ window.SimApp = {
 
     getRole: function () {
         return this.myRole || State.variables.myRole || "";
+    },
+
+    /** Default simulation variables (room init + post-tutorial reset) */
+    DEFAULT_GAME_STATE: {
+        Energy: 10,
+        Points: 0,
+        Inhaler: 0,
+        win: false,
+        evalComplete: false,
+        patientFeedback: "",
+        patientFeedbackColor: "",
+        satAndRested: 0,
+        pursedLip: 0,
+        rushed: 0,
+        bentOver: 0,
+        stairs: 0,
+        elevator: 0,
+        standing: 0,
+        wildCarded: false,
+        wildRoll: 0,
+        yourItem: "",
+        hisItem: "",
+        visitedHallway: false,
+        visitedGrocery: false,
+        visitedPharmacy: false,
+        visitedToyStore: false,
+        visitedClinic: false,
+        errandsRun: 0,
+        hasInhaler: true,
+        hasMedications: false,
+        hasToy: false
+    },
+
+    isBriefingPassage: function (passageName) {
+        var name = passageName || passage();
+        var pd = Story.get(name);
+        return !!(pd && pd.tags && pd.tags.includes("briefing"));
+    },
+
+    /** Reset stats and timer after the tutorial, before Good Morning */
+    resetSimulationForStart: function () {
+        var self = this;
+        Object.keys(this.DEFAULT_GAME_STATE).forEach(function (key) {
+            self.setVal(key, self.DEFAULT_GAME_STATE[key], true);
+        });
+        State.variables.playtime = Date.now();
+        this.setVal("sharedTime", "00:00", true);
+        $(".time-display").text("00:00");
+        this.updateHud();
     },
 
     /** Count connected peers (including this device) */
@@ -896,37 +1013,16 @@ window.SimApp = {
         var r = true;
         Playroom.setState("roomStarted", true, r);
         Playroom.setState("currentPassage", "Role_Selection", r);
-        Playroom.setState("evalComplete", false, r);
         Playroom.setState("sharedTime", "00:00", r);
         Playroom.setState("lobby_patient", false, r);
         Playroom.setState("lobby_observer", false, r);
         Playroom.setState("patientPlayerId", "", r);
         Playroom.setState("observerPlayerId", "", r);
 
-        Playroom.setState("Energy", 10, r);
-        Playroom.setState("Points", 0, r);
-        Playroom.setState("Inhaler", 0, r);
-        Playroom.setState("win", false, r);
-        Playroom.setState("satAndRested", 0, r);
-        Playroom.setState("pursedLip", 0, r);
-        Playroom.setState("rushed", 0, r);
-        Playroom.setState("bentOver", 0, r);
-        Playroom.setState("stairs", 0, r);
-        Playroom.setState("elevator", 0, r);
-        Playroom.setState("standing", 0, r);
-        Playroom.setState("wildCarded", false, r);
-        Playroom.setState("wildRoll", 0, r);
-        Playroom.setState("yourItem", "", r);
-        Playroom.setState("hisItem", "", r);
-        Playroom.setState("visitedHallway", false, r);
-        Playroom.setState("visitedGrocery", false, r);
-        Playroom.setState("visitedPharmacy", false, r);
-        Playroom.setState("visitedToyStore", false, r);
-        Playroom.setState("visitedClinic", false, r);
-        Playroom.setState("errandsRun", 0, r);
-        Playroom.setState("hasInhaler", true, r);
-        Playroom.setState("hasMedications", false, r);
-        Playroom.setState("hasToy", false, r);
+        var self = this;
+        Object.keys(this.DEFAULT_GAME_STATE).forEach(function (key) {
+            Playroom.setState(key, self.DEFAULT_GAME_STATE[key], r);
+        });
     },
 
     /** After connect/refresh: restore role and active passage without resetting room */
@@ -1297,9 +1393,8 @@ window.SimApp = {
 
     /**
      * Parse one faculty option string:
-     *   "Button label | energy | points | behavior | color"
-     * energy/points are numbers; behavior is a Story variable name or "none";
-     * color is green, red, or blue (optional — auto from energy sign if omitted).
+     *   "Button label | energy | points | behavior | color | patientMessage | patientMessageColor"
+     * Optional fields 6–7: message shown to the Patient after Observer evaluates.
      */
     parseEvalOption: function (raw) {
         var parts = String(raw).split("|").map(function (s) {
@@ -1322,12 +1417,18 @@ window.SimApp = {
         if (color !== "green" && color !== "red" && color !== "blue") {
             color = energy >= 0 ? "green" : "red";
         }
+        var patientMessageColor = (parts[6] || "red").toLowerCase();
+        if (patientMessageColor !== "green" && patientMessageColor !== "red") {
+            patientMessageColor = energy >= 0 ? "green" : "red";
+        }
         return {
             label: parts[0],
             energy: energy,
             points: points,
             behavior: behavior,
-            color: color
+            color: color,
+            patientMessage: parts[5] || "",
+            patientMessageColor: patientMessageColor
         };
     },
 
@@ -1356,7 +1457,8 @@ window.SimApp = {
         if ($("#energy-display").length) {
             $("#energy-display").text(newEnergy);
         }
-        if (newEnergy <= 0) {
+        this.updateHud();
+        if (newEnergy <= 0 && !this.isBriefingPassage()) {
             this.goToSharedPassage("Game_Over_Energy");
             return;
         }
@@ -1373,6 +1475,11 @@ window.SimApp = {
         if (opt.behavior && opt.behavior !== "none") {
             var currentVal = this.getVal(opt.behavior) || 0;
             this.setVal(opt.behavior, currentVal + 1);
+        }
+
+        if (opt.patientMessage) {
+            this.setVal("patientFeedback", opt.patientMessage, true);
+            this.setVal("patientFeedbackColor", opt.patientMessageColor || "red", true);
         }
 
         this.setVal("evalComplete", true);
@@ -1395,6 +1502,8 @@ window.SimApp = {
 
         /* New activity station — Patient waits for a fresh Observer eval */
         this.setVal("evalComplete", false, true);
+        this.setVal("patientFeedback", "", true);
+        this.setVal("patientFeedbackColor", "", true);
 
         var self = this;
         var recordedHtml =
@@ -1515,11 +1624,17 @@ window.SimApp = {
         }
         this.setVal("Energy", newEnergy);
         this.updateHud();
-        if (newEnergy <= 0) {
+        if (newEnergy <= 0 && !this.isBriefingPassage()) {
             this.goToSharedPassage("Game_Over_Energy");
             return false;
         }
         return true;
+    },
+
+    _renderPatientHudHint: function () {
+        return (
+            '<div class="patient-footer-hint">Look at your HUD at the top of the screen to see how this affected your work of breathing.</div>'
+        );
     },
 
     _renderPatientConsequence: function (message, msgColor) {
@@ -1547,6 +1662,8 @@ window.SimApp = {
 
         this._patientChoiceResolved = false;
         this.setVal("evalComplete", false, true);
+        this.setVal("patientFeedback", "", true);
+        this.setVal("patientFeedbackColor", "", true);
 
         var self = this;
         var html = '<div class="patient-choices-root">';
@@ -1580,22 +1697,27 @@ window.SimApp = {
                 return;
             }
             self._patientChoiceResolved = true;
-            $target.html(
+            var choiceHtml =
                 '<div class="patient-choices-root">' +
                 '<div class="patient-footer-heading">' +
                 self._escapeHtml(sectionTitle) +
-                "</div>" +
-                self._renderPatientConsequence(choice.message, choice.msgColor) +
-                "</div>"
-            );
+                "</div>";
+            if (choice.message) {
+                choiceHtml += self._renderPatientConsequence(choice.message, choice.msgColor);
+            } else {
+                choiceHtml += '<div class="gray-box patient-footer-hint">Waiting for your Observer to evaluate...</div>';
+            }
+            choiceHtml += "</div>";
+            $target.html(choiceHtml);
             self.refreshPatientNextSlot();
         });
     },
 
-    mountPatientNext: function (buttonLabel, targetPassage) {
+    mountPatientNext: function (buttonLabel, targetPassage, options) {
         this._patientNextConfig = {
             label: buttonLabel,
-            targetPassage: targetPassage
+            targetPassage: targetPassage,
+            resetBeforeStart: !!(options && options.resetBeforeStart)
         };
         this.clearPatientFooterTimers();
         this.refreshPatientNextSlot();
@@ -1609,42 +1731,53 @@ window.SimApp = {
         }
 
         var self = this;
+        var hasChoiceUI = $("#patient-footer-choices").length > 0;
+        var evalDone = this.getVal("evalComplete") === true;
+        var feedback = this.getVal("patientFeedback") || "";
+        var feedbackColor = this.getVal("patientFeedbackColor") || "red";
 
-        if (!this._patientChoiceResolved && $("#patient-footer-choices").length) {
+        if (hasChoiceUI && !this._patientChoiceResolved) {
             $slot.html(
                 '<div class="gray-box patient-footer-hint">Make your selection above, then wait for your Observer.</div>'
             );
             return;
         }
 
-        if (this.getVal("evalComplete") === true) {
+        if (hasChoiceUI && !evalDone) {
             $slot.html(
-                '<button type="button" class="patient-next-btn">' +
-                this._escapeHtml(cfg.label) +
-                "</button>"
+                '<div class="gray-box patient-footer-hint">Waiting for Observer evaluation...</div>'
             );
-            $slot.find(".patient-next-btn").on("click", function () {
-                self.nextPassage(cfg.targetPassage);
-            });
-            this.clearPatientFooterTimers();
+            if (!this._patientNextTimer) {
+                this._patientNextTimer = setInterval(function () {
+                    if (!self._patientNextConfig) {
+                        self.clearPatientFooterTimers();
+                        return;
+                    }
+                    if (self._patientChoiceResolved && self.getVal("evalComplete") === true) {
+                        self.refreshPatientNextSlot();
+                    }
+                }, 500);
+            }
             return;
         }
 
-        $slot.html(
-            '<div class="gray-box patient-footer-hint">Waiting for Observer evaluation...</div>'
-        );
-
-        if (!this._patientNextTimer) {
-            this._patientNextTimer = setInterval(function () {
-                if (!self._patientNextConfig) {
-                    self.clearPatientFooterTimers();
-                    return;
-                }
-                if (self._patientChoiceResolved && self.getVal("evalComplete") === true) {
-                    self.refreshPatientNextSlot();
-                }
-            }, 500);
+        var html = "";
+        if (feedback) {
+            html += this._renderPatientConsequence(feedback, feedbackColor);
+            html += this._renderPatientHudHint();
         }
+        html +=
+            '<button type="button" class="patient-next-btn">' +
+            cfg.label +
+            "</button>";
+        $slot.html(html);
+        $slot.find(".patient-next-btn").on("click", function () {
+            if (cfg.resetBeforeStart) {
+                self.resetSimulationForStart();
+            }
+            self.nextPassage(cfg.targetPassage);
+        });
+        this.clearPatientFooterTimers();
     }
 };
 
@@ -1657,7 +1790,7 @@ window.SimApp = {
 
    <<dynamic-eval "Activity: Getting Out of Bed"
      "Label | energy | points | behaviorVariable | green"
-     "Other label | -2 | 1 | rushed | red"
+     "Other label | -2 | 1 | rushed | red | Message shown to Patient after eval | red"
    >>
 
    Fields per option (pipe-separated):
@@ -1666,6 +1799,8 @@ window.SimApp = {
      3. Points change (number)
      4. Behavior variable to increment (or none)
      5. Button color: green, red, or blue (optional)
+     6. Patient feedback message after eval (optional, for tutorials)
+     7. Patient feedback color: green or red (optional)
 
    Subtitle under the label is auto-generated from energy/points.
    ======================================================== */
@@ -1724,6 +1859,8 @@ window.SimApp = {
    NEXT STATION (waits for Observer eval, then navigates):
 
    <<patient-next "Continue Your Day" "Next_Passage_Name">>
+   <<patient-next "Start Simulation" "Good_Morning_Mr._Holland" "reset">>
+   Optional 3rd arg "reset" — resets all stats and the timer before navigating.
    ======================================================== */
 (function () {
     "use strict";
@@ -1766,11 +1903,15 @@ window.SimApp = {
 
             var buttonLabel = String(this.args[0]);
             var targetPassage = String(this.args[1]);
+            var resetBeforeStart =
+                this.args.length >= 3 && String(this.args[2]).toLowerCase() === "reset";
             var passageTitle = passage();
 
             setTimeout(function () {
                 if (passage() === passageTitle) {
-                    SimApp.mountPatientNext(buttonLabel, targetPassage);
+                    SimApp.mountPatientNext(buttonLabel, targetPassage, {
+                        resetBeforeStart: resetBeforeStart
+                    });
                 }
             }, Engine.minDomActionDelay);
         }
@@ -1819,7 +1960,6 @@ importScripts("https://unpkg.com/playroomkit/multiplayer.full.umd.js")
             loader.style.color = "red";
         }
     });
-
 
 :: StoryStylesheet [stylesheet]
 /* 1. Hide default SugarCube Sidebar and reset layout */
@@ -2068,12 +2208,41 @@ button.host-invite-btn:hover {
     box-sizing: border-box;
 }
 
-.eval-grid {
+.eval-grid,
+.dynamic-eval-grid,
+.patient-choice-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     max-width: 800px;
+    width: 100%;
     margin: 0 auto 8px auto;
+    box-sizing: border-box;
+}
+
+.eval-grid > .eval-wrap,
+.dynamic-eval-grid > .eval-wrap,
+.patient-choice-grid > .eval-wrap {
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
+/* Single odd button (1, 3, 5… options) — same cell width as grid columns, centered */
+.eval-grid > .eval-wrap:last-child:nth-child(odd),
+.dynamic-eval-grid > .eval-wrap:last-child:nth-child(odd),
+.patient-choice-grid > .eval-wrap:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    width: calc(50% - 4px);
+    justify-self: center;
+}
+
+.dynamic-eval-root,
+.patient-choices-root {
+    max-width: 800px;
+    width: 100%;
+    margin: 4px auto 10px auto;
+    box-sizing: border-box;
 }
 /* 6. Text Formating */
 .holland {
@@ -2148,11 +2317,6 @@ button.host-invite-btn:hover {
     letter-spacing: 1px;
 }
 
-.dynamic-eval-root {
-    margin-bottom: 10px;
-    margin-top: 4px;
-}
-
 /* Green Buttons (Left) */
 .green-wrap button { background-color: #28a745; color: white; }
 .green-wrap button:disabled { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; cursor: not-allowed; opacity: 1; }
@@ -2204,13 +2368,6 @@ button.host-invite-btn:hover {
     letter-spacing: 1px;
 }
 
-.patient-choice-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-bottom: 8px;
-}
-
 .patient-consequence {
     text-align: center;
     padding: 10px 8px;
@@ -2219,7 +2376,9 @@ button.host-invite-btn:hover {
 }
 
 .patient-footer-hint {
-    width: 100% !important;
+  	text-align: center;
+  	padding: 4px 4px;
+ 	width: 100% !important;
     font-size: 0.95em;
 }
 
