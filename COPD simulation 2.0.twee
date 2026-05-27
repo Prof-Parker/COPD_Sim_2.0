@@ -351,6 +351,14 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 
 
 :: StoryInit {"position":"700,200","size":"100,100"}
+<<script>>
+(function () {
+    var vp = document.querySelector('meta[name="viewport"]');
+    if (vp) {
+        vp.setAttribute("content", "width=device-width, initial-scale=1, viewport-fit=cover");
+    }
+})();
+<</script>>
 /* Multiplayer / role fallbacks (offline testing) */
 <<set $myRole to "">>
 <<set $evalComplete to false>>
@@ -1962,9 +1970,58 @@ importScripts("https://unpkg.com/playroomkit/multiplayer.full.umd.js")
     });
 
 :: StoryStylesheet [stylesheet]
+/* Global box model — prevents padding from pushing content past the viewport */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 /* 1. Hide default SugarCube Sidebar and reset layout */
 #ui-bar {
-    display: none;
+    display: none !important;
+    width: 0 !important;
+    overflow: hidden !important;
+}
+
+/*
+ * SugarCube ui-bar sibling selectors (#ui-bar.stowed ~ #story) beat plain #story
+ * and leave a 3.5em left margin on phones even when the sidebar is hidden.
+ */
+#story,
+#ui-bar ~ #story,
+#ui-bar.stowed ~ #story {
+    margin: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-top: calc(60px + env(safe-area-inset-top, 0px));
+    box-sizing: border-box;
+    display: block;
+    z-index: 10;
+}
+
+@media screen and (max-width: 1136px) {
+    #story,
+    #ui-bar ~ #story,
+    #ui-bar.stowed ~ #story {
+        margin: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    #story,
+    #ui-bar ~ #story,
+    #ui-bar.stowed ~ #story {
+        margin: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
 }
 
 body, html {
@@ -1972,37 +2029,49 @@ body, html {
     padding: 0;
     height: 100%;
     width: 100%;
-    overflow-x: hidden; /* Prevent horizontal drift on real iOS devices */
+    max-width: 100%;
+    overflow-x: clip;
     -webkit-text-size-adjust: 100%;
 }
 
-#story {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    max-width: 100%;
-    height: 100dvh;
-    overflow-x: hidden;
-	overflow-y: auto;
-  	padding-top: calc(60px + env(safe-area-inset-top, 0px));
-    box-sizing: border-box;
-    display: block;
-}
-
 #passages {
-    max-width: 600px;
+    max-width: min(600px, 100%) !important;
     width: 100%;
-    margin: 0 auto;
-    padding: 20px;
-    padding-left: max(20px, env(safe-area-inset-left));
-    padding-right: max(20px, env(safe-area-inset-right));
+    margin-inline: auto;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
     box-sizing: border-box;
-    overflow-x: hidden;
+    overflow-x: clip;
     overflow-wrap: anywhere;
     word-wrap: break-word;
+    word-break: break-word;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: 18px;
     line-height: 1.6;
+}
+
+#passages .passage {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: auto;
+    text-align: left;
+    overflow-wrap: anywhere;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+#passages .passage img,
+#passages .passage video,
+#passages .passage table,
+#passages .passage pre {
+    max-width: 100%;
+}
+
+#passages .passage table {
+    display: block;
+    overflow-x: auto;
 }
 
 /* Strip the wasted spacing from the top of the passage titles */
@@ -2208,41 +2277,12 @@ button.host-invite-btn:hover {
     box-sizing: border-box;
 }
 
-.eval-grid,
-.dynamic-eval-grid,
-.patient-choice-grid {
+.eval-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     max-width: 800px;
-    width: 100%;
     margin: 0 auto 8px auto;
-    box-sizing: border-box;
-}
-
-.eval-grid > .eval-wrap,
-.dynamic-eval-grid > .eval-wrap,
-.patient-choice-grid > .eval-wrap {
-    display: block;
-    width: 100%;
-    min-width: 0;
-}
-
-/* Single odd button (1, 3, 5… options) — same cell width as grid columns, centered */
-.eval-grid > .eval-wrap:last-child:nth-child(odd),
-.dynamic-eval-grid > .eval-wrap:last-child:nth-child(odd),
-.patient-choice-grid > .eval-wrap:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-    width: calc(50% - 4px);
-    justify-self: center;
-}
-
-.dynamic-eval-root,
-.patient-choices-root {
-    max-width: 800px;
-    width: 100%;
-    margin: 4px auto 10px auto;
-    box-sizing: border-box;
 }
 /* 6. Text Formating */
 .holland {
@@ -2317,6 +2357,11 @@ button.host-invite-btn:hover {
     letter-spacing: 1px;
 }
 
+.dynamic-eval-root {
+    margin-bottom: 10px;
+    margin-top: 4px;
+}
+
 /* Green Buttons (Left) */
 .green-wrap button { background-color: #28a745; color: white; }
 .green-wrap button:disabled { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; cursor: not-allowed; opacity: 1; }
@@ -2366,6 +2411,13 @@ button.host-invite-btn:hover {
     margin-bottom: 6px;
     text-transform: uppercase;
     letter-spacing: 1px;
+}
+
+.patient-choice-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 
 .patient-consequence {
