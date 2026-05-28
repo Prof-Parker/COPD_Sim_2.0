@@ -37,24 +37,21 @@ Your alarm wakes you and its time to get up. You get the strangest feeling that 
 
 Before you spend too much time thinking about the radio playlist you remember you've got a lot of things to do today. You hope that you will be able to get it all done.
 <hr>\
-<<if $myRole == "patient">>
+<<if $myRole == "patient">>\
 @@.holland;Mr.Holland@@ it's time to start the day. Go ahead and get out of bed now.
     
 Once you are fully standing and ready to start your day, click below to head to the bathroom to get cleaned up.
 
 //Note that you will not be able to progress until your @@.observer;Observer@@ has evaluated your actions at this station//
-
-    <<patient-next "Head to the Bathroom (Shower)" "Showering">>
-
-<<else>>
+    <<patient-next "Head to the Bathroom (Shower)" "Showering">>\
+<<else>>\
 Tell @@.holland;Mr. Holland@@ to physically get out of bed. Observe their actions carefully as they do this.
     
 Once they are fully standing, click the appropriate evaluation below.
-
 <<dynamic-eval "Activity: Getting Out of Bed"
   "They sat and rested on the edge before standing | -1 | 1 | satAndRested | green"
   "They got straight out of bed without resting | -2 | 1 | rushed | red"
->>
+>>\
 <</if>>
 
 <!--[[Showering]]-->
@@ -184,7 +181,7 @@ Once they are fully standing, click the appropriate evaluation below.
 
 :: Role_Selection {"position":"1100,300","size":"100,100"}
 ! Choose Your Role
-
+<hr>\
 Please coordinate with your partner. One of you must be the Patient, and the other must be the Observer.
 
 <div id="host-invite-slot"></div>
@@ -247,22 +244,30 @@ Once you are there, what temperature will you set the water to?
 
 :: Simulation_Hub [simulation briefing] {"position":"1200,450","size":"100,100"}
 ! Tutorial & Controls Practice
-
-<<if State.variables.myRole == "patient">>
-@@.holland;Mr. Holland@@, this is what your user interface will look like when you start the game. At the top of your screen you will see your heads up display (HUD) showing the time elapsed in the simulation, your current work of breathing, and whether you have your rescue inhaler with you.
+<hr>\
+<<if State.variables.myRole == "patient">>\
+!! Welcom to the game @@.holland;Mr. Holland@@ 
+This is what your user interface will look like when you start the game. At the top of your screen you will see your heads up display (HUD) showing the time elapsed in the simulation, your current work of breathing, and whether you have your rescue inhaler with you.
 
 The clock is running now so you can see the real HUD in action. It will reset to zero when you start the actual simulation.
 
 If you have your rescue inhaler with you, during the simulation you may demonstrate correct inhaler technique to your @@.observer;Observer@@ and they will add some energy. Don't forget to keep track of how many times you have used it during the simulation. You can only use it 6 times per day according to the doctor.
 
-For now, use the **Practice Activity** button at the bottom of your screen to try a sample action and see how it impacts your work of breathing.
-
+For now, use the <strong><u>Practice Activity</u></strong> button at the bottom of your screen to try a sample action and see how it impacts your work of breathing.
+<hr>\
+<nobr>
     <<patient-next "Begin Practice Activity" "Tutorial_Jumping_Jacks">>
-
-<<else>>
+</nobr>\
+<<else>>\
 !! Welcome to the game @@.observer;Observer@@!
+You will be following along with @@.holland;Mr. Holland@@ and assessing how well he conserves his energy as he goes about his day. 
+This is what your user interface will look like when you start the game. At the top of your screen you will see your heads up display (HUD) showing:
+*The time elapsed in the simulation. //Don't worry about the clock ticking right now it will reset after these tutorial pages when we start the actual simulation//
+*@@.holland;Mr. Holland's@@ current energy
+*If @@.holland;Mr. Holland@@ has is inhaler
+*How many points he has earned
 
-You will be following along with @@.holland;Mr. Holland@@ and assessing how well he conserves his energy as he goes about his day.
+The clock is running now so you can see the real HUD in action. It will reset to zero when you start the actual simulation.
 
 !!! How the Simulation Works
 * ''Hidden Stats:'' The student playing @@.holland;Mr. Holland@@ cannot see their exact energy or inhaler uses. They will only see a rough estimate of their breathing status.
@@ -283,22 +288,23 @@ Once you feel comfortable with the controls and @@.holland;Mr. Holland@@ is comf
 
 
 :: Start {"position":"800,400","size":"200,200"}
+
 <div class="center-heading1">@@.holland;Mr Holland's@@ Grand Day Out</div>\
 <div class="center-heading3">Version <<print Story.title.replace(/^COPD simulation\s+/i, "")>></div>\
 <hr>\
 <div class="center-heading2">An interactive augmented reality simulation by Robin Parker, MSN, RN, PCCN</div>\
 <div class="center-heading3">Cursor AI was used to assist with coding and debugging</div>\
-
-<div id="loading-overlay">Loading multiplayer services...</div>
-<div id="connect-container" class="hidden">
-    <<button "Connect to Multiplayer">>
-        <<run SimApp.connect()>>
-    <</button>>
-</div>
-
+<nobr>\
+<div id="loading-overlay">Loading multiplayer services...</div>\
+<div id="connect-container" class="hidden">\
+    <<button "Connect to Multiplayer">>\
+        <<run SimApp.connect()>>\
+    <</button>>\
+</div>\
+</nobr>\
 Welcome to this live nursing simulation. You will need a partner to complete this activity. 
 Before we begin please review the briefing below.
-<hr>
+<hr>\
 !! Briefing
 Today you and your partner will be living a day in the life of @@.holland;Mr. Bernard Holland@@, a 75-year-old male with COPD. He is 60-pack-year smoker who is currently trying to quit. He does not wear home oxygen, though he does often have to stop to catch his breath after walking for more than a few minutes on level ground.
 
@@ -308,7 +314,7 @@ Today you and your partner will be living a day in the life of @@.holland;Mr. Be
 * Tiotropium maintenance inhaler: 1 puff, once daily
 * Theophylline ER: 400mg, PO once daily in the morning
 * Nicotine patch: 21mg, transdermal, once daily in the morning
-
+<br>
 !!! Your goal
 Your goal  is to accomplish as many tasks during your day as possible. This is a ''timed simulation''. You and your partner will be competing against your classmates!
 
@@ -341,13 +347,12 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 * Once you connect to the multiplayer lobby the student playing the role of @@.holland;Mr. Holand@@ wil be controlling the pace of the game and moving from activity station to activity station. The game will tell you where to go next or it may give you options to chose from.
 *Meanwhile the @@.observer;The Observer@@ be provided specific scoring buttons for each task.
 
-
 !! To start the game 
 * Have one player click the "Connect to Multiplayer" button below. This will connect you to the game lobby.
-* Once in the game lobby the second player can scan the invite QR code on their phone to pair up and form a team. If you leave the lobby before your partner joins, the host can tap **Show Invite QR Code** on the role selection screen to display it again.
-* Once you've both joined the game your have an opportunity to practice using the controls and familarize yourselves with the interface before the game starts.
-
+* Once in the game lobby click the <strong><u>Invite</u></strong> button. This will give you a QR code for your partner to pair up and form a team.. If you leave the lobby before your partner joins, the host can tap <strong><u>Show Invite QR Code</u></strong> on the role selection screen to display it again.
+* Once you've both joined the 1st player can then click the <strong><u>Launch</u></strong> button to enter the briefing area to learn the controls.
 //Don't bother spending time customizing your avatar or player names. These won't be used in the game//
+
 
 
 :: StoryInit {"position":"700,200","size":"100,100"}
@@ -400,59 +405,51 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 
 :: Tutorial_Jumping_Jacks [simulation briefing activity] {"position":"1350,450","size":"100,100"}
 ! Practice: Jumping Jacks
-
-<<if State.variables.myRole == "patient">>
+<hr>\
+<<if State.variables.myRole == "patient">>\
 You are breathing great right now — look at the top of the page. How about trying **5 jumping jacks**?
 
 Go ahead and do them now, then tap the button below when you are finished.
-
+<hr>\
+<nobr>\
 <<patient-choices "Practice Activity"
   "Do 5 jumping jacks (click when done) | 0 | blue | green | "
->>
-
+>>\
 <<patient-next "Continue" "Tutorial_Rest">>
-
-<<else>>
+<<else>>\
 Watch @@.holland;Mr. Holland@@ perform the practice activity. Once they finish, record your assessment below.
-
 <<dynamic-eval "Practice: Jumping Jacks"
   "They did 5 jumping jacks | -9 | 0 | none | red | What were you thinking?! You have advanced COPD! You can't exercise like you used to in High School!"
->>
+>>\
 <</if>>
-
 <!--[[Tutorial_Rest]]-->
 
 
 :: Tutorial_Rest [simulation briefing activity] {"position":"1500,450","size":"100,100"}
 ! Practice: Catch Your Breath
-
-<<if State.variables.myRole == "patient">>
+<hr>\
+<<if State.variables.myRole == "patient">>\
 That was a lot of work! How about you try ''sitting down and leaning over a table'' to do some pursed lip breathing and catch your breath?
 
 Once you are seated and breathing, tap the button below.
-
+<hr>\
 <<patient-choices "Practice Activity"
-  "Sit down and do pursed lip breathing (click when done) | 0 | green | green | "
->>
-
-<<patient-next "Start Simulation<br>Good Morning Mr. Holland" "Good_Morning_Mr._Holland" "reset">>
-
-<<else>>
+  "Sit down and do pursed lip breathing (click when done) | 0 | green | green | You feel a little better "
+>>\
+<<patient-next "Start Simulation<br>Good Morning Mr. Holland" "Good_Morning_Mr._Holland" "reset">>\
+<<else>>\
 @@.holland;Mr. Holland@@ should sit and rest. Evaluate their recovery technique below.
-
 <<dynamic-eval "Practice: Rest & Recovery"
-  "Sat and did pursed lip breathing | 4 | 0 | pursedLip | green | green| That feels a little better. You are still winded, but not as bad."
->>
-
+  "Sat and did pursed lip breathing | +4 | 0 | pursedLip | green |That feels a little better. You are still winded, but not as bad. | green| "
+>>\
 Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, they will start the simulation from their screen.
 <</if>>
-
 <!--[[Good_Morning_Mr._Holland]]-->
 
 
 :: Waiting_Room {"position":"1100,600","size":"100,100"}
 ! Waiting for Partner...
-
+<hr>\
 <<if State.variables.myRole == "patient">>
     You are the **Patient**. Please wait for your Observer to be ready.
 <<else>>
@@ -1936,7 +1933,6 @@ window.SimApp = {
     });
 }());
 
-/* Load Playroom Kit via SugarCube CDN importer */
 (function () {
     "use strict";
     /* iOS safe-area + real-device viewport (GitHub Pages / mobile Safari) */
@@ -1949,6 +1945,7 @@ window.SimApp = {
     }
 }());
 
+/* Load Playroom Kit via SugarCube CDN importer */
 importScripts("https://unpkg.com/playroomkit/multiplayer.full.umd.js")
     .then(function () {
         window.SimApp.isPlayroomLoaded = true;
