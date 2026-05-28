@@ -2,7 +2,7 @@
 <html data-init="no-js">
 <head>
 <meta charset="UTF-8" />
-<title>COPD simulation 2.0.2</title>
+<title>COPD simulation 2.0.3</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <meta name="application-name" content="SugarCube" />
 <meta name="version" content="2.37.3" />
@@ -1990,7 +1990,6 @@ window.SimApp = {
     });
 }());
 
-/* Load Playroom Kit via SugarCube CDN importer */
 (function () {
     "use strict";
     /* iOS safe-area + real-device viewport (GitHub Pages / mobile Safari) */
@@ -2003,6 +2002,7 @@ window.SimApp = {
     }
 }());
 
+/* Load Playroom Kit via SugarCube CDN importer */
 importScripts("https://unpkg.com/playroomkit/multiplayer.full.umd.js")
     .then(function () {
         window.SimApp.isPlayroomLoaded = true;
@@ -2258,8 +2258,7 @@ For some activities, you will be provided with different options that automatica
 Once you feel comfortable with the controls and @@.holland;Mr. Holland@@ is comfortable with the practice activities, they will start the simulation from their screen.
 &lt;&lt;/if&gt;&gt;
 
-&lt;!--[[Tutorial_Jumping_Jacks]]--&gt;</tw-passagedata><tw-passagedata pid="9" name="Start" tags="" position="800,400" size="200,200">
-&lt;div class=&quot;center-heading1&quot;&gt;@@.holland;Mr Holland&#39;s@@ Grand Day Out&lt;/div&gt;\
+&lt;!--[[Tutorial_Jumping_Jacks]]--&gt;</tw-passagedata><tw-passagedata pid="9" name="Start" tags="" position="800,400" size="200,200">&lt;div class=&quot;center-heading1&quot;&gt;@@.holland;Mr Holland&#39;s@@ Grand Day Out&lt;/div&gt;\
 &lt;div class=&quot;center-heading3&quot;&gt;Version &lt;&lt;print Story.title.replace(/^COPD simulation\s+/i, &quot;&quot;)&gt;&gt;&lt;/div&gt;\
 &lt;hr&gt;\
 &lt;div class=&quot;center-heading2&quot;&gt;An interactive augmented reality simulation by Robin Parker, MSN, RN, PCCN&lt;/div&gt;\
@@ -2321,8 +2320,7 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 * Have one player click the &quot;Connect to Multiplayer&quot; button below. This will connect you to the game lobby.
 * Once in the game lobby click the &lt;strong&gt;&lt;u&gt;Invite&lt;/u&gt;&lt;/strong&gt; button. This will give you a QR code for your partner to pair up and form a team.. If you leave the lobby before your partner joins, the host can tap &lt;strong&gt;&lt;u&gt;Show Invite QR Code&lt;/u&gt;&lt;/strong&gt; on the role selection screen to display it again.
 * Once you&#39;ve both joined the 1st player can then click the &lt;strong&gt;&lt;u&gt;Launch&lt;/u&gt;&lt;/strong&gt; button to enter the briefing area to learn the controls.
-//Don&#39;t bother spending time customizing your avatar or player names. These won&#39;t be used in the game//
-</tw-passagedata><tw-passagedata pid="10" name="StoryInit" tags="" position="700,200" size="100,100">&lt;&lt;script&gt;&gt;
+//Don&#39;t bother spending time customizing your avatar or player names. These won&#39;t be used in the game//</tw-passagedata><tw-passagedata pid="10" name="StoryInit" tags="" position="700,200" size="100,100">&lt;&lt;script&gt;&gt;
 (function () {
     var vp = document.querySelector(&#39;meta[name=&quot;viewport&quot;]&#39;);
     if (vp) {
@@ -2392,13 +2390,13 @@ That was a lot of work! How about you try &#39;&#39;sitting down and leaning ove
 Once you are seated and breathing, tap the button below.
 &lt;hr&gt;\
 &lt;&lt;patient-choices &quot;Practice Activity&quot;
-  &quot;Sit down and do pursed lip breathing (click when done) | 0 | green | You feel a little better &quot;
+  &quot;Sit down and do pursed lip breathing (click when done) | 0 | green | green | You feel a little better &quot;
 &gt;&gt;\
 &lt;&lt;patient-next &quot;Start Simulation&lt;br&gt;Good Morning Mr. Holland&quot; &quot;Good_Morning_Mr._Holland&quot; &quot;reset&quot;&gt;&gt;\
 &lt;&lt;else&gt;&gt;\
 @@.holland;Mr. Holland@@ should sit and rest. Evaluate their recovery technique below.
 &lt;&lt;dynamic-eval &quot;Practice: Rest &amp; Recovery&quot;
-  &quot;Sat and did pursed lip breathing | 4 | 0 | pursedLip | green | green| That feels a little better. You are still winded, but not as bad.&quot;
+  &quot;Sat and did pursed lip breathing | +4 | 0 | pursedLip | green |That feels a little better. You are still winded, but not as bad. | green| &quot;
 &gt;&gt;\
 Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, they will start the simulation from their screen.
 &lt;&lt;/if&gt;&gt;

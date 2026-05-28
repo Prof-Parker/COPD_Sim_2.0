@@ -1,0 +1,14 @@
+-Use the following prefexis for commit messages followed by a colon and a space:
+    -"fix" for bug fixes
+    -"feat" for new features
+    -"perf" for performance improvements
+    -"docs" for documentation changes
+    -"style" for formatting changes
+    -"test" for adding missing tests
+    -"chore" for chore tasks
+-when determining the commit message prefix, pick the most relevant prefix from the list above
+-use lower case for commit messages
+-the commit message should also include a list of the changes made in the commit after the summary line if the changes are not self explanatory
+
+Before all commits to the beta branch update the version number of the .twee file to 2.0.1 +0.0.1. Also update the version number at the top of the Start passage.
+Before all commits to the master branch update the version number of the .twee file to 2.0 +0.1 Also update the version number at the top of the Start passage.

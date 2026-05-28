@@ -1,5 +1,5 @@
 :: StoryTitle
-COPD simulation 2.0.2
+COPD simulation 2.0.3
 
 
 :: StoryData
@@ -255,9 +255,7 @@ If you have your rescue inhaler with you, during the simulation you may demonstr
 
 For now, use the <strong><u>Practice Activity</u></strong> button at the bottom of your screen to try a sample action and see how it impacts your work of breathing.
 <hr>\
-<nobr>
     <<patient-next "Begin Practice Activity" "Tutorial_Jumping_Jacks">>
-</nobr>\
 <<else>>\
 !! Welcome to the game @@.observer;Observer@@!
 You will be following along with @@.holland;Mr. Holland@@ and assessing how well he conserves his energy as he goes about his day. 
@@ -288,7 +286,6 @@ Once you feel comfortable with the controls and @@.holland;Mr. Holland@@ is comf
 
 
 :: Start {"position":"800,400","size":"200,200"}
-
 <div class="center-heading1">@@.holland;Mr Holland's@@ Grand Day Out</div>\
 <div class="center-heading3">Version <<print Story.title.replace(/^COPD simulation\s+/i, "")>></div>\
 <hr>\
@@ -354,7 +351,6 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 //Don't bother spending time customizing your avatar or player names. These won't be used in the game//
 
 
-
 :: StoryInit {"position":"700,200","size":"100,100"}
 <<script>>
 (function () {
@@ -411,7 +407,6 @@ You are breathing great right now — look at the top of the page. How about try
 
 Go ahead and do them now, then tap the button below when you are finished.
 <hr>\
-<nobr>\
 <<patient-choices "Practice Activity"
   "Do 5 jumping jacks (click when done) | 0 | blue | green | "
 >>\
