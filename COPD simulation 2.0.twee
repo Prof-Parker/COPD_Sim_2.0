@@ -1,5 +1,5 @@
 :: StoryTitle
-COPD simulation 2.0.4
+COPD simulation 2.0.5
 
 
 :: StoryData
@@ -18,6 +18,33 @@ COPD simulation 2.0.4
 }
 
 
+:: Breakfast {"position":"1950,700","size":"100,100"}
+
+
+
+:: Dressing {"position":"2100,700","size":"100,100"}
+! Getting Dressed
+<hr>\
+<<if $myRole == "patient">>\
+Time to get dressed for the day. ''Make sure to put on your socks and shoes'' so you can run your errands.
+
+<<patient-next "Time for breakfast!" "Breakfast">>\
+
+<<else>>\
+
+It's time for @@.holland;Mr Holland@@ to get dressed. Once they are done getting dressed evaluate their performance below.
+//Don't forget that you can use your general controls as well to add or subtract additional energy such as if they bend over to put their shoes on//
+
+<<dynamic-eval "Activity: Getting Dressed"
+" They got dressed sitting down | -1 | 1 | satAndRested | green | You're dressed and ready for breakfast | green"
+"They got dressed standing up | -3 | 1 | standing | red | Even putting your clothes on for the day makes you feel winded, you wonder if you'll be able to do all your errands today | red"
+>>
+
+<</if>>
+
+<!--[[Breakfast]]-->
+
+
 :: Game_Over_Energy {"position":"1000,100","size":"100,100"}
 ! Game Over
 
@@ -33,11 +60,11 @@ Your heart is racing and feels like it is about to jump out of your chest. It hu
 :: Good_Morning_Mr._Holland [simulation activity] {"position":"1650,450","size":"100,100"}
 ! Good Morning
 <hr>\
+<<if $myRole == "patient">>\
 Your alarm wakes you and its time to get up. You get the strangest feeling that this was the same song you woke up to yesterday morning...
 
 Before you spend too much time thinking about the radio playlist you remember you've got a lot of things to do today. You hope that you will be able to get it all done.
 <hr>\
-<<if $myRole == "patient">>\
 @@.holland;Mr.Holland@@ it's time to start the day. Go ahead and get out of bed now.
     
 Once you are fully standing and ready to start your day, click below to head to the bathroom to get cleaned up.
@@ -45,6 +72,8 @@ Once you are fully standing and ready to start your day, click below to head to 
 //Note that you will not be able to progress until your @@.observer;Observer@@ has evaluated your actions at this station//
     <<patient-next "Head to the Bathroom (Shower)" "Showering">>\
 <<else>>\
+@@.holland;Mr. Holland's@@ alarm goes off, its time for him to wake up. As he listens to the song playing over the radio he gets the strangest feeling of deja-vu...
+<hr>\
 Tell @@.holland;Mr. Holland@@ to physically get out of bed. Observe their actions carefully as they do this.
     
 Once they are fully standing, click the appropriate evaluation below.
@@ -55,6 +84,32 @@ Once they are fully standing, click the appropriate evaluation below.
 <</if>>
 
 <!--[[Showering]]-->
+
+
+:: Lotion [simulation activity] {"position":"2100,450","size":"100,100"}
+!Lotion
+<hr>\
+<<if $myRole == "patient">>\
+Your skin has been feeling dry lately. Perhaps some lotion would help your skin feel better. What would you like to do?
+
+<<patient-choices "Lotion choices"
+	"The lavendar scented lotion from your daughter" | -2 | blue | red | It smells lovely, but strong, you immediately start coughing"
+    "The generic unscented lotion" | 0 | blue | green | It's nothing special, but it doesn't trigger your COPD symptoms"
+	"Skip the lotion, it might trigger your COPD | 0 | blue | red | You're concerned about how your skin is going to feel today without lotion, but you have to prioritize your breathing"
+>>\
+
+<<patient-next "Time to get dressed" "Dressing">>\
+
+<<else>>\
+@.holland;Mr. Holland's@@ skin has been feeling dry. He's wondering about putting on some lotion, and if so which lotion to use, the scented or unscented.
+
+<<dynamic-eval "Activity: Applying lotion"
+"They applied lotion" | -1 | 2 | none | green | Your skin feels better already | green"
+"They don't apply lotion | 0 | -1 | none | red | The itching is already irritating, hopefully once you start running errands you'll be distracted | red"
+>>
+<</if>>
+
+<!--[[Dressing]]-->
 
 
 :: PassageFooter {"position":"500,600","size":"100,100"}
@@ -132,6 +187,9 @@ Once they are fully standing, click the appropriate evaluation below.
     if (role) {
         $("body").removeClass("role-patient role-observer").addClass("role-" + role);
     }
+    if (window.SimApp) {
+        SimApp.mountDevModeUI();
+    }
 <</script>>
 <<if tags().includes("simulation")>>
     /* Mirror persistent role + pull latest Playroom stats for this passage render */
@@ -187,13 +245,13 @@ Please coordinate with your partner. One of you must be the Patient, and the oth
 <div id="host-invite-slot"></div>
 
 <span id="wrap-patient">
-    <<button "I am the Patient (COPD)">>
+    <<button "I will be <span class='holland'>Mr. Holland</span>">>
         <<run SimApp.setRole("patient")>>
     <</button>>
 </span>
 
 <span id="wrap-observer">
-    <<button "I am the Observer">>
+    <<button "I will be <span class='observer'>the Observer</span>">>
         <<run SimApp.setRole("observer")>>
     <</button>>
 </span>
@@ -219,7 +277,7 @@ Please coordinate with your partner. One of you must be the Patient, and the oth
 :: Showering [simulation activity] {"position":"1800,450","size":"100,100"}
 ! Showering
 <hr>\
-<<if $myRole == "patient">>
+<<if $myRole == "patient">>\
 First things first — you could use a shower. Walk over to the shower station.
 
 Once you are there, what temperature will you set the water to?
@@ -228,18 +286,20 @@ Once you are there, what temperature will you set the water to?
   "Hot Water | -4 | hot | red | All the steam from the hot water makes it hard to breathe! But at least you are clean."
   "Warm Water | -1 | warm | green | The warm water is soothing and doesn't stress your lungs."
   "Cold Water | -2 | cold | red | The sudden shock of the cold water makes you gasp for air!"
->>
+>>\
 
-<<patient-next "Continue Your Day" "Simulation_Hub">>
+<<patient-next "Time to brush your teeth" "Teeth_Brushing">>\
 
-<<else>>
+<<else>>\
 @@.holland;Mr. Holland@@ is at the shower. Observe how he sets the water temperature and how his breathing responds.
 
 <<dynamic-eval "Activity: Showering"
-  "They showered sitting down | 0 | 1 | satAndRested | green"
-  "They showered standing up | -2 | 1 | standing | red"
->>
+  "He showered sitting down | 0 | 1 | satAndRested | green | You're glad your daughter convinced you to buy the shower chair, it certainely makes things easier in the morning | green"
+  "He showered standing up | -2 | 1 | standing | red | The day has barely begun and you're already starting to feel a little winded | red"
+>>\
 <</if>>
+
+<!--[[Teeth_Brushing]]-->
 
 
 :: Simulation_Hub [simulation briefing] {"position":"1200,450","size":"100,100"}
@@ -255,7 +315,7 @@ If you have your rescue inhaler with you, during the simulation you may demonstr
 
 For now, use the <strong><u>Practice Activity</u></strong> button at the bottom of your screen to try a sample action and see how it impacts your work of breathing.
 <hr>\
-    <<patient-next "Begin Practice Activity" "Tutorial_Jumping_Jacks">>
+    <<patient-next "Begin Practice Activity" "Tutorial_Jumping_Jacks""reset">>
 <<else>>\
 !! Welcome to the game @@.observer;Observer@@!
 You will be following along with @@.holland;Mr. Holland@@ and assessing how well he conserves his energy as he goes about his day. 
@@ -360,6 +420,9 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
     }
 })();
 <</script>>
+<<set $devMode to false>>
+/* Host testing: set $devMode to true for Playroom host dev menu (variable override + passage jump) */
+
 /* Multiplayer / role fallbacks (offline testing) */
 <<set $myRole to "">>
 <<set $evalComplete to false>>
@@ -399,6 +462,26 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 <<set $hasToy to false>>
 
 
+:: Teeth_Brushing [simulation activity] {"position":"1950,450","size":"100,100"}
+!Teeth Brushing
+<hr>\
+<<if $myRole == "patient">>\
+Now that you are done showering it is time to brush your teeth. Go ahead and walk to the sink and brush your teeth.
+
+<<patient-next "Your skin has been feeling dry, how about some lotion?" "Lotion">>\
+
+<<else>>\
+
+Now that @@.holland;Mr. Holland@@ is done showering he needs to brush his teeth. Go ahead to assess what technique he uses as he brushes his teeth,
+
+<<dynamic-eval "Activity: Brushing Teeth" 
+"They brushed sitting down | -1 | +1 | satAndRested | green | sitting down for this task helped conserve your energy | green" 
+"They brushed standing up | -2 | +1 | standing | red | Even small activities of daily living take their toll on your energy | red" >>\
+
+<</if>>
+<<!--[[Lotion]]-->>
+
+
 :: Tutorial_Jumping_Jacks [simulation briefing activity] {"position":"1350,450","size":"100,100"}
 ! Practice: Jumping Jacks
 <hr>\
@@ -408,7 +491,7 @@ You are breathing great right now — look at the top of the page. How about try
 Go ahead and do them now, then tap the button below when you are finished.
 <hr>\
 <<patient-choices "Practice Activity"
-  "Do 5 jumping jacks (click when done) | 0 | blue | green | "
+  "Do 5 jumping jacks (click when done) | 0 | blue | "
 >>\
 <<patient-next "Continue" "Tutorial_Rest">>
 <<else>>\
@@ -429,7 +512,7 @@ That was a lot of work! How about you try ''sitting down and leaning over a tabl
 Once you are seated and breathing, tap the button below.
 <hr>\
 <<patient-choices "Practice Activity"
-  "Sit down and do pursed lip breathing (click when done) | 0 | green | green | You feel a little better "
+  "Sit down and do pursed lip breathing (click when done) | 0 | green "
 >>\
 <<patient-next "Start Simulation<br>Good Morning Mr. Holland" "Good_Morning_Mr._Holland" "reset">>\
 <<else>>\
@@ -1183,8 +1266,12 @@ window.SimApp = {
             }
         });
 
-        $("#wrap-patient button").prop("disabled", false).text("I am the Patient (COPD)");
-        $("#wrap-observer button").prop("disabled", false).text("I am the Observer");
+        $("#wrap-patient button")
+            .prop("disabled", false)
+            .html("I will be <span class='holland'>Mr. Holland</span>");
+  		$("#wrap-observer button")
+          	.prop("disabled", false)
+    		.html("I will be <span class='observer'>the Observer</span>");
 
         if (otherRole === "patient") {
             $("#wrap-patient button").prop("disabled", true).text("Patient (Selected by Partner)");
@@ -1389,6 +1476,289 @@ window.SimApp = {
             .replace(/</g, "&lt;")
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;");
+    },
+
+    /* ==========================================================
+       HOST DEV MODE — enable with <<set $devMode to true>> in StoryInit
+       Visible to Playroom host only; all variable edits use setVal → Playroom.
+       ========================================================== */
+
+    DEV_ROOM_KEYS: [
+        "sharedTime",
+        "roomStarted",
+        "lobby_patient",
+        "lobby_observer",
+        "patientPlayerId",
+        "observerPlayerId"
+    ],
+
+    _devPanelOpen: false,
+
+    isDevModeEnabled: function () {
+        return State.variables.devMode === true;
+    },
+
+    /** Dev tools: host when connected, or solo when Playroom not loaded yet */
+    canUseDevMode: function () {
+        if (!this.isDevModeEnabled()) {
+            return false;
+        }
+        if (typeof Playroom === "undefined" || !Playroom.myPlayer()) {
+            return true;
+        }
+        return Playroom.isHost();
+    },
+
+    getDevVariableKeys: function () {
+        var keys = this.DEV_ROOM_KEYS.slice();
+        this.STATE_KEYS.forEach(function (key) {
+            if (keys.indexOf(key) === -1) {
+                keys.push(key);
+            }
+        });
+        return keys.sort();
+    },
+
+    getPassageNames: function () {
+        return Array.from(Story.keys()).sort(function (a, b) {
+            return a.localeCompare(b);
+        });
+    },
+
+    getDevValueType: function (key) {
+        var val = this.getVal(key);
+        if (val !== undefined && val !== null) {
+            if (typeof val === "boolean") {
+                return "boolean";
+            }
+            if (typeof val === "number") {
+                return "number";
+            }
+            return "string";
+        }
+        if (Object.prototype.hasOwnProperty.call(this.DEFAULT_GAME_STATE, key)) {
+            return typeof this.DEFAULT_GAME_STATE[key];
+        }
+        return "string";
+    },
+
+    coerceDevValue: function (key, raw) {
+        var type = this.getDevValueType(key);
+        if (type === "boolean") {
+            return raw === true || raw === "true" || raw === 1 || raw === "1";
+        }
+        if (type === "number") {
+            var n = Number(raw);
+            return isNaN(n) ? 0 : n;
+        }
+        return String(raw);
+    },
+
+    devApplyVariable: function (key, rawValue) {
+        var val = this.coerceDevValue(key, rawValue);
+        this.setVal(key, val, true);
+        this.updateHud();
+        if (key === "sharedTime") {
+            $(".time-display").text(String(val));
+        }
+        this.refreshDevModePanel();
+    },
+
+    devNavigateToPassage: function (passageName) {
+        if (!passageName || !Story.has(passageName)) {
+            window.alert("Unknown passage: " + passageName);
+            return;
+        }
+        this.goToSharedPassage(passageName);
+        this.refreshDevModePanel();
+    },
+
+    devResetAllVariables: function () {
+        var self = this;
+        Object.keys(this.DEFAULT_GAME_STATE).forEach(function (key) {
+            self.setVal(key, self.DEFAULT_GAME_STATE[key], true);
+        });
+        this.setVal("sharedTime", "00:00", true);
+        State.variables.playtime = Date.now();
+        $(".time-display").text("00:00");
+        this.updateHud();
+        this.refreshDevModePanel();
+    },
+
+    toggleDevModePanel: function (show) {
+        var $panel = $("#sim-dev-panel");
+        if (!$panel.length) {
+            return;
+        }
+        if (show === undefined) {
+            show = $panel.hasClass("hidden");
+        }
+        $panel.toggleClass("hidden", !show);
+        this._devPanelOpen = show;
+        if (show) {
+            this.refreshDevModePanel();
+        }
+    },
+
+    refreshDevModePanel: function () {
+        if (!this.canUseDevMode() || !$("#sim-dev-panel").length) {
+            return;
+        }
+        var self = this;
+        this.getDevVariableKeys().forEach(function (key) {
+            var val = self.getVal(key);
+            var $input = $("#sim-dev-var-" + CSS.escape(key));
+            if (!$input.length) {
+                return;
+            }
+            if ($input.is("select")) {
+                $input.val(val === true || val === "true" ? "true" : "false");
+            } else {
+                $input.val(val === undefined || val === null ? "" : String(val));
+            }
+        });
+        var here = passage();
+        $("#sim-dev-passage-select").val(here);
+        $("#sim-dev-current-passage").text(here || "—");
+    },
+
+    mountDevModeUI: function () {
+        if (!this.canUseDevMode()) {
+            $("#sim-dev-ui").remove();
+            return;
+        }
+        if ($("#sim-dev-ui").length) {
+            if (this._devPanelOpen) {
+                this.refreshDevModePanel();
+            }
+            return;
+        }
+
+        var self = this;
+        var passageOptions = "";
+        this.getPassageNames().forEach(function (name) {
+            passageOptions +=
+                '<option value="' +
+                self._escapeHtml(name) +
+                '">' +
+                self._escapeHtml(name) +
+                "</option>";
+        });
+
+        var varRows = "";
+        this.getDevVariableKeys().forEach(function (key) {
+            var type = self.getDevValueType(key);
+            var val = self.getVal(key);
+            var safeKey = self._escapeHtml(key);
+            var inputHtml;
+            if (type === "boolean") {
+                inputHtml =
+                    '<select id="sim-dev-var-' +
+                    safeKey +
+                    '" class="sim-dev-input" data-dev-key="' +
+                    safeKey +
+                    '">' +
+                    '<option value="true">true</option>' +
+                    '<option value="false">false</option>' +
+                    "</select>";
+            } else if (type === "number") {
+                inputHtml =
+                    '<input type="number" id="sim-dev-var-' +
+                    safeKey +
+                    '" class="sim-dev-input" data-dev-key="' +
+                    safeKey +
+                    '" value="' +
+                    self._escapeHtml(val === undefined || val === null ? "0" : String(val)) +
+                    '" />';
+            } else {
+                inputHtml =
+                    '<input type="text" id="sim-dev-var-' +
+                    safeKey +
+                    '" class="sim-dev-input" data-dev-key="' +
+                    safeKey +
+                    '" value="' +
+                    self._escapeHtml(val === undefined || val === null ? "" : String(val)) +
+                    '" />';
+            }
+            varRows +=
+                '<tr class="sim-dev-var-row">' +
+                '<td class="sim-dev-var-key"><code>' +
+                safeKey +
+                "</code></td>" +
+                '<td class="sim-dev-var-input">' +
+                inputHtml +
+                "</td>" +
+                '<td class="sim-dev-var-action">' +
+                '<button type="button" class="sim-dev-apply-btn" data-dev-key="' +
+                safeKey +
+                '">Apply</button>' +
+                "</td>" +
+                "</tr>";
+        });
+
+        var html =
+            '<div id="sim-dev-ui">' +
+            '<button type="button" id="sim-dev-toggle" class="sim-dev-toggle" title="Host Dev Mode">DEV</button>' +
+            '<div id="sim-dev-panel" class="sim-dev-panel hidden">' +
+            '<div class="sim-dev-header">' +
+            "<strong>Host Dev Mode</strong>" +
+            '<button type="button" id="sim-dev-close" class="sim-dev-close" aria-label="Close">&times;</button>' +
+            "</div>" +
+            '<p class="sim-dev-note">Overrides sync to Playroom via setVal. Set $devMode to false before class.</p>' +
+            '<section class="sim-dev-section">' +
+            "<h3>Navigate</h3>" +
+            '<p class="sim-dev-meta">Current: <code id="sim-dev-current-passage"></code></p>' +
+            '<div class="sim-dev-nav-row">' +
+            '<select id="sim-dev-passage-select" class="sim-dev-select">' +
+            passageOptions +
+            "</select>" +
+            '<button type="button" id="sim-dev-go-passage" class="sim-dev-action-btn">Go (team)</button>' +
+            "</div></section>" +
+            '<section class="sim-dev-section">' +
+            "<h3>Variables</h3>" +
+            '<div class="sim-dev-var-scroll">' +
+            '<table class="sim-dev-var-table"><tbody>' +
+            varRows +
+            "</tbody></table></div>" +
+            '<div class="sim-dev-btn-row">' +
+            '<button type="button" id="sim-dev-reset-all" class="sim-dev-action-btn sim-dev-reset">Reset defaults</button>' +
+            '<button type="button" id="sim-dev-sync" class="sim-dev-action-btn">Pull from Playroom</button>' +
+            "</div></section></div></div>";
+
+        $("body").append(html);
+
+        this.getDevVariableKeys().forEach(function (key) {
+            if (self.getDevValueType(key) !== "boolean") {
+                return;
+            }
+            var val = self.getVal(key);
+            $("#sim-dev-var-" + key).val(val === true || val === "true" ? "true" : "false");
+        });
+
+        $("#sim-dev-toggle").on("click", function () {
+            self.toggleDevModePanel();
+        });
+        $("#sim-dev-close").on("click", function () {
+            self.toggleDevModePanel(false);
+        });
+        $("#sim-dev-go-passage").on("click", function () {
+            self.devNavigateToPassage($("#sim-dev-passage-select").val());
+        });
+        $("#sim-dev-ui").on("click", ".sim-dev-apply-btn", function () {
+            var key = $(this).attr("data-dev-key");
+            self.devApplyVariable(key, $("#sim-dev-var-" + key).val());
+        });
+        $("#sim-dev-reset-all").on("click", function () {
+            if (window.confirm("Reset all game variables and timer to defaults?")) {
+                self.devResetAllVariables();
+            }
+        });
+        $("#sim-dev-sync").on("click", function () {
+            self.syncFromPlayroom();
+            self.refreshDevModePanel();
+        });
+
+        this.refreshDevModePanel();
     },
 
     /**
@@ -1924,6 +2294,7 @@ window.SimApp = {
             SimApp._patientNextConfig = null;
             $("#patient-footer-choices").empty();
             $("#patient-footer-next").empty();
+            SimApp.mountDevModeUI();
         }
     });
 }());
@@ -2579,4 +2950,175 @@ body.role-observer #passages {
 
 body.role-patient #passages {
     padding-bottom: calc(38dvh + env(safe-area-inset-bottom, 0px));
+}
+
+/* 9. Host dev mode overlay (enable via $devMode in StoryInit) */
+#sim-dev-ui {
+    font-size: 14px;
+    line-height: 1.35;
+}
+
+.sim-dev-toggle {
+    position: fixed;
+    top: calc(56px + env(safe-area-inset-top, 0px));
+    left: max(8px, env(safe-area-inset-left, 0px));
+    z-index: 1500;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 6px 12px !important;
+    font-size: 0.75em !important;
+    font-weight: bold;
+    background-color: #6f42c1 !important;
+    color: #fff !important;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.sim-dev-toggle:hover {
+    background-color: #5a32a3 !important;
+}
+
+.sim-dev-panel {
+    position: fixed;
+    top: calc(92px + env(safe-area-inset-top, 0px));
+    left: max(8px, env(safe-area-inset-left, 0px));
+    right: max(8px, env(safe-area-inset-right, 0px));
+    max-width: 520px;
+    max-height: min(55dvh, 420px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    z-index: 1500;
+    background: #1a1a2e;
+    color: #eee;
+    border: 2px solid #6f42c1;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    box-sizing: border-box;
+}
+
+.sim-dev-panel.hidden {
+    display: none !important;
+}
+
+.sim-dev-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #444;
+    flex-shrink: 0;
+}
+
+.sim-dev-close {
+    width: auto !important;
+    margin: 0 !important;
+    padding: 2px 8px !important;
+    font-size: 1.4em !important;
+    line-height: 1;
+    background: transparent !important;
+    color: #ccc !important;
+    box-shadow: none !important;
+}
+
+.sim-dev-note,
+.sim-dev-meta {
+    margin: 8px 12px 0;
+    font-size: 0.85em;
+    color: #aaa;
+}
+
+.sim-dev-section {
+    padding: 8px 12px 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.sim-dev-section h3 {
+    margin: 0 0 8px;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #b794f6;
+}
+
+.sim-dev-nav-row,
+.sim-dev-btn-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.sim-dev-select {
+    flex: 1 1 180px;
+    min-width: 0;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #555;
+    background: #2d2d44;
+    color: #fff;
+    font-size: 0.9em;
+}
+
+.sim-dev-var-scroll {
+    overflow-y: auto;
+    max-height: 28dvh;
+    margin-bottom: 10px;
+    border: 1px solid #333;
+    border-radius: 6px;
+}
+
+.sim-dev-var-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+}
+
+.sim-dev-var-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid #333;
+    vertical-align: middle;
+}
+
+.sim-dev-var-key code {
+    font-size: 0.9em;
+    word-break: break-all;
+}
+
+.sim-dev-input {
+    width: 100%;
+    min-width: 60px;
+    padding: 6px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    background: #2d2d44;
+    color: #fff;
+    box-sizing: border-box;
+}
+
+.sim-dev-apply-btn,
+.sim-dev-action-btn {
+    width: auto !important;
+    margin: 0 !important;
+    padding: 8px 12px !important;
+    font-size: 0.85em !important;
+    background-color: #495057 !important;
+    color: #fff !important;
+    white-space: nowrap;
+}
+
+.sim-dev-action-btn {
+    flex-shrink: 0;
+}
+
+.sim-dev-reset {
+    background-color: #856404 !important;
+}
+
+.sim-dev-apply-btn:hover,
+.sim-dev-action-btn:hover {
+    filter: brightness(1.1);
 }
