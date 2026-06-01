@@ -117,7 +117,7 @@ The second argument `"no-eval"` is optional. When present, it must come **immedi
 | 4 | **Message color** | `green` or `red` — color of the consequence text after the Patient clicks. |
 | 5 | **Message** | Consequence text shown in the footer after the Patient clicks. |
 | 6 | **Next passage** *(optional)* | Exact passage name. Overrides the target in `<<patient-next>>` when **this** choice is picked. Use for branching story paths. |
-| 7+ | **State set** *(optional)* | `variableName=value` synced to Playroom via `setVal`. Use for booleans (`hasInhaler=true`), numbers, or strings. Add more `key=value` segments if needed. |
+| 7+ | **State set** *(optional)* | Playroom sync via `setVal`: `key=value` (assign), `key+=n` (add), or `key-=n` (subtract). Examples: `hasInhaler=true`, `Points+=1`, `errandsRun+=1`. Field 6 may be left blank (`| | Points+=1`). |
 
 **Shorthand (4 fields):** If you only provide 4 pipe-separated values, field 4 is treated as the **message** and the message color is auto-set from the energy sign (positive → green, negative → red).
 
@@ -125,7 +125,11 @@ The second argument `"no-eval"` is optional. When present, it must come **immedi
 "Warm Water | -1 | warm | The warm water is soothing."
 ```
 
-**Fields 6–7 require fields 1–5:** When using a next passage or state set, always include all five core fields (use `0` energy and `green`/`red` colors as needed). Field 6 is the passage name; field 7 is `key=value`.
+**Fields 6–7 require fields 1–5:** When using a next passage or state set, always include all five core fields (use `0` energy and `green`/`red` colors as needed). Field 6 is the passage name (leave blank to keep the `<<patient-next>>` target). Field 7+ uses `=`, `+=`, or `-=`.
+
+```
+"Good choice | 0 | green | green | Well done! | | Points+=1"
+```
 
 **Empty message:** Leave field 5 blank to show “Waiting for your Observer to evaluate…” instead of a consequence line. Useful when the Observer’s eval supplies the Patient feedback (see `<<dynamic-eval>>` field 6).
 
@@ -417,7 +421,7 @@ Observe @@.holland;Mr. Holland@@. Use General Observations in the footer if need
 
 | Choice field 6 | Choice field 7 |
 |----------------|----------------|
-| Override next passage for that branch | `key=value` synced to Playroom (`hasInhaler=true`, etc.) |
+| Override next passage for that branch | `key=value`, `key+=n`, or `key-=n` synced to Playroom |
 
 ---
 

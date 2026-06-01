@@ -2102,7 +2102,7 @@ window.SimApp = {
         var msgColor;
         var message;
         var nextPassage = "";
-        var stateSet = {};
+        var stateOps = [];
         var partIdx;
 
         if (parts.length >= 6) {
@@ -2110,27 +2110,9 @@ window.SimApp = {
             message = (parts[4] || "").trim();
             nextPassage = (parts[5] || "").trim();
             for (partIdx = 6; partIdx < parts.length; partIdx++) {
-                var segment = parts[partIdx];
-                if (!segment) {
-                    continue;
-                }
-                var eq = segment.indexOf("=");
-                if (eq === -1) {
-                    continue;
-                }
-                var stateKey = segment.slice(0, eq).trim();
-                var stateRaw = segment.slice(eq + 1).trim();
-                if (!stateKey) {
-                    continue;
-                }
-                if (stateRaw === "true") {
-                    stateSet[stateKey] = true;
-                } else if (stateRaw === "false") {
-                    stateSet[stateKey] = false;
-                } else if (stateRaw !== "" && !isNaN(Number(stateRaw))) {
-                    stateSet[stateKey] = Number(stateRaw);
-                } else {
-                    stateSet[stateKey] = stateRaw;
+                var parsedState = this.parsePatientChoiceStateSegment(parts[partIdx]);
+                if (parsedState) {
+                    stateOps.push(parsedState);
                 }
             }
         } else if (parts.length >= 5) {
@@ -2154,8 +2136,90 @@ window.SimApp = {
             msgColor: msgColor,
             message: message || "You make your choice.",
             nextPassage: nextPassage,
-            stateSet: stateSet
+            stateOps: stateOps
         };
+    },
+
+    /**
+     * Parse one field-7 state segment: key=value, key+=n, or key-=n
+     */
+    parsePatientChoiceStateSegment: function (segment) {
+        if (!segment) {
+            return null;
+        }
+        var text = String(segment).trim();
+        var addIdx = text.indexOf("+=");
+        var subIdx = text.indexOf("-=");
+        var key;
+        var op;
+        var raw;
+
+        if (addIdx !== -1) {
+            key = text.slice(0, addIdx).trim();
+            raw = text.slice(addIdx + 2).trim();
+            op = "add";
+        } else if (subIdx !== -1) {
+            key = text.slice(0, subIdx).trim();
+            raw = text.slice(subIdx + 2).trim();
+            op = "subtract";
+        } else {
+            var eq = text.indexOf("=");
+            if (eq === -1) {
+                return null;
+            }
+            key = text.slice(0, eq).trim();
+            raw = text.slice(eq + 1).trim();
+            op = "set";
+        }
+        if (!key) {
+            return null;
+        }
+        if (op === "add" || op === "subtract") {
+            var delta = Number(raw);
+            if (isNaN(delta)) {
+                return null;
+            }
+            return { key: key, op: op, value: delta };
+        }
+        if (raw === "true") {
+            return { key: key, op: "set", value: true };
+        }
+        if (raw === "false") {
+            return { key: key, op: "set", value: false };
+        }
+        if (raw !== "" && !isNaN(Number(raw))) {
+            return { key: key, op: "set", value: Number(raw) };
+        }
+        return { key: key, op: "set", value: raw };
+    },
+
+    applyPatientChoiceStateOps: function (ops) {
+        if (!ops || !ops.length) {
+            return;
+        }
+        var self = this;
+        ops.forEach(function (item) {
+            var current;
+            var next;
+            if (item.op === "add") {
+                current = Number(self.getVal(item.key));
+                if (isNaN(current)) {
+                    current = 0;
+                }
+                next = current + item.value;
+                self.setVal(item.key, next, true);
+            } else if (item.op === "subtract") {
+                current = Number(self.getVal(item.key));
+                if (isNaN(current)) {
+                    current = 0;
+                }
+                next = current - item.value;
+                self.setVal(item.key, next, true);
+            } else {
+                self.setVal(item.key, item.value, true);
+            }
+        });
+        this.updateHud();
     },
 
     /** Apply energy change for a patient decision; returns false if game over fired */
@@ -2244,10 +2308,8 @@ window.SimApp = {
             if (!self.applyPatientEnergy(choice.energy)) {
                 return;
             }
-            if (choice.stateSet) {
-                Object.keys(choice.stateSet).forEach(function (key) {
-                    self.setVal(key, choice.stateSet[key], true);
-                });
+            if (choice.stateOps && choice.stateOps.length) {
+                self.applyPatientChoiceStateOps(choice.stateOps);
             }
             if (choice.nextPassage && self._patientNextConfig) {
                 self._patientNextConfig.targetPassage = choice.nextPassage;
