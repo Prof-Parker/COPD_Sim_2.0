@@ -2,6 +2,8 @@
 
 This guide explains how to author **activity stations** in the COPD Simulation using three custom SugarCube macros. These macros render controls in the **fixed footer** at the bottom of the screen (the same area as the Observer’s General Observations buttons).
 
+All shared stats (Energy, Points, `hasInhaler`, etc.) sync through **Playroom** via `SimApp.setVal` / `SimApp.getVal`. Patient choices that change inventory or flags should use the optional **state set** field (field 7) so both devices stay in sync.
+
 ---
 
 ## Before You Begin
@@ -31,11 +33,13 @@ Each activity passage should use a role check so Patient and Observer see differ
     <<patient-next ...>>
 <<else>>
     ... observer instructions ...
-    <<dynamic-eval ...>>
+    <<dynamic-eval ...>>   /* omit when no observer eval at this station */
 <</if>>
 ```
 
 ### How an activity station flows
+
+**Standard station (with Observer eval):**
 
 1. **Patient** reads instructions in the main passage text.
 2. **Patient** taps a choice button in the footer (`<<patient-choices>>`), if the activity has choices.
@@ -44,7 +48,17 @@ Each activity passage should use a role check so Patient and Observer see differ
 
 The Patient cannot advance until the Observer has evaluated (`evalComplete` must be true).
 
-**Important:** During multiplayer, use these macros and `SimApp.nextPassage` — do **not** use `<<goto>>` for shared navigation.
+**Choice-only station (no Observer eval at this passage):**
+
+1. **Patient** taps a choice (`<<patient-choices>>` with `"no-eval"`).
+2. **Continue** unlocks immediately after the choice — no Observer button on this passage.
+3. **Observer** watches in the passage text only; evaluate on a **later** passage (e.g. movement after the decision).
+
+**Next-only station (no choices, no eval):**
+
+1. **Patient** taps `<<patient-next>>` immediately (e.g. tutorial hub, simple transitions).
+
+**Important:** During multiplayer, use these macros and `SimApp.nextPassage` / `SimApp.goToSharedPassage` — do **not** use `<<goto>>` for shared navigation.
 
 ---
 
@@ -56,11 +70,13 @@ The Patient cannot advance until the Observer has evaluated (`evalComplete` must
 
 ### Purpose
 
-Presents one or more choice buttons (e.g., water temperature, which errand to do next). When the Patient taps a button:
+Presents one or more choice buttons (e.g., water temperature, forgot inhaler decision). When the Patient taps a button:
 
 - Energy is adjusted (hidden from the Patient UI)
+- Optional **Playroom state** is updated (e.g. `hasInhaler=true`) via `setVal`
+- Optional **next passage** override for branching paths
 - A consequence message appears in the footer (green or red text)
-- The Patient waits for the Observer to evaluate before the Next button unlocks
+- The Patient waits for the Observer to evaluate **unless** `"no-eval"` is used
 
 ### Syntax
 
@@ -71,6 +87,26 @@ Presents one or more choice buttons (e.g., water temperature, which errand to do
 >>
 ```
 
+With **no Observer eval** on this passage:
+
+```
+<<patient-choices "What do you want to do?" "no-eval"
+  "Option A | 0 | green | green | You chose A."
+  "Option B | 0 | green | red | You chose B."
+>>
+```
+
+With **branching** (different next passage + synced state per choice):
+
+```
+<<patient-choices "What do you want to do?" "no-eval"
+  "Turn around and go back inside | 0 | green | green | Walk back upstairs to get your inhaler. | Hallway_In_Repeat | hasInhaler=true"
+  "Keep going without it | 0 | green | red | You hope you won't regret leaving it behind. | Whistle_Stop_Out | hasInhaler=false"
+>>
+```
+
+The second argument `"no-eval"` is optional. When present, it must come **immediately after** the section title and **before** the choice strings.
+
 ### Fields (pipe-separated, one row per button)
 
 | # | Field | Description |
@@ -80,6 +116,8 @@ Presents one or more choice buttons (e.g., water temperature, which errand to do
 | 3 | **Button color** | CSS theme for the button. Built-in themes: `green`, `red`, `blue`, `hot`, `warm`, `cold`. |
 | 4 | **Message color** | `green` or `red` — color of the consequence text after the Patient clicks. |
 | 5 | **Message** | Consequence text shown in the footer after the Patient clicks. |
+| 6 | **Next passage** *(optional)* | Exact passage name. Overrides the target in `<<patient-next>>` when **this** choice is picked. Use for branching story paths. |
+| 7+ | **State set** *(optional)* | `variableName=value` synced to Playroom via `setVal`. Use for booleans (`hasInhaler=true`), numbers, or strings. Add more `key=value` segments if needed. |
 
 **Shorthand (4 fields):** If you only provide 4 pipe-separated values, field 4 is treated as the **message** and the message color is auto-set from the energy sign (positive → green, negative → red).
 
@@ -87,9 +125,11 @@ Presents one or more choice buttons (e.g., water temperature, which errand to do
 "Warm Water | -1 | warm | The warm water is soothing."
 ```
 
+**Fields 6–7 require fields 1–5:** When using a next passage or state set, always include all five core fields (use `0` energy and `green`/`red` colors as needed). Field 6 is the passage name; field 7 is `key=value`.
+
 **Empty message:** Leave field 5 blank to show “Waiting for your Observer to evaluate…” instead of a consequence line. Useful when the Observer’s eval supplies the Patient feedback (see `<<dynamic-eval>>` field 6).
 
-### Example — Showering (3 choices)
+### Example — Showering (3 choices, standard eval)
 
 ```
 <<patient-choices "Water temperature"
@@ -98,6 +138,21 @@ Presents one or more choice buttons (e.g., water temperature, which errand to do
   "Cold Water | -2 | cold | red | The sudden shock of the cold water makes you gasp for air!"
 >>
 ```
+
+### Example — Forgotten inhaler wildcard (`Wildcard1`)
+
+Patient decision only; Observer evaluates **movement** on the next passage (`Hallway_In_Repeat` or `Whistle_Stop_Out`):
+
+```
+<<patient-choices "What do you want to do?" "no-eval"
+  "Turn around and go back inside to get it | 0 | green | green | Walk back upstairs to your apartment to get your inhaler. | Hallway_In_Repeat | hasInhaler=true"
+  "Keep going to your errands without it | 0 | green | red | You hope that you don't regret your decision to leave your inhaler behind. Start walking to Whistle Stop Park. | Whistle_Stop_Out | hasInhaler=false"
+>>
+
+<<patient-next "Continue" "Whistle_Stop_Out">>
+```
+
+`<<patient-next>>` provides a default target; field 6 on each choice overrides it when that choice is selected.
 
 ### Layout notes
 
@@ -120,6 +175,8 @@ Renders one or more assessment buttons for the current activity. When the Observ
 - An optional behavior counter is incremented (for debriefing data)
 - `evalComplete` is set so the Patient’s Next button unlocks
 - An optional message can be sent to the Patient’s footer (used heavily in the tutorial)
+
+**When to omit:** Some passages only need the Patient to choose (Breakfast, `Wildcard1` decision). Give the Observer read-only instructions in the passage body and use `"no-eval"` on `<<patient-choices>>`. Put `<<dynamic-eval>>` on the **follow-up** passage instead (e.g. walking back for the inhaler).
 
 ### Syntax
 
@@ -161,6 +218,16 @@ Energy and points are shown automatically as a subtitle under the button label (
 >>
 ```
 
+### Example — Observer-only body text (no eval on this passage)
+
+```
+<<else>>
+@@.holland;Mr. Holland@@ steps outside and pats his pockets — his rescue inhaler is still on the counter inside. Watch what he decides.
+
+//There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
+<</if>>
+```
+
 ### Layout notes
 
 - Buttons use the same **two-column grid** and width as General Observations.
@@ -179,9 +246,12 @@ Energy and points are shown automatically as a subtitle under the button label (
 
 Shows the Patient a **Next** / **Continue** button that:
 
-- Waits for the Observer’s evaluation (unless the passage has no choices and no eval is required)
+- Waits for the Observer’s evaluation when the passage uses choices **without** `"no-eval"`, or when an eval is otherwise required
+- Unlocks immediately after a `"no-eval"` choice is picked, or on passages with no choices
 - Navigates the **entire team** to the target passage via `SimApp.nextPassage`
 - Optionally **resets all game stats and the timer** before starting the real simulation
+
+When a choice includes **field 6 (next passage)**, that choice’s destination replaces the default target from `<<patient-next>>`.
 
 ### Syntax
 
@@ -200,7 +270,7 @@ With simulation reset (used at the end of the tutorial):
 | # | Argument | Description |
 |---|----------|-------------|
 | 1 | **Button label** | Text on the button. HTML like `<br>` is allowed for line breaks. |
-| 2 | **Target passage** | Exact Twine passage name (e.g. `Showering`, `Good_Morning_Mr._Holland`) |
+| 2 | **Target passage** | Exact Twine passage name (e.g. `Showering`, `Good_Morning_Mr._Holland`). Default destination unless a choice overrides with field 6. |
 | 3 | **`reset`** *(optional)* | If the third argument is the word `reset`, all stats and the simulation timer return to defaults before navigating. Use once when leaving the tutorial. |
 
 ### Example — Simple advance after Observer eval
@@ -225,9 +295,39 @@ On passages **without** `<<patient-choices>>`, the Next button appears immediate
 
 ---
 
-## Full activity template
+## Multiplayer navigation (faculty / routers)
 
-Copy this into a new passage and edit the tagged name, text, and macro lines.
+| Situation | Use |
+|-----------|-----|
+| Patient taps **Next** after an activity | `<<patient-next>>` → `SimApp.nextPassage` (handled by macro) |
+| Host must move **everyone** to the same passage (game over, hub, wildcard router) | `SimApp.goToSharedPassage("Passage_Name")` via `<<run>>` |
+| Random or host-only logic (e.g. `Wildcard_Router`) | Host rolls and `setVal`s shared state; both clients use `goToSharedPassage` — **not** `<<goto>>` |
+
+**Example — synced wildcard router (host rolls, team follows):**
+
+```
+<<silently>>
+<<if typeof Playroom !== "undefined" and Playroom.isHost()>>
+<<set _wildRoll to random(1, 6)>>
+<<run SimApp.setVal("wildRoll", _wildRoll, true); SimApp.setVal("wildCarded", true, true)>>
+<<else>>
+<<run SimApp.syncFromPlayroom()>>
+<<set _wildRoll to SimApp.getVal("wildRoll")>>
+<</if>>
+<</silently>>
+<<if _wildRoll is 1>>
+<<run SimApp.goToSharedPassage("Wildcard1")>>
+...
+<</if>>
+```
+
+`wildRoll` defaults to **1** in StoryInit as a safe fallback before the host rolls.
+
+---
+
+## Full activity templates
+
+### Standard — choices + Observer eval
 
 ```
 :: My_Activity [simulation activity]
@@ -254,6 +354,50 @@ Instructions for the @@.observer;Observer@@ go here.
 <</if>>
 ```
 
+### Choice-only — no Observer eval on this passage
+
+```
+:: My_Decision [simulation activity]
+! Decision Point
+<hr>
+
+<<if $myRole == "patient">>
+What do you want to do?
+
+<<patient-choices "Your decision" "no-eval"
+  "Choice A | 0 | green | green | You chose A. | Path_A | someFlag=true"
+  "Choice B | 0 | green | red | You chose B. | Path_B | someFlag=false"
+>>
+
+<<patient-next "Continue" "Path_B">>
+
+<<else>>
+Watch @@.holland;Mr. Holland@@ decide. No activity-specific eval here — assess on the next passage.
+<</if>>
+```
+
+### Next-only — no choices
+
+```
+:: My_Transition [simulation activity]
+! Keep Moving
+<hr>
+
+<<if $myRole == "patient">>
+Walk to the next location, then tap Continue.
+
+<<patient-next "Continue" "Next_Passage">>
+
+<<else>>
+Observe @@.holland;Mr. Holland@@. Use General Observations in the footer if needed.
+
+<<dynamic-eval "Activity: Walking"
+  "Steady pace | -1 | 1 | satAndRested | green"
+  "Rushed | -3 | 0 | rushed | red"
+>>
+<</if>>
+```
+
 ---
 
 ## Quick reference
@@ -261,23 +405,31 @@ Instructions for the @@.observer;Observer@@ go here.
 | Macro | Role | Footer section |
 |-------|------|----------------|
 | `<<patient-choices>>` | Patient | Choice buttons + consequence text |
+| `<<patient-choices>>` `"no-eval"` | Patient | Choice unlocks Continue without Observer eval |
 | `<<dynamic-eval>>` | Observer | Activity Specific Observations |
 | `<<patient-next>>` | Patient | Next / Continue button |
 
-| Patient step | Observer step |
-|--------------|---------------|
-| Tap choice (if any) | Tap eval button |
-| Wait for eval | — |
-| Tap Next | Follows via sync |
+| Patient step | Observer step (standard) | Observer step (no-eval) |
+|--------------|----------------------------|-------------------------|
+| Tap choice (if any) | Tap eval button | Watch only (passage text) |
+| Wait for eval | — | — |
+| Tap Next | Follows via sync | Tap Next after choice |
+
+| Choice field 6 | Choice field 7 |
+|----------------|----------------|
+| Override next passage for that branch | `key=value` synced to Playroom (`hasInhaler=true`, etc.) |
 
 ---
 
 ## Tips & troubleshooting
 
 - **Passage names are case-sensitive** — `Showering` and `showering` are different. Use underscores for spaces in names (e.g. `Good_Morning_Mr._Holland`).
-- **Pipe character `|`** separates fields. If your message text needs a literal pipe, avoid it or rephrase — there is no escape character.
+- **Pipe character `|`** separates fields. If your message text needs a literal pipe, avoid it or rephrase — there is no escape character. When using fields 6–7, keep the message in field 5 only (do not use extra pipes in the message).
 - **Energy is capped** at 15 and floored at 0. Reaching 0 energy triggers game over on normal `[simulation]` passages; `[briefing]` passages are exempt.
 - **One eval per station** — design each `<<dynamic-eval>>` so the Observer picks the single best-matching option.
+- **`"no-eval"`** — use when the Patient choice *is* the activity (Breakfast, wildcard decisions). Put movement/technique eval on the **next** passage.
+- **Branching** — pair field 6 (next passage) with field 7 (state flags). Both players receive updates through Playroom.
+- **Do not use `<<goto>>`** for team navigation during multiplayer — use `<<patient-next>>`, `SimApp.nextPassage`, or `SimApp.goToSharedPassage`.
 - **Test both roles** — open two browsers/devices, connect via Playroom, assign Patient and Observer, and walk through the station.
 - **Republish** — after editing the `.twee` file, use Twine **Publish to File → index.html** before pushing to GitHub Pages.
 

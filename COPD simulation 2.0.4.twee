@@ -1,0 +1,3178 @@
+:: StoryTitle
+COPD simulation 2.0.7
+
+
+:: StoryData
+{
+  "ifid": "D9CFA1E4-05AF-4B80-B2B9-95D847D4C534",
+  "format": "SugarCube",
+  "format-version": "2.37.3",
+  "start": "Start",
+  "tag-colors": {
+    "simulation": "red",
+    "widget": "purple",
+    "activity": "green",
+    "briefing": "orange"
+  },
+  "zoom": 1
+}
+
+
+:: Breakfast [simulation activity] {"position":"1400,650","size":"100,100"}
+!Breakfast Time
+<hr>\
+<<if $myRole == "patient">>\
+It's time for breakfast. What would you like to have for breakfast today @@holland;Mr. Holland@@? As you think about what to have you try figure out which option will give you the most energy for your errands today.
+
+<<patient-choices "Breakfast choices"
+	"A 24-once high protein smoothie and a 20-ounce cup of coffee | -2 | warm | red | Too much liquid all at once makes you feel really full and makes it harder to breathe"
+    "An 8-ouncel cup of coffee, cottage cheese with fruit | 1 | warm | green | Just the right amount of food and liquid in one meal is easier for you to eat . You feel refreshed and plan to pack a protein bar as a snack for later"
+	"An 8-ounce cup of coffee, a glass of orange juice, two slices of toast, two fried eggs, two turkey sausage links and an apple | -1 | warm | red | It was delicious, but your body can't handle eating the way you did as a teenager anymore. All that food and liquid was filling and made it harder to breath"
+>>\
+
+<<patient-next "Time to run errands" "Hallway_Out">>\
+
+<<else>>\
+
+@@holland;Mr. Holland@@ is going to pick what he wants for breakfast. Here are his options this morning. Which do you think he'll choose? What will give him the most energy for the busy day ahead?
+
+* A 24-once high protein smoothie and a 20-ounce cup of coffee
+* An 8-ouncel cup of coffee, cottage cheese with fruit
+* An 8-ounce cup of coffee, a glass of orange juice, two slices of toast, two fried eggs, two turkey sausage links and an apple
+//There are no activity specific evaluations for this station//
+<</if>>
+
+<!--[[Hallway_Out]]-->
+
+
+:: Dressing [simulation activity] {"position":"1600,650","size":"100,100"}
+! Getting Dressed
+<hr>\
+<<if $myRole == "patient">>\
+Time to get dressed for the day. ''Make sure to put on your socks and shoes'' so you can run your errands.
+
+<<patient-next "Time for breakfast!" "Breakfast">>\
+
+<<else>>\
+
+It's time for @@.holland;Mr Holland@@ to get dressed. Once they are done getting dressed evaluate their performance below.
+//Don't forget that you can use your general controls as well to add or subtract additional energy such as if they bend over to put their shoes on//
+
+<<dynamic-eval "Activity: Getting Dressed"
+" They got dressed sitting down | -1 | 1 | satAndRested | green | You're dressed and ready for breakfast | green"
+"They got dressed standing up | -3 | 1 | standing | red | Even putting your clothes on for the day makes you feel winded, you wonder if you'll be able to do all your errands today | red"
+>>
+
+<</if>>
+
+<!--[[Breakfast]]-->
+
+
+:: Game_Over_Energy {"position":"1000,100","size":"100,100"}
+! Game Over
+
+You are very short of breath and can barely breath. You collapse on the ground and someone nearby calls an ambulance to bring you to the hospital.
+
+
+:: Game_Over_Inhaler {"position":"1200,100","size":"100,100"}
+! Game Over
+
+Your heart is racing and feels like it is about to jump out of your chest. It hurts to breath and move. You curl up on the ground and a bystander calls an ambulance.
+
+
+:: Good_Morning_Mr._Holland [simulation activity] {"position":"1800,450","size":"100,100"}
+! Good Morning
+<hr>\
+<<if $myRole == "patient">>\
+Your alarm wakes you and its time to get up. You get the strangest feeling that this was the same song you woke up to yesterday morning...
+
+Before you spend too much time thinking about the radio playlist you remember you've got a lot of things to do today. You hope that you will be able to get it all done.
+<hr>\
+@@.holland;Mr.Holland@@ it's time to start the day. Go ahead and get out of bed now.
+    
+Once you are fully standing and ready to start your day, click below to head to the bathroom to get cleaned up.
+
+//Note that you will not be able to progress until your @@.observer;Observer@@ has evaluated your actions at this station//
+    <<patient-next "Head to the Bathroom (Shower)" "Showering">>\
+<<else>>\
+@@.holland;Mr. Holland's@@ alarm goes off, its time for him to wake up. As he listens to the song playing over the radio he gets the strangest feeling of deja-vu...
+<hr>\
+Tell @@.holland;Mr. Holland@@ to physically get out of bed. Observe their actions carefully as they do this.
+    
+Once they are fully standing, click the appropriate evaluation below.
+<<dynamic-eval "Activity: Getting Out of Bed"
+  "They sat and rested on the edge before standing | -1 | 1 | satAndRested | green"
+  "They got straight out of bed without resting | -2 | 1 | rushed | red"
+>>\
+<</if>>
+
+<!--[[Showering]]-->
+
+
+:: Hallway_Out [simulation activity] {"position":"1200,650","size":"100,100"}
+!Walking out to the lobby
+<hr>\
+<<if $myRole == "patient">>\
+Now that you are done with breakfast it's time to start your day. Go ahead and start walking down stairs to the lobby.
+
+<<patient-next "Time to head outside" "Wildcard_Router">>
+
+<<else>>\
+Now that @@holland;Mr. Holland@@ is done with his breakfast he is ready to start his day. His first step is to walk down to the lobby. As he navigates the hallway make sure to evaluate his actions. Use the general observer controls to record if he ''sits in a chair to rest'' along the way or if he ''rushes''. 
+
+<<dynamic-eval "Activity: Walking down stairs"
+" They used the stairs | -1 | 1 | satAndRested | green | You're dressed and ready for breakfast | green"
+"They took the elevator | -3 | 1 | standing | red | Even putting your clothes on for the day makes you feel winded, you wonder if you'll be able to do all your errands today | red"
+>>
+
+<</if>>
+
+<!--[[Wildcard_Router]]-->
+
+
+:: Lotion [simulation activity] {"position":"1800,650","size":"100,100"}
+!Lotion
+<hr>\
+<<if $myRole == "patient">>\
+Your skin has been feeling dry lately. Perhaps some lotion would help your skin feel better. What would you like to do?
+
+<<patient-choices "Lotion choices"
+	"The lavendar scented lotion from your daughter | -2 | blue | red | It smells lovely, but strong, you immediately start coughing"
+    "The generic unscented lotion | 0 | blue | green | It's nothing special, but it doesn't trigger your COPD symptoms"
+	"Skip the lotion, it might trigger your COPD | 0 | blue | red | You're concerned about how your skin is going to feel today without lotion, but you have to prioritize your breathing"
+>>\
+
+<<patient-next "Time to get dressed" "Dressing">>\
+
+<<else>>\
+@@.holland;Mr. Holland's@@ skin has been feeling dry. He's wondering about putting on some lotion, and if so which lotion to use, the scented or unscented.
+
+<<dynamic-eval "Activity: Applying lotion"
+"They applied lotion | -1 | 2 | none | green | Your skin feels better already | green"
+"They did not apply lotion | 0 | -1 | none | red | The itching is already irritating, hopefully once you start running errands you'll be distracted | red"
+>>
+<</if>>
+
+<!--[[Dressing]]-->
+
+
+:: PassageFooter {"position":"500,600","size":"100,100"}
+<<nobr>>
+<<if tags().includes("simulation") and State.variables.myRole == "observer">>
+    <div id="observer-footer">
+        
+        <<if tags().includes("activity")>>
+        /* --- DYNAMIC PASSAGE ASSESSMENTS (Injected here via <<done>> macros) --- */
+		<div style="text-align: center; font-weight: bold; border-top: 1px solid #333; padding-top: 5px;">Activity Specific Observations:	</div>       
+		<div id="dynamic-observer-evals"></div>
+        <</if>>
+        
+         /* --- GENERAL CONTROLS --- */
+        <div style="text-align: center; font-weight: bold; margin-bottom: 5px; border-top: 1px solid #333; padding-top: 5px;">General Observations:</div>
+        
+        <div class="eval-grid">
+            <!-- Row 1 -->
+            <span id="wrap-sat" class="eval-wrap green-wrap">
+                <<button '<div class="eval-title">Sat & Rested</div><div class="eval-sub">+2 Energy</div>'>>
+                    <<Observer_Eval "satAndRested" 2 "wrap-sat">>
+                <</button>>
+            </span>
+            <span id="wrap-rushed" class="eval-wrap red-wrap">
+                <<button '<div class="eval-title">Rushed</div><div class="eval-sub">-2 Energy</div>'>>
+                    <<Observer_Eval "rushed" -2 "wrap-rushed">>
+                <</button>>
+            </span>
+            
+            <!-- Row 2 -->
+            <span id="wrap-pursed" class="eval-wrap green-wrap">
+                <<button '<div class="eval-title">Pursed Lip Breathing</div><div class="eval-sub">+1 Energy</div>'>>
+                    <<Observer_Eval "pursedLip" 1 "wrap-pursed">>
+                <</button>>
+            </span>
+            <span id="wrap-bent" class="eval-wrap red-wrap">
+                <<button '<div class="eval-title">Bent Over</div><div class="eval-sub">-1 Energy</div>'>>
+                    <<Observer_Eval "bentOver" -1 "wrap-bent">>
+                <</button>>
+            </span>
+        </div>
+        
+        <!-- Bottom Row: Inhaler -->
+        <div class="footer-control-row inhaler-row">
+            <<if $hasInhaler>>
+                <span id="wrap-inhaler" class="eval-wrap blue-wrap">
+                    <<button '<div class="eval-title">Use Rescue Inhaler</div><div class="eval-sub">+2 Energy</div>'>>
+                        <<Use_Inhaler>>
+                    <</button>>
+                </span>
+            <<else>>
+                <div class="gray-box">
+                    <div class="eval-title" style="font-style: italic;">Rescue Inhaler</div>
+                    <div class="eval-sub" style="font-style: italic;">Left at home</div>
+                </div>
+            <</if>>
+        </div>
+    </div>
+<<elseif tags().includes("simulation") and State.variables.myRole == "patient">>
+    <div id="patient-footer">
+        <<if tags().includes("activity")>>
+        <div id="patient-footer-choices"></div>
+        <</if>>
+        <div id="patient-footer-next"></div>
+    </div>
+<</if>>
+<</nobr>>
+
+
+:: PassageHeader {"position":"500,200","size":"100,100"}
+<<nobr>>
+<<script>>
+    /* Restore role CSS class after SugarCube passage transitions */
+    var role = window.SimApp && (window.SimApp.myRole || State.variables.myRole);
+    if (role) {
+        $("body").removeClass("role-patient role-observer").addClass("role-" + role);
+    }
+<</script>>
+<<if tags().includes("simulation")>>
+    /* Mirror persistent role + pull latest Playroom stats for this passage render */
+    <<run State.variables.myRole = window.SimApp.myRole || State.variables.myRole>>
+    <<run SimApp.syncFromPlayroom()>>
+    <<set $Energy to SimApp.getVal("Energy")>>
+    <<set $Inhaler to SimApp.getVal("Inhaler")>>
+    <<set $Points to SimApp.getVal("Points")>>
+    <<set $hasInhaler to SimApp.getVal("hasInhaler")>>
+
+    <span id="hidden-time" class="hidden"></span>
+
+    <<if $myRole == "observer">>
+        <div id="observer-hud" class="hud-bar">
+            <strong>Time:</strong>&nbsp;<span class="time-display">00:00</span> &nbsp;|&nbsp;
+            <strong>Energy:</strong>&nbsp;<span id="energy-display"><<print $Energy>></span> / 15 &nbsp;|&nbsp;
+            <strong>Inhaler:</strong>&nbsp;<span id="inhaler-display"><<print $Inhaler>></span> &nbsp;|&nbsp;
+            <strong>Points:</strong>&nbsp;<span id="points-display"><<print $Points>></span>
+        </div>
+    <<else>>
+        <div id="patient-hud" class="hud-bar">
+            <strong>Time:</strong>&nbsp;<span class="time-display">00:00</span> &nbsp;|&nbsp;
+            <strong>Status:</strong>&nbsp;<span id="patient-breathing-status">...</span> &nbsp;|&nbsp;
+            <strong>Inhaler:</strong>&nbsp;<span id="patient-inhaler-status">...</span>
+        </div>
+    <</if>>
+
+    <<silently>>
+        /* Host broadcasts elapsed time; SimApp sync loop handles state + tether */
+        <<repeat 1s>>
+            <<if window.SimApp && window.SimApp.isPlayroomLoaded>>
+                <<if Playroom.isHost()>>
+                    <<replace '#hidden-time'>><<playtime>><</replace>>
+                    <<run Playroom.setState("sharedTime", $("#hidden-time").text(), true)>>
+                    <<run $(".time-display").text($("#hidden-time").text())>>
+                <<else>>
+                    <<run $(".time-display").text(Playroom.getState("sharedTime") || "00:00")>>
+                <</if>>
+            <<else>>
+                <<replace '.time-display'>><<playtime>><</replace>>
+            <</if>>
+        <</repeat>>
+    <</silently>>
+<</if>>
+<</nobr>>
+
+
+:: PassageReady {"position":"300,200","size":"100,100"}
+<<if $devmode && State.variables.myRole == "patient">>
+	<<run UIBar.show()>>
+<<else>>
+	<<run UIBar.hide()>>
+<</if>>
+
+
+:: Role_Selection {"position":"1050,300","size":"100,100"}
+! Choose Your Role
+<hr>\
+Please coordinate with your partner. One of you must be the Patient, and the other must be the Observer.
+
+<div id="host-invite-slot"></div>
+
+<span id="wrap-patient">
+    <<button "I will be <span class='holland'>Mr. Holland</span>">>
+        <<run SimApp.setRole("patient")>>
+    <</button>>
+</span>
+
+<span id="wrap-observer">
+    <<button "I will be <span class='observer'>the Observer</span>">>
+        <<run SimApp.setRole("observer")>>
+    <</button>>
+</span>
+
+<<script>>
+    if (window.SimApp) {
+        SimApp.mountHostInviteButton("host-invite-slot", "Show Invite QR Code");
+        SimApp.refreshRoleButtons();
+        if (window.roleRefreshInterval) {
+            clearInterval(window.roleRefreshInterval);
+        }
+        window.roleRefreshInterval = setInterval(function () {
+            if (passage() !== "Role_Selection") {
+                clearInterval(window.roleRefreshInterval);
+                return;
+            }
+            SimApp.refreshRoleButtons();
+        }, 1000);
+    }
+<</script>>
+
+<!--[[Simulation_Hub]]-->
+
+
+:: Showering [simulation activity] {"position":"2000,450","size":"100,100"}
+! Showering
+<hr>\
+<<if $myRole == "patient">>\
+First things first — you could use a shower. Walk over to the shower station.
+
+Once you are there, what temperature will you set the water to?
+
+<<patient-choices "Water temperature"
+  "Hot Water | -4 | hot | red | All the steam from the hot water makes it hard to breathe! But at least you are clean."
+  "Warm Water | -1 | warm | green | The warm water is soothing and doesn't stress your lungs."
+  "Cold Water | -2 | cold | red | The sudden shock of the cold water makes you gasp for air!"
+>>\
+
+<<patient-next "Time to brush your teeth" "Teeth_Brushing">>\
+
+<<else>>\
+@@.holland;Mr. Holland@@ is at the shower. Observe how he sets the water temperature and how his breathing responds.
+
+<<dynamic-eval "Activity: Showering"
+  "He showered sitting down | 0 | 1 | satAndRested | green | You're glad your daughter convinced you to buy the shower chair, it certainely makes things easier in the morning | green"
+  "He showered standing up | -2 | 1 | standing | red | The day has barely begun and you're already starting to feel a little winded | red"
+>>\
+<</if>>
+
+<!--[[Teeth_Brushing]]-->
+
+
+:: Simulation_Hub [simulation briefing] {"position":"1200,450","size":"100,100"}
+! Tutorial & Controls Practice
+<hr>\
+<<if State.variables.myRole == "patient">>\
+!! Welcom to the game @@.holland;Mr. Holland@@ 
+This is what your user interface will look like when you start the game. At the top of your screen you will see your heads up display (HUD) showing the time elapsed in the simulation, your current work of breathing, and whether you have your rescue inhaler with you.
+
+The clock is running now so you can see the real HUD in action. It will reset to zero when you start the actual simulation.
+
+If you have your rescue inhaler with you, during the simulation you may demonstrate correct inhaler technique to your @@.observer;Observer@@ and they will add some energy. Don't forget to keep track of how many times you have used it during the simulation. You can only use it 6 times per day according to the doctor.
+
+For now, use the <strong><u>Practice Activity</u></strong> button at the bottom of your screen to try a sample action and see how it impacts your work of breathing.
+<hr>\
+    <<patient-next "Begin Practice Activity" "Tutorial_Jumping_Jacks""reset">>
+<<else>>\
+!! Welcome to the game @@.observer;Observer@@!
+You will be following along with @@.holland;Mr. Holland@@ and assessing how well he conserves his energy as he goes about his day. 
+This is what your user interface will look like when you start the game. At the top of your screen you will see your heads up display (HUD) showing:
+*The time elapsed in the simulation. //Don't worry about the clock ticking right now it will reset after these tutorial pages when we start the actual simulation//
+*@@.holland;Mr. Holland's@@ current energy
+*If @@.holland;Mr. Holland@@ has is inhaler
+*How many points he has earned
+
+The clock is running now so you can see the real HUD in action. It will reset to zero when you start the actual simulation.
+
+!!! How the Simulation Works
+* ''Hidden Stats:'' The student playing @@.holland;Mr. Holland@@ cannot see their exact energy or inhaler uses. They will only see a rough estimate of their breathing status.
+* ''Gaining Energy:'' They can use energy-conserving techniques to regain energy.
+* ''Inhaler Use:'' They can use their albuterol rescue inhaler to regain energy, but make sure your partner actually demonstrates correct technique for it to count.
+* ''Losing Energy:'' They will lose energy if they rush, don't take breaks, or bend over (which compresses their lungs and makes it harder to breathe).
+* ''Button Limits:'' The assessment buttons in the footer can only be used once per activity, but they will reset at the next station.
+
+!!! Practice Area
+Try clicking the buttons at the bottom of the screen in ''General Observations'' right now to see how they affect @@.holland;Mr. Holland's@@ energy level!
+
+For some activities, you will be provided with different options that automatically assign points and energy based on how @@.holland;Mr. Holland@@ performed.
+
+Once you feel comfortable with the controls and @@.holland;Mr. Holland@@ is comfortable with the practice activities, they will start the simulation from their screen.
+<</if>>
+
+<!--[[Tutorial_Jumping_Jacks]]-->
+
+
+:: Start {"position":"800,400","size":"200,200"}
+<div class="center-heading1">@@.holland;Mr Holland's@@ Grand Day Out</div>\
+<div class="center-heading3">Version <<print Story.title.replace(/^COPD simulation\s+/i, "")>></div>\
+<hr>\
+<div class="center-heading2">An interactive augmented reality simulation by Robin Parker, MSN, RN, PCCN</div>\
+<div class="center-heading3">Cursor AI was used to assist with coding and debugging</div>\
+<nobr>\
+<div id="loading-overlay">Loading multiplayer services...</div>\
+<div id="connect-container" class="hidden">\
+    <<button "Connect to Multiplayer">>\
+        <<run SimApp.connect()>>\
+    <</button>>\
+</div>\
+</nobr>\
+Welcome to this live nursing simulation. You will need a partner to complete this activity. 
+Before we begin please review the briefing below.
+<hr>\
+!! Briefing
+Today you and your partner will be living a day in the life of @@.holland;Mr. Bernard Holland@@, a 75-year-old male with COPD. He is 60-pack-year smoker who is currently trying to quit. He does not wear home oxygen, though he does often have to stop to catch his breath after walking for more than a few minutes on level ground.
+
+!!! Home Medications
+* Albuterol sulfate rescue inhaler: 1-2 Puffs PRN for wheezing/shortness of breath every 4 hours *(Not to exceed 6 puffs per day!)*
+* Formoterol/budesonide maintenance inhaler: 1 puff, BID
+* Tiotropium maintenance inhaler: 1 puff, once daily
+* Theophylline ER: 400mg, PO once daily in the morning
+* Nicotine patch: 21mg, transdermal, once daily in the morning
+<br>
+!!! Your goal
+Your goal  is to accomplish as many tasks during your day as possible. This is a ''timed simulation''. You and your partner will be competing against your classmates!
+
+Each activity your team completes will earn you points, with some activities being worth more points than others.
+
+At the end of the simulation the winning team will be determined by the amount of points earned during the simulation. In the event of a tie, the fastest time will be used to break the tie.
+
+!!! Roles
+* @@.holland;Mr. Holand@@: In this role you will be making choices about what activities to complete and how to perform those activities to conserve your energy. 
+* @@.observer;The Observer@@:  In this role you will be evaluating  @@.holland;Mr. Holand's@@ performance throughout his daily routine. You will be adding and deducting energy based on his performance, along with providing cues on what to do next.
+
+!!! Energy Management
+* @@.holland;Mr. Holand@@ will start with @@color:green;10 energy@@. and can have a maximum of @@color:green;15 energy@@.
+* Each task you perform will cost energy, with certain tasks costing more than others. 
+* When you use energy conservation techniques or use your rescue inhaler @@.observer;The Observer@@ will be able to @@color:green; add energy@@. Conversly not using good breathing technique can result in @@color:red; subtracting energy@@
+* If @@.holland;Mr. Holand@@ reaches @@color:red; 0 energy@@, its game over and you will have to return to ''room 8220 for debriefing.''
+
+!!! Today's Itinerary
+The game will start with  @@.holland;Mr. Holand@@ getting out of bed in the morning, which will start the clock for the simulation. After that, you’ll need to shower, brush your teeth, get dressed, along with other activities of daily living.
+
+It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot of errands on his to-do list including:
+* Go to the grocery store.
+* Pick up his prescriptions ''(He is almost out of his maintenance medications, fortunately he still has an extra rescue inhaler!)''.
+* Visit the pulmonary rehab clinic.
+* Go to the toy store to buy a gift for his granddaughter's 7th birthday tomorrow.
+
+!!! Augmented Reality Approach
+* To give you an understanding of what it is like to live with a chronic illness the student playing the role of  @@.holland;Mr. Holand@@ will need to act out many of the activities as if you are actually doing them. For example putting on your shoes will require actually putting on your shoes, while folding laundry will require you to fold a pile of laundry.
+* @@.observer;The Observer@@ will assign energy additions or substractions based on @@.holland;Mr. Holand's@@ actual physical performance of that task.
+* Once you connect to the multiplayer lobby the student playing the role of @@.holland;Mr. Holand@@ wil be controlling the pace of the game and moving from activity station to activity station. The game will tell you where to go next or it may give you options to chose from.
+*Meanwhile the @@.observer;The Observer@@ be provided specific scoring buttons for each task.
+
+!! To start the game 
+* Have one player click the "Connect to Multiplayer" button below. This will connect you to the game lobby.
+* Once in the game lobby click the <strong><u>Invite</u></strong> button. This will give you a QR code for your partner to pair up and form a team.. If you leave the lobby before your partner joins, the host can tap <strong><u>Show Invite QR Code</u></strong> on the role selection screen to display it again.
+* Once you've both joined the 1st player can then click the <strong><u>Launch</u></strong> button to enter the briefing area to learn the controls.
+//Don't bother spending time customizing your avatar or player names. These won't be used in the game//
+
+<!--[[Role_Selection]]-->
+<!--[[Waiting_Room]]-->
+
+
+:: StoryCaption {"position":"300,400","size":"100,100"}
+<<if $devmode && State.variables.myRole == "patient">>
+	<<run UIBar.show()>>
+!!Dev Mode
+
+<details>
+    <summary><strong>Score & Status</strong></summary>
+    <span class="dev-var" data-dev-key="Energy">Energy: <<numberbox "$Energy" $Energy>></span>
+    <span class="dev-var" data-dev-key="Points">Points: <<numberbox "$Points" $Points>></span>
+    <span class="dev-var" data-dev-key="Inhaler">Inhaler Uses: <<numberbox "$Inhaler" $Inhaler>></span>
+    <span class="dev-var" data-dev-key="win">Win State:
+    <<listbox "$win" autoselect>>
+        <<option "true" true>>
+        <<option "false" false>>
+    <</listbox>></span>
+   </details>
+
+   <details>
+    <summary><strong>Techniques</strong></summary>
+    <span class="dev-var" data-dev-key="satAndRested">Sat/Rested: <<numberbox "$satAndRested" $satAndRested>></span>
+    <span class="dev-var" data-dev-key="pursedLip">Pursed Lip: <<numberbox "$pursedLip" $pursedLip>></span>
+    <span class="dev-var" data-dev-key="rushed">Rushed: <<numberbox "$rushed" $rushed>></span>
+    <span class="dev-var" data-dev-key="bentOver">Bent Over: <<numberbox "$bentOver" $bentOver>></span>
+    <span class="dev-var" data-dev-key="stairs">Stairs: <<numberbox "$stairs" $stairs>></span>
+    <span class="dev-var" data-dev-key="elevator">Elevator: <<numberbox "$elevator" $elevator>></span>
+    <span class="dev-var" data-dev-key="standing">Standing: <<numberbox "$standing" $standing>></span>
+   </details>
+
+  <details>
+    <summary><strong>Locations & Events</strong></summary>
+    <span class="dev-var" data-dev-key="errandsRun">Errands Run: <<numberbox "$errandsRun" $errandsRun>></span>
+    <span class="dev-var" data-dev-key="wildRoll">Wild Roll: <<numberbox "$wildRoll" $wildRoll>></span>
+    <span class="dev-var" data-dev-key="wildCarded">Wild Carded:
+    <<listbox "$wildCarded" autoselect>>
+        <<option "true" true>>
+        <<option "false" false>>
+    <</listbox>></span>
+    <span class="dev-var" data-dev-key="visitedHallway">Visited Hallway:
+    <<listbox "$visitedHallway" autoselect>>
+        <<option "true" true>>
+        <<option "false" false>>
+    <</listbox>></span>
+    <span class="dev-var" data-dev-key="visitedGrocery">Visited Grocery:
+    <<listbox "$visitedGrocery" autoselect>>
+        <<option "true" true>>
+        <<option "false" false>>
+    <</listbox>></span>
+    <span class="dev-var" data-dev-key="visitedPharmacy">Visited Pharmacy:
+    <<listbox "$visitedPharmacy" autoselect>>
+        <<option "true" true>>
+        <<option "false" false>>
+    <</listbox>></span>
+    <span class="dev-var" data-dev-key="visitedToyStore">Visited Toy Store:
+    <<listbox "$visitedToyStore" autoselect>>
+        <<option "true" true>>
+        <<option "false" false>>
+    <</listbox>></span>
+    <span class="dev-var" data-dev-key="visitedClinic">Visited Clinic:
+    <<listbox "$visitedClinic" autoselect>>
+        <<option "true" true>>
+        <<option "false" false>>
+    <</listbox>></span>
+   </details>
+
+ <details>
+    <summary><strong>Inventory</strong></summary>
+    <span class="dev-var" data-dev-key="yourItem">Your Item: <<textbox "$yourItem" $yourItem>></span>
+    <span class="dev-var" data-dev-key="hisItem">His Item: <<textbox "$hisItem" $hisItem>></span>
+    <span class="dev-var" data-dev-key="hasInhaler">Has Inhaler:
+    <<listbox "$hasInhaler" autoselect>>
+        <<option "true" true>>
+        <<option "false" false>>
+    <</listbox>></span>
+    <span class="dev-var" data-dev-key="hasMedications">Has Meds:
+    <<listbox "$hasMedications" autoselect>>
+        <<option "true" true>>
+        <<option "false" false>>
+    <</listbox>></span>
+    <span class="dev-var" data-dev-key="hasToy">Has Toy:
+    <<listbox "$hasToy" autoselect>>
+        <<option "true" true>>
+        <<option "false" false>>
+    <</listbox>></span>
+ </details>
+
+    ---
+//**Passage Navigator**//
+    Passage Name:
+    <<textbox "_jumpTarget" "">>
+    <<button "Jump To Passage (team)">>
+        <<if Story.has(_jumpTarget)>>
+            <<run SimApp.goToSharedPassage(_jumpTarget)>>
+        <<else>>
+            <<run UI.alert("Error: Passage '" + _jumpTarget + "' does not exist.")>>
+        <</if>>
+    <</button>>
+
+    <<button "Sync from Playroom">>
+        <<run SimApp.syncFromPlayroom(); SimApp.refreshDevCaptionUI(); SimApp.updateHud()>>
+    <</button>>
+    ---
+<<script>>
+setTimeout(function () {
+    if (window.SimApp && State.variables.devmode) {
+        SimApp.wireDevCaptionControls();
+    }
+}, Engine.minDomActionDelay);
+<</script>>
+<</if>>
+
+
+:: StoryInit {"position":"700,200","size":"100,100"}
+<<script>>
+(function () {
+    var vp = document.querySelector('meta[name="viewport"]');
+    if (vp) {
+        vp.setAttribute("content", "width=device-width, initial-scale=1, viewport-fit=cover");
+    }
+})();
+<</script>>
+<<run UIBar.hide()>>
+<<set $devmode to true>>
+/* Multiplayer / role fallbacks (offline testing) */
+<<set $myRole to "">>
+<<set $evalComplete to false>>
+<<set $patientFeedback to "">>
+<<set $patientFeedbackColor to "">>
+
+/* Score Keeping Fallbacks */
+<<set $Energy to 10>>
+<<set $Points to 0>>
+<<set $Inhaler to 0>>
+<<set $win to false>>
+
+/* Energy Conservation Technique Fallbacks */
+<<set $satAndRested to 0>>
+<<set $pursedLip to 0>>
+<<set $rushed to 0>>
+<<set $bentOver to 0>>
+<<set $stairs to 0>>
+<<set $elevator to 0>>
+<<set $standing to 0>>
+
+/* Visited Fallbacks */
+<<set $wildCarded to false>>
+<<set $wildRoll to 1>>
+<<set $yourItem to "">>
+<<set $hisItem to "">>
+<<set $visitedHallway to false>>
+<<set $visitedGrocery to false>>
+<<set $visitedPharmacy to false>>
+<<set $visitedToyStore to false>>
+<<set $visitedClinic to false>>
+<<set $errandsRun to 0>>
+
+/* Inventory Fallbacks */
+<<set $hasInhaler to true>>
+<<set $hasMedications to false>>
+<<set $hasToy to false>>
+
+
+:: Teeth_Brushing [simulation activity] {"position":"2000,650","size":"100,100"}
+!Teeth Brushing
+<hr>\
+<<if $myRole == "patient">>\
+Now that you are done showering it is time to brush your teeth. Go ahead and walk to the sink and brush your teeth.
+
+<<patient-next "Your skin has been feeling dry, how about some lotion?" "Lotion">>\
+
+<<else>>\
+
+Now that @@.holland;Mr. Holland@@ is done showering he needs to brush his teeth. Go ahead to assess what technique he uses as he brushes his teeth,
+
+<<dynamic-eval "Activity: Brushing Teeth" 
+"They brushed sitting down | -1 | +1 | satAndRested | green | sitting down for this task helped conserve your energy | green" 
+"They brushed standing up | -2 | +1 | standing | red | Even small activities of daily living take their toll on your energy | red" >>\
+
+<</if>>
+
+<!--[[Lotion]]-->
+
+
+:: Tutorial_Jumping_Jacks [simulation briefing activity] {"position":"1400,450","size":"100,100"}
+! Practice: Jumping Jacks
+<hr>\
+<<if State.variables.myRole == "patient">>\
+You are breathing great right now — look at the top of the page. How about trying **5 jumping jacks**?
+
+Go ahead and do them now, then tap the button below when you are finished.
+<hr>\
+<<patient-choices "Practice Activity"
+  "Do 5 jumping jacks (click when done) | 0 | blue | "
+>>\
+<<patient-next "Continue" "Tutorial_Rest">>
+<<else>>\
+Watch @@.holland;Mr. Holland@@ perform the practice activity. Once they finish, record your assessment below.
+<<dynamic-eval "Practice: Jumping Jacks"
+  "They did 5 jumping jacks | -9 | 0 | none | red | What were you thinking?! You have advanced COPD! You can't exercise like you used to in High School!"
+>>\
+<</if>>
+<!--[[Tutorial_Rest]]-->
+
+
+:: Tutorial_Rest [simulation briefing activity] {"position":"1600,450","size":"100,100"}
+! Practice: Catch Your Breath
+<hr>\
+<<if State.variables.myRole == "patient">>\
+That was a lot of work! How about you try ''sitting down and leaning over a table'' to do some pursed lip breathing and catch your breath?
+
+Once you are seated and breathing, tap the button below.
+<hr>\
+<<patient-choices "Practice Activity"
+  "Sit down and do pursed lip breathing (click when done) | 0 | green "
+>>\
+<<patient-next "Start Simulation<br>Good Morning Mr. Holland" "Good_Morning_Mr._Holland" "reset">>\
+<<else>>\
+@@.holland;Mr. Holland@@ should sit and rest. Evaluate their recovery technique below.
+<<dynamic-eval "Practice: Rest & Recovery"
+  "Sat and did pursed lip breathing | +4 | 0 | pursedLip | green |That feels a little better. You are still winded, but not as bad. | green| "
+>>\
+Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, they will start the simulation from their screen.
+<</if>>
+<!--[[Good_Morning_Mr._Holland]]-->
+
+
+:: Waiting_Room {"position":"1050,600","size":"100,100"}
+! Waiting for Partner...
+<hr>\
+<<if State.variables.myRole == "patient">>
+    You are the **Patient**. Please wait for your Observer to be ready.
+<<else>>
+    You are the **Observer**. Please wait for your Patient to be ready.
+<</if>>
+
+<div id="host-invite-slot-wait"></div>
+
+<div id="status-message">Waiting for partner to select their role...</div>
+
+<div id="conflict-container" class="hidden" style="margin-top: 20px; padding: 15px; border: 2px solid #dc3545; border-radius: 8px; background-color: #f8d7da; color: #721c24;">
+    <strong>Role Conflict!</strong><br>
+    Both players have selected the same role. One of you needs to switch.
+    <<button "Switch My Role">>
+        <<script>>
+            clearInterval(window.waitingInterval);
+            if (window.SimApp) {
+                Playroom.myPlayer().setState("role", "", true);
+                SimApp.clearLobbyRole(SimApp.myRole);
+                SimApp.myRole = "";
+            }
+            State.variables.myRole = "";
+            $("body").removeClass("role-patient role-observer");
+            Engine.play("Role_Selection");
+        <</script>>
+    <</button>>
+</div>
+
+<<script>>
+    if (window.SimApp) {
+        SimApp.mountHostInviteButton("host-invite-slot-wait", "Show Invite QR Code");
+    }
+
+    /* We attach the interval to the window object so the button script can clear it safely */
+    window.waitingInterval = setInterval(function() {
+        if (SimApp.checkReadyState()) {
+            clearInterval(window.waitingInterval);
+            SimApp.goToSharedPassage("Simulation_Hub");
+        } else if (SimApp.checkRoleConflict()) {
+            $("#status-message").addClass("hidden");
+            $("#conflict-container").removeClass("hidden");
+        } else {
+            $("#status-message").removeClass("hidden");
+            $("#conflict-container").addClass("hidden");
+        }
+    }, 1000);
+<</script>>
+
+<!--[[Simulation_Hub]]-->
+
+
+:: Widgets [widget] {"position":"500,400","size":"100,100"}
+<<nobr>>
+/* SMART WIDGET: Energy changes sync to Playroom; triggers shared game over */
+<<widget "Adjust_Energy">>
+    <<set _amount to _args[0]>>
+    <<set _currentEnergy to SimApp.getVal("Energy")>>
+    <<set _newEnergy to _currentEnergy + _amount>>
+
+    <<if _newEnergy > 15>><<set _newEnergy to 15>><</if>>
+    <<if _newEnergy < 0>><<set _newEnergy to 0>><</if>>
+
+    <<run SimApp.setVal("Energy", _newEnergy)>>
+    <<run $("#energy-display").text(_newEnergy)>>
+
+    <<if _newEnergy <= 0 and !tags().includes("briefing")>>
+        <<run SimApp.goToSharedPassage("Game_Over_Energy")>>
+    <</if>>
+<</widget>>
+
+/* SMART WIDGET: Rescue inhaler use + overdose game over */
+<<widget "Use_Inhaler">>
+    <<set _currentInhaler to SimApp.getVal("Inhaler")>>
+    <<set _newInhaler to _currentInhaler + 1>>
+
+    <<run SimApp.setVal("Inhaler", _newInhaler)>>
+    <<run $("#inhaler-display").text(_newInhaler)>>
+
+    <<Adjust_Energy 2>>
+
+    <<if _newInhaler >= 7 and !tags().includes("briefing")>>
+        <<run SimApp.goToSharedPassage("Game_Over_Inhaler")>>
+    <</if>>
+<</widget>>
+
+/* OBSERVER WIDGET: General footer evaluation buttons */
+<<widget "Observer_Eval">>
+    <<set _varName to _args[0]>>
+    <<set _energyChange to _args[1]>>
+    <<set _btnWrapId to _args[2]>>
+
+    <<Track_Behavior _varName>>
+    <<Adjust_Energy _energyChange>>
+
+    <<run $("#" + _btnWrapId + " button").prop("disabled", true)>>
+<</widget>>
+
+/* SMART WIDGET: Points adjustments */
+<<widget "Adjust_Points">>
+    <<set _amount to _args[0]>>
+    <<set _currentPoints to SimApp.getVal("Points")>>
+    <<set _newPoints to _currentPoints + _amount>>
+
+    <<run SimApp.setVal("Points", _newPoints)>>
+    <<run $("#points-display").text(_newPoints)>>
+<</widget>>
+
+/* SMART WIDGET: Behavioral tracking for debriefing */
+<<widget "Track_Behavior">>
+    <<for _i to 0; _i < _args.length; _i++>>
+        <<set _behaviorName to _args[_i]>>
+        <<set _currentVal to SimApp.getVal(_behaviorName) || 0>>
+        <<run SimApp.setVal(_behaviorName, _currentVal + 1)>>
+    <</for>>
+<</widget>>
+
+/* LEGACY: Prefer <<dynamic-eval>> macro in passages (see StoryScript). */
+<<widget "Dynamic_Eval_Button">>
+    <<set _title to _args[0]>>
+    <<set _sub to _args[1]>>
+    <<set _energyChange to _args[2]>>
+    <<set _pointsChange to _args[3]>>
+    <<set _behavior to _args[4]>>
+    <<set _wrapClass to "eval-wrap " + _args[5] + "-wrap">>
+
+    <<set _btnText to '<div class="eval-title">' + _title + '</div><div class="eval-sub">' + _sub + '</div>'>>
+
+    <span class="<<print _wrapClass>>">
+        <<button _btnText>>
+            <<Adjust_Energy _energyChange>>
+            <<Adjust_Points _pointsChange>>
+            <<if _behavior neq "none" and _behavior neq "">>
+                <<Track_Behavior _behavior>>
+            <</if>>
+            <<run SimApp.setVal("evalComplete", true)>>
+            <<replace "#dynamic-eval-container">>
+                <div class="gray-box">Assessment Recorded</div>
+            <</replace>>
+        <</button>>
+    </span>
+<</widget>>
+
+/* LEGACY: Prefer <<patient-next>> macro (renders in #patient-footer-next). */
+<<widget "Patient_Next_Button">>
+    <<set _btnText to _args[0]>>
+    <<set _targetPassage to _args[1]>>
+
+    <span id="patient-next-container">
+        <div class="gray-box">Waiting for Observer Evaluation...</div>
+    </span>
+
+    <<silently>>
+        <<repeat 500ms>>
+            <<if SimApp.getVal("evalComplete") === true>>
+                <<replace "#patient-next-container">>
+                    <<button _btnText>>
+                        <<run SimApp.nextPassage(_targetPassage)>>
+                    <</button>>
+                <</replace>>
+                <<stop>>
+            <</if>>
+        <</repeat>>
+    <</silently>>
+<</widget>>
+<</nobr>>
+
+
+:: Wildcard1 [simulation activity] {"position":"1300,1000","size":"100,100"}
+! Forgotten Inhaler!
+<hr>\
+<<if $myRole == "patient">>\
+You step outside and pat your pockets. Oh no... you realize you left your rescue inhaler sitting on the counter inside!
+
+What do you want to do?
+
+<<patient-choices "What do you want to do?" "no-eval"
+  "Turn around and go back inside to get it | 0 | green | green | Walk back upstairs to your apartment to get your inhaler. | Hallway_In_Repeat | hasInhaler=true"
+  "Keep going to your errands without it | 0 | green | red | You hope that you don't regret your decision to leave your inhaler behind. Start walking to Whistle Stop Park. | Whistle_Stop_Out | hasInhaler=false"
+>>\
+
+<<patient-next "Continue" "Whistle_Stop_Out">>\
+
+<<else>>\
+
+@@.holland;Mr. Holland@@ steps outside and pats his pockets — his rescue inhaler is still on the counter inside. Watch what he decides.
+
+//There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
+
+<</if>>
+
+<!--[[Hallway_In_Repeat]]-->
+<!--[[Whistle_Stop_Out]]-->
+
+
+:: Hallway_In_Repeat [simulation activity] {"position":"1400,1100","size":"100,100"}
+! Back Inside for Your Inhaler
+<hr>\
+<<if $myRole == "patient">>\
+You head back upstairs to your apartment and grab your rescue inhaler from the counter. Relief — it's back in your pocket where it belongs.
+
+<<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>\
+
+<<else>>\
+
+@@.holland;Mr. Holland@@ walked back inside to retrieve his inhaler. Evaluate how he moves through the building on the way back to his apartment.
+
+<<dynamic-eval "Activity: Walk Back for Inhaler"
+  "Walked back at a reasonable pace | -1 | 1 | satAndRested | green | You're glad you went back for it | green"
+  "Rushed back upstairs | -3 | 0 | rushed | red | You're winded from hurrying, but at least you have your inhaler | red"
+  "Used the elevator | -1 | 1 | elevator | green | Smart — you saved your energy for the day ahead | green"
+>>\
+
+<</if>>
+
+<!--[[Whistle_Stop_Out]]-->
+
+
+:: Whistle_Stop_Out [simulation activity] {"position":"1500,1100","size":"100,100"}
+! Whistle Stop Park
+<hr>\
+<<if $myRole == "patient">>\
+You start walking toward Whistle Stop Park to begin your errands for the day.
+
+<<patient-next "Continue your errands" "Errands_Hub">>\
+
+<<else>>\
+
+@@.holland;Mr. Holland@@ is walking out toward Whistle Stop Park. Evaluate his pace and technique as he heads out.
+
+<<dynamic-eval "Activity: Walk to Whistle Stop Park"
+  "Walked at a steady, energy-conserving pace | -1 | 1 | satAndRested | green | A good start to a busy day | green"
+  "Walked too fast and became short of breath | -3 | 0 | rushed | red | You need to slow down — you've got a long day ahead | red"
+  "Used pursed-lip breathing while walking | 0 | 1 | pursedLip | green | That's a great technique for conserving energy while walking | green"
+>>\
+
+<</if>>
+
+<!--[[Errands_Hub]]-->
+
+
+:: Errands_Hub [simulation] {"position":"1600,1100","size":"100,100"}
+! Whistle Stop Park
+<hr>\
+<<if $myRole == "patient">>\
+You've made it to Whistle Stop Park. Your errands await — grocery store, pharmacy, clinic, and more (coming soon).
+
+<<else>>\
+@@.holland;Mr. Holland@@ has arrived at Whistle Stop Park. More errand stations will be added here.
+<</if>>
+
+
+:: Wildcard2 {"position":"1300,1200","size":"100,100"}
+
+
+
+:: Wildcard3 {"position":"1500,1300","size":"100,100"}
+
+
+
+:: Wildcard4 {"position":"1700,1300","size":"100,100"}
+
+
+
+:: Wildcard5 {"position":"1900,1200","size":"100,100"}
+
+
+
+:: Wildcard6 {"position":"1900,1000","size":"100,100"}
+
+
+
+:: Wildcard_Router [simulation] {"position":"1600,1100","size":"100,100"}
+<<silently>>
+<<if typeof Playroom !== "undefined" and Playroom.isHost()>>
+<<set _wildRoll to random(1, 6)>>
+<<run SimApp.setVal("wildRoll", _wildRoll, true); SimApp.setVal("wildCarded", true, true)>>
+<<else>>
+<<run SimApp.syncFromPlayroom()>>
+<<set _wildRoll to SimApp.getVal("wildRoll")>>
+<</if>>
+<</silently>>
+<<if _wildRoll is 1>>
+<<run SimApp.setVal("yourItem", "your inhaler", true); SimApp.setVal("hisItem", "his inhaler", true); SimApp.goToSharedPassage("Wildcard1")>>
+<<elseif _wildRoll is 2>>
+<<run SimApp.goToSharedPassage("Wildcard2")>>
+<<elseif _wildRoll is 3>>
+<<run SimApp.setVal("yourItem", "a mask", true); SimApp.setVal("hisItem", "a mask", true); SimApp.goToSharedPassage("Wildcard3")>>
+<<elseif _wildRoll is 4>>
+<<run SimApp.setVal("yourItem", "a scarf", true); SimApp.setVal("hisItem", "a scarf", true); SimApp.goToSharedPassage("Wildcard4")>>
+<<elseif _wildRoll is 5>>
+<<run SimApp.goToSharedPassage("Wildcard5")>>
+<<else>>
+<<run SimApp.goToSharedPassage("Wildcard6")>>
+<</if>>
+
+<!--[[Wildcard1]]-->
+<!--[[Wildcard2]]-->
+<!--[[Wildcard3]]-->
+<!--[[Wildcard4]]-->
+<!--[[Wildcard5]]-->
+<!--[[Wildcard6]]-->
+
+
+:: StoryScript [script]
+/* ========================================================
+   1. PASTE CHAPEL'S PLAYTIME MACRO JAVASCRIPT HERE
+   (Ensure you are only pasting raw JavaScript, no HTML tags)
+   ======================================================== */
+(function () {
+    'use strict';
+    // play time system, by chapel; for SugarCube 2
+    // version 2.1.0
+
+    // options object:
+    var options = {
+        tryGlobal : true,
+        storyVar  : 'playtime',
+        pauseTag  : 'pausetimer'
+    };
+
+    State.variables[options.storyVar] = Date.now();
+
+    predisplay['start-playtime'] = function (t) {
+        delete predisplay[t]; // single use
+        // we need to grab a starting time so errors don't appear in user saves prior to adding this code:
+        if (!State.variables[options.storyVar]) {
+            State.variables[options.storyVar] = Date.now();
+        }
+    };
+
+    // pause tag handling
+    prehistory['pause-playtime'] = function (t) {
+        if (tags().includes(options.pauseTag)) {
+            State.variables[options.storyVar] += time();
+        }
+    };
+
+    // the function:
+    function _getMS () {
+        return (Date.now() - State.variables[options.storyVar]);
+    }
+
+    function _getTimeArray (ms) {
+        if (!ms || ms < 0 || typeof ms !== 'number') {
+            return;
+        }
+        
+        var time = [];
+        
+        time.push(Math.floor(ms / 1000) % 60); // second [0]
+        time.push(Math.floor(ms / 60000) % 60); // minutes [1]
+        time.push(Math.floor(ms / 3600000)); // hours [2]
+        
+        return time;
+    }
+
+    // set up valid args
+    var hourNames = ['h', 'hr', 'hrs', 'hour', 'hours'];
+    var minNames  = ['m', 'min', 'mins', 'minute', 'minutes'];
+    var secNames  = ['s', 'sec', 'secs', 'second', 'seconds'];
+
+    // user function
+    function _getPlayTime (m) {
+        var ms   = _getMS();
+        var time = _getTimeArray(ms);
+        if (hourNames.includes(m)) {
+            return time[2];
+        }
+        if (minNames.includes(m)) {
+            return time[1];
+        }
+        if (secNames.includes(m)) {
+            return time[0];
+        }
+        return ms;
+    }
+
+    function _formatTime (arr, fmt) {
+        if (!arr || !Array.isArray(arr) || arr.length < 3) {
+            return;
+        }
+        
+        var hr  = (arr[2] < 10) ? '0' + arr[2] : '' + arr[2],
+            min = (arr[1] < 10) ? '0' + arr[1] : '' + arr[1],
+            sec = (arr[0] < 10) ? '0' + arr[0] : '' + arr[0];
+            
+        if (fmt) {
+            return '<b>' + hr + ':' + min + '</b>' + ':' + sec;
+        }
+        return hr + ':' + min + ':' + sec;
+    }
+
+    function _outputPlaytime (fmt) {
+        var ms = _getMS();
+        return _formatTime(_getTimeArray(ms), fmt);
+    }
+
+    /* 
+        (setup|window).playTime(arg):
+        
+            if (arg) is a string, returns a positive integer:
+                * hour, hours, h, hr, etc            : returns hours
+                * min, minutes, minute, m, mins, etc : returns minutes
+                * sec, secs, s, second, seconds, etc : returns seconds
+                * anyother string                    : returns milliseconds
+
+            if (arg) is not a string:
+                * (arg) is truthy : returns formatted time string
+                * (arg) is falsey : returns unformatted time string
+    */
+
+    // setup API
+    setup.playTime = function (arg) {
+        if (typeof arg === 'string') {
+            return _getPlayTime(arg);
+        }
+        return _outputPlaytime(arg);
+    };
+
+    // global playTime() function
+    if (options.tryGlobal) {
+        window.playTime = window.playTime || setup.playTime;
+    }
+
+    // <<playtime>> macro
+    // if given the format argument, bold hours and minutes
+    Macro.add('playtime', {
+        handler : function () {
+            var arr = this.args.map(function (arg) {
+                return String(arg).trim().toLowerCase();
+            });
+            var $wrapper = $(document.createElement('span'));
+            var fmt      = arr.includesAny(['format', 'f', 'fmt', 'b', 'bold', 'true']);
+            var string   = _outputPlaytime(fmt);
+            
+            $wrapper
+                .wiki(string)
+                .addClass('macro-' + this.name)
+                .appendTo(this.output);
+        }
+    });
+}());
+
+/* ========================================================
+   2. SimApp — MULTIPLAYER FRAMEWORK (Playroom Kit + SugarCube)
+   ------------------------------------------------------------
+   FACULTY / AI AUTHORS:
+   - Add new shared variables to STATE_KEYS and initRoomState().
+   - Patients use <<patient-choices>> and <<patient-next>> in [activity] passages
+   - Patients navigate with SimApp.nextPassage (usually via <<patient-next>>)
+   - Observers evaluate via <<dynamic-eval>> (or setVal("evalComplete", true))
+   - Do NOT use <<goto>> for shared navigation during multiplayer.
+   ======================================================== */
+
+window.SimApp = {
+    isPlayroomLoaded: false,
+    players: {},
+    myRole: "",
+    _syncTimer: null,
+
+    /**
+     * Passages the Observer must NOT be pulled into via tether.
+     * (Global currentPassage stays on Role_Selection until the Patient advances.)
+     */
+    LOBBY_PASSAGES: ["Role_Selection", "Waiting_Room", "Start"],
+
+    /** Keys mirrored from Playroom global state → State.variables */
+    STATE_KEYS: [
+        "Energy", "Points", "Inhaler", "win", "evalComplete",
+        "patientFeedback", "patientFeedbackColor",
+        "satAndRested", "pursedLip", "rushed", "bentOver",
+        "stairs", "elevator", "standing",
+        "wildCarded", "wildRoll", "yourItem", "hisItem",
+        "visitedHallway", "visitedGrocery", "visitedPharmacy",
+        "visitedToyStore", "visitedClinic", "errandsRun",
+        "hasInhaler", "hasMedications", "hasToy"
+    ],
+
+    /** True when an active simulation is already running in this room */
+    isRoomActive: function () {
+        if (typeof Playroom === "undefined") {
+            return false;
+        }
+        return Playroom.getState("roomStarted") === true;
+    },
+
+    getRole: function () {
+        return this.myRole || State.variables.myRole || "";
+    },
+
+    /** Default simulation variables (room init + post-tutorial reset) */
+    DEFAULT_GAME_STATE: {
+        Energy: 10,
+        Points: 0,
+        Inhaler: 0,
+        win: false,
+        evalComplete: false,
+        patientFeedback: "",
+        patientFeedbackColor: "",
+        satAndRested: 0,
+        pursedLip: 0,
+        rushed: 0,
+        bentOver: 0,
+        stairs: 0,
+        elevator: 0,
+        standing: 0,
+        wildCarded: false,
+        wildRoll: 1,
+        yourItem: "",
+        hisItem: "",
+        visitedHallway: false,
+        visitedGrocery: false,
+        visitedPharmacy: false,
+        visitedToyStore: false,
+        visitedClinic: false,
+        errandsRun: 0,
+        hasInhaler: true,
+        hasMedications: false,
+        hasToy: false
+    },
+
+    isBriefingPassage: function (passageName) {
+        var name = passageName || passage();
+        var pd = Story.get(name);
+        return !!(pd && pd.tags && pd.tags.includes("briefing"));
+    },
+
+    /** Reset stats and timer after the tutorial, before Good Morning */
+    resetSimulationForStart: function () {
+        var self = this;
+        Object.keys(this.DEFAULT_GAME_STATE).forEach(function (key) {
+            self.setVal(key, self.DEFAULT_GAME_STATE[key], true);
+        });
+        State.variables.playtime = Date.now();
+        this.setVal("sharedTime", "00:00", true);
+        $(".time-display").text("00:00");
+        this.updateHud();
+    },
+
+    /** Count connected peers (including this device) */
+    getPlayerCount: function () {
+        var count = Object.keys(this.players || {}).length;
+        if (count > 0) {
+            return count;
+        }
+        if (typeof Playroom !== "undefined" && Playroom.myPlayer()) {
+            return 1;
+        }
+        return 0;
+    },
+
+    isPlayroomHost: function () {
+        return typeof Playroom !== "undefined" && Playroom.isHost();
+    },
+
+    /** Join URL Playroom reads on load (#r=roomCode) */
+    getInviteUrl: function () {
+        var base = window.location.href.split("#")[0];
+        if (typeof Playroom === "undefined") {
+            return base;
+        }
+        var code = Playroom.getRoomCode();
+        if (!code) {
+            return base;
+        }
+        return base + "#r=" + encodeURIComponent(code);
+    },
+
+    ensureInviteModal: function () {
+        if ($("#sim-invite-modal").length) {
+            return;
+        }
+        var self = this;
+        var html =
+            '<div id="sim-invite-modal" class="sim-invite-modal hidden" role="dialog" aria-modal="true" aria-labelledby="sim-invite-title">' +
+            '<div class="sim-invite-backdrop"></div>' +
+            '<div class="sim-invite-panel">' +
+            '<button type="button" id="sim-invite-close" class="sim-invite-close" aria-label="Close">&times;</button>' +
+            '<h2 id="sim-invite-title">Invite Your Partner</h2>' +
+            '<p id="sim-invite-status" class="sim-invite-status">Have your partner scan this QR code to join your room.</p>' +
+            '<img id="sim-invite-qr" class="sim-invite-qr" alt="Join room QR code" />' +
+            '<p class="sim-invite-room">Room code: <code id="sim-invite-code"></code></p>' +
+            '<button type="button" id="sim-invite-copy" class="sim-invite-copy">Copy Join Link</button>' +
+            "</div></div>";
+        $("body").append(html);
+
+        $("#sim-invite-close, #sim-invite-modal .sim-invite-backdrop").on("click", function () {
+            self.hideInviteModal();
+        });
+        $("#sim-invite-copy").on("click", function () {
+            var url = self.getInviteUrl();
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(function () {
+                    $("#sim-invite-copy").text("Link Copied!");
+                    setTimeout(function () {
+                        $("#sim-invite-copy").text("Copy Join Link");
+                    }, 2000);
+                }).catch(function () {
+                    window.prompt("Copy this join link:", url);
+                });
+            } else {
+                window.prompt("Copy this join link:", url);
+            }
+        });
+    },
+
+    refreshInviteModal: function () {
+        if (!$("#sim-invite-modal").length || $("#sim-invite-modal").hasClass("hidden")) {
+            return;
+        }
+        var count = this.getPlayerCount();
+        if (count >= 2) {
+            $("#sim-invite-status").text("Partner connected! Close this window and choose your roles.");
+            this.hideInviteModal();
+            return;
+        }
+        $("#sim-invite-status").text(
+            "Waiting for your partner (" + count + " of 2 connected). Have them scan this QR code."
+        );
+    },
+
+    showInviteModal: function () {
+        if (!this.isPlayroomHost()) {
+            alert("Only the room host can show the invite QR code.");
+            return;
+        }
+        this.ensureInviteModal();
+        var url = this.getInviteUrl();
+        var code = typeof Playroom !== "undefined" ? Playroom.getRoomCode() : "";
+        $("#sim-invite-code").text(code || "—");
+        $("#sim-invite-qr").attr(
+            "src",
+            "https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=" + encodeURIComponent(url)
+        );
+        this.refreshInviteModal();
+        $("#sim-invite-modal").removeClass("hidden");
+    },
+
+    hideInviteModal: function () {
+        $("#sim-invite-modal").addClass("hidden");
+    },
+
+    /** Host-only button for lobby passages (Role_Selection, Waiting_Room) */
+    mountHostInviteButton: function (containerId, label) {
+        var $slot = $("#" + containerId);
+        if (!$slot.length) {
+            return;
+        }
+        $slot.empty();
+        if (!this.isPlayroomHost()) {
+            return;
+        }
+        var self = this;
+        $("<button>", {
+            type: "button",
+            class: "host-invite-btn",
+            text: label || "Show Invite QR Code"
+        }).on("click", function () {
+            self.showInviteModal();
+        }).appendTo($slot);
+    },
+
+    /** Connect to Playroom lobby, init room if new, resume if reconnecting */
+    connect: async function () {
+        if (typeof Playroom === "undefined") {
+            alert("Playroom is still loading. Please wait a second and try again.");
+            return;
+        }
+
+        var self = this;
+        self.registerPlayerHandlers();
+
+        try {
+            await Playroom.insertCoin({
+                maxPlayersPerRoom: 2,
+                skipLobby: false,
+                reconnectGracePeriod: 120000
+            });
+
+            if (Playroom.isHost() && !self.isRoomActive()) {
+                self.initRoomState();
+            }
+
+            self.startSyncLoop();
+            self.resumeSession();
+
+            if (Playroom.isHost() && self.getPlayerCount() < 2) {
+                setTimeout(function () {
+                    self.showInviteModal();
+                }, Engine.minDomActionDelay || 40);
+            }
+            setTimeout(function () {
+                self.wireDevCaptionControls();
+            }, Engine.minDomActionDelay || 40);
+        } catch (e) {
+            console.error("Failed to connect to Playroom:", e);
+            alert("Connection error. Please refresh and try again.");
+        }
+    },
+
+    /** Host-only: initialize a brand-new room (skipped on reconnect) */
+    initRoomState: function () {
+        if (!Playroom.isHost() || this.isRoomActive()) {
+            return;
+        }
+
+        var r = true;
+        Playroom.setState("roomStarted", true, r);
+        Playroom.setState("currentPassage", "Role_Selection", r);
+        Playroom.setState("sharedTime", "00:00", r);
+        Playroom.setState("lobby_patient", false, r);
+        Playroom.setState("lobby_observer", false, r);
+        Playroom.setState("patientPlayerId", "", r);
+        Playroom.setState("observerPlayerId", "", r);
+
+        var self = this;
+        Object.keys(this.DEFAULT_GAME_STATE).forEach(function (key) {
+            Playroom.setState(key, self.DEFAULT_GAME_STATE[key], r);
+        });
+    },
+
+    /** After connect/refresh: restore role and active passage without resetting room */
+    resumeSession: function () {
+        var me = Playroom.myPlayer();
+        if (!me) {
+            Engine.play("Role_Selection");
+            return;
+        }
+
+        var savedRole = me.getState("role");
+        if (savedRole) {
+            this.myRole = savedRole;
+            State.variables.myRole = savedRole;
+            $("body").removeClass("role-patient role-observer").addClass("role-" + savedRole);
+        }
+
+        this.syncFromPlayroom();
+
+        var target = Playroom.getState("currentPassage");
+        if (target && Story.has(target)) {
+            Engine.play(target);
+            return;
+        }
+
+        if (savedRole) {
+            Engine.play(this.checkReadyState() ? "Simulation_Hub" : "Waiting_Room");
+        } else {
+            Engine.play("Role_Selection");
+        }
+    },
+
+    setVal: function (key, val, reliable) {
+        if (this.isPlayroomLoaded && typeof Playroom !== "undefined") {
+            Playroom.setState(key, val, reliable !== false);
+        }
+        State.variables[key] = val;
+    },
+
+    getVal: function (key) {
+        if (this.isPlayroomLoaded && typeof Playroom !== "undefined") {
+            var val = Playroom.getState(key);
+            if (val !== undefined) {
+                return val;
+            }
+        }
+        return State.variables[key];
+    },
+
+    /** Patient-driven navigation: updates global passage + resets eval lock */
+    nextPassage: function (passageName) {
+        this.setVal("evalComplete", false, true);
+        this.setVal("currentPassage", passageName, true);
+        if (this.getRole() === "patient" && Story.has(passageName)) {
+            Engine.play(passageName);
+        }
+    },
+
+    /** Both players must see this passage (hub, game over, critical events) */
+    goToSharedPassage: function (passageName) {
+        this.setVal("currentPassage", passageName, true);
+        if (Story.has(passageName) && passage() !== passageName) {
+            Engine.play(passageName);
+        }
+    },
+
+    /** After role pick, sync lobby passage so tether does not yank to Role_Selection */
+    goToWaitingRoom: function () {
+        this.setVal("currentPassage", "Waiting_Room", true);
+        if (passage() !== "Waiting_Room") {
+            Engine.play("Waiting_Room");
+        }
+    },
+
+    clearLobbyRole: function (roleName) {
+        if (!roleName) {
+            return;
+        }
+        this.setVal("lobby_" + roleName, false, true);
+    },
+
+    /** Mirror per-player roles into global flags (host runs each sync tick) */
+    syncLobbyRolesFromPlayers: function () {
+        if (!Playroom.isHost()) {
+            return;
+        }
+        var hasPatient = false;
+        var hasObserver = false;
+        Object.values(this.players || {}).forEach(function (p) {
+            var r = p.getState("role");
+            if (r === "patient") {
+                hasPatient = true;
+            }
+            if (r === "observer") {
+                hasObserver = true;
+            }
+        });
+        if (hasPatient) {
+            this.setVal("lobby_patient", true, true);
+        }
+        if (hasObserver) {
+            this.setVal("lobby_observer", true, true);
+        }
+    },
+
+    setRole: function (roleName) {
+        if (typeof Playroom === "undefined" || !Playroom.myPlayer()) {
+            alert("Not connected to multiplayer yet.");
+            return;
+        }
+
+        var myId = Playroom.myPlayer().id;
+        var lobbyKey = "lobby_" + roleName;
+        var ownerKey = roleName + "PlayerId";
+        var ownerId = this.getVal(ownerKey);
+
+        if (this.getVal(lobbyKey) === true && ownerId && ownerId !== myId) {
+            alert("Your partner already selected that role. Pick the other role.");
+            this.refreshRoleButtons();
+            return;
+        }
+
+        var taken = Object.values(this.players).some(function (p) {
+            return p.id !== myId && p.getState("role") === roleName;
+        });
+        if (taken) {
+            alert("Your partner already selected that role. Pick the other role.");
+            this.refreshRoleButtons();
+            return;
+        }
+
+        Playroom.myPlayer().setState("role", roleName, true);
+        this.setVal(lobbyKey, true, true);
+        this.setVal(ownerKey, myId, true);
+        this.myRole = roleName;
+        State.variables.myRole = roleName;
+        $("body").removeClass("role-patient role-observer").addClass("role-" + roleName);
+
+        if (Playroom.isHost()) {
+            this.syncLobbyRolesFromPlayers();
+        }
+
+        this.goToWaitingRoom();
+    },
+
+    refreshRoleButtons: function () {
+        if (typeof Playroom === "undefined" || !Playroom.myPlayer()) {
+            return;
+        }
+        if (passage() !== "Role_Selection") {
+            return;
+        }
+
+        var otherRole = null;
+        Object.values(this.players).forEach(function (p) {
+            if (p.id !== Playroom.myPlayer().id) {
+                otherRole = p.getState("role");
+            }
+        });
+
+        $("#wrap-patient button")
+            .prop("disabled", false)
+            .html("I will be <span class='holland'>Mr. Holland</span>");
+  		$("#wrap-observer button")
+          	.prop("disabled", false)
+    		.html("I will be <span class='observer'>the Observer</span>");
+
+        if (otherRole === "patient") {
+            $("#wrap-patient button").prop("disabled", true).text("Patient (Selected by Partner)");
+        }
+        if (otherRole === "observer") {
+            $("#wrap-observer button").prop("disabled", true).text("Observer (Selected by Partner)");
+        }
+    },
+
+    checkReadyState: function () {
+        /* Primary: global flags (works even if onPlayerJoin missed a peer) */
+        if (this.getVal("lobby_patient") === true && this.getVal("lobby_observer") === true) {
+            return true;
+        }
+        var playerList = Object.values(this.players || {});
+        if (playerList.length >= 2) {
+            var hasPatient = false;
+            var hasObserver = false;
+            playerList.forEach(function (p) {
+                var r = p.getState("role");
+                if (r === "patient") {
+                    hasPatient = true;
+                }
+                if (r === "observer") {
+                    hasObserver = true;
+                }
+            });
+            return hasPatient && hasObserver;
+        }
+        return false;
+    },
+
+    checkRoleConflict: function () {
+        var playerList = Object.values(this.players || {});
+        if (playerList.length === 2) {
+            var roles = playerList.map(function (p) {
+                return p.getState("role");
+            }).filter(function (r) {
+                return r;
+            });
+            if (roles.length === 2 && roles[0] === roles[1]) {
+                return true;
+            }
+        }
+        return false;
+    },
+
+    /** Single background loop: sync state, tether observer, refresh HUD */
+    startSyncLoop: function () {
+        if (this._syncTimer) {
+            return;
+        }
+        var self = this;
+        this._syncTimer = setInterval(function () {
+            if (!self.isPlayroomLoaded) {
+                return;
+            }
+            self.syncFromPlayroom();
+            self.syncLobbyRolesFromPlayers();
+            self.broadcastLobbyAdvance();
+            self.tetherToPassage();
+            self.updateHud();
+        }, 100);
+    },
+
+    /** Track peers — registered once when Playroom loads (not per connect) */
+    registerPlayerHandlers: function () {
+        if (this._playerHandlersRegistered || typeof Playroom === "undefined") {
+            return;
+        }
+        this._playerHandlersRegistered = true;
+        var self = this;
+        Playroom.onPlayerJoin(function (playerState) {
+            self.players[playerState.id] = playerState;
+            playerState.onQuit(function () {
+                delete self.players[playerState.id];
+                self.refreshInviteModal();
+            });
+            if (Playroom.isHost()) {
+                self.syncLobbyRolesFromPlayers();
+            }
+            self.refreshRoleButtons();
+            self.refreshInviteModal();
+        });
+    },
+
+    syncFromPlayroom: function () {
+        if (typeof Playroom === "undefined") {
+            return;
+        }
+        var self = this;
+        this.STATE_KEYS.forEach(function (key) {
+            var v = Playroom.getState(key);
+            if (v !== undefined) {
+                State.variables[key] = v;
+            }
+        });
+        var me = Playroom.myPlayer();
+        if (me) {
+            var savedRole = me.getState("role");
+            if (savedRole) {
+                self.myRole = savedRole;
+                State.variables.myRole = savedRole;
+                $("body").removeClass("role-patient role-observer").addClass("role-" + savedRole);
+            }
+        }
+    },
+
+    /** True when Observer should follow Patient to this passage */
+    shouldObserverTether: function (dest) {
+        if (!dest || this.LOBBY_PASSAGES.indexOf(dest) !== -1) {
+            return false;
+        }
+        var pd = Story.get(dest);
+        return pd && pd.tags && pd.tags.includes("simulation");
+    },
+
+    /** Host advances the room; everyone else follows via sync/tether/waiting poll */
+    broadcastLobbyAdvance: function () {
+        if (!this.checkReadyState()) {
+            return;
+        }
+        var globalDest = Playroom.getState("currentPassage");
+        if (globalDest === "Simulation_Hub") {
+            return;
+        }
+        if (globalDest && globalDest !== "Role_Selection" && globalDest !== "Waiting_Room") {
+            return;
+        }
+        if (Playroom.isHost()) {
+            this.goToSharedPassage("Simulation_Hub");
+            return;
+        }
+        var here = passage();
+        if (here === "Role_Selection" || here === "Waiting_Room") {
+            this.goToSharedPassage("Simulation_Hub");
+        }
+    },
+
+    /** When both roles are picked, move anyone still in lobby passages to the hub */
+    advanceLobbyIfReady: function () {
+        this.broadcastLobbyAdvance();
+    },
+
+    /** Observer follows Patient on simulation passages only; Patient follows Game Over */
+    tetherToPassage: function () {
+        if (typeof Playroom === "undefined") {
+            return;
+        }
+        this.advanceLobbyIfReady();
+
+        var dest = Playroom.getState("currentPassage");
+        if (!dest || dest === passage() || !Story.has(dest)) {
+            return;
+        }
+        var role = this.getRole();
+        if (role === "observer" && this.shouldObserverTether(dest)) {
+            Engine.play(dest);
+        } else if (role === "patient" && dest.indexOf("Game_Over") === 0) {
+            Engine.play(dest);
+        }
+    },
+
+    updateHud: function () {
+        var e = State.variables.Energy;
+        if ($("#energy-display").length) {
+            $("#energy-display").text(e);
+            $("#inhaler-display").text(State.variables.Inhaler);
+            $("#points-display").text(State.variables.Points);
+        }
+        if (this.getRole() !== "patient") {
+            return;
+        }
+        var statusHtml;
+        if (e >= 8) {
+            statusHtml = '<span style="color:#28a745;">Breathing Easily</span>';
+        } else if (e >= 4) {
+            statusHtml = '<span style="color:#ffc107;">Short of Breath</span>';
+        } else {
+            statusHtml = '<span style="color:#dc3545;">Collapsing!</span>';
+        }
+        var $breath = $("#patient-breathing-status");
+        if ($breath.length && $breath.html() !== statusHtml) {
+            $breath.html(statusHtml);
+        }
+        var inhHtml = State.variables.hasInhaler
+            ? '<span style="color:#28a745;">In Pocket</span>'
+            : '<span style="color:#dc3545;">At Home</span>';
+        var $inh = $("#patient-inhaler-status");
+        if ($inh.length && $inh.html() !== inhHtml) {
+            $inh.html(inhHtml);
+        }
+        if (this.isDevCaptionActive()) {
+            this.refreshDevCaptionUI();
+        }
+    },
+
+    /* ==========================================================
+       DEV MODE — StoryCaption ↔ Playroom (via setVal / syncFromPlayroom)
+       ========================================================== */
+
+    _devCaptionSyncing: false,
+    _devCaptionEditing: null,
+
+    isDevCaptionActive: function () {
+        return State.variables.devmode === true && this.getRole() === "patient";
+    },
+
+    coerceDevCaptionValue: function (key, raw) {
+        var sample = this.DEFAULT_GAME_STATE[key];
+        if (typeof sample === "boolean") {
+            return raw === true || raw === "true" || raw === 1 || raw === "1";
+        }
+        if (typeof sample === "number") {
+            var n = Number(raw);
+            return isNaN(n) ? 0 : n;
+        }
+        return raw === undefined || raw === null ? "" : String(raw);
+    },
+
+    pushDevCaptionKey: function (key, raw) {
+        if (!this.isDevCaptionActive()) {
+            return;
+        }
+        var val = this.coerceDevCaptionValue(key, raw);
+        this.setVal(key, val, true);
+        this.updateHud();
+    },
+
+    refreshDevCaptionUI: function () {
+        if (!this.isDevCaptionActive() || !$("#ui-bar .dev-var").length) {
+            return;
+        }
+        var self = this;
+        this._devCaptionSyncing = true;
+        $("#ui-bar .dev-var").each(function () {
+            var key = $(this).attr("data-dev-key");
+            if (!key) {
+                return;
+            }
+            var val = self.getVal(key);
+            State.variables[key] = val;
+            var $control = $(this).find("input, select").first();
+            if (!$control.length) {
+                return;
+            }
+            if ($control.is(":focus") || self._devCaptionEditing === key) {
+                return;
+            }
+            if ($control.is("select")) {
+                $control.val(val === true || val === "true" ? "true" : "false");
+            } else {
+                $control.val(val === undefined || val === null ? "" : val);
+            }
+        });
+        this._devCaptionSyncing = false;
+    },
+
+    wireDevCaptionControls: function () {
+        if (!this.isDevCaptionActive()) {
+            return;
+        }
+        var self = this;
+        var $bar = $("#ui-bar-body");
+        if (!$bar.length) {
+            return;
+        }
+
+        this.syncFromPlayroom();
+        this.refreshDevCaptionUI();
+
+        $bar.find(".dev-var").each(function () {
+            var key = $(this).attr("data-dev-key");
+            if (!key) {
+                return;
+            }
+            var $control = $(this).find("input, select").first();
+            if (!$control.length || $control.data("dev-wired")) {
+                return;
+            }
+            $control.data("dev-wired", true);
+
+            var push = function () {
+                if (self._devCaptionSyncing) {
+                    return;
+                }
+                self.pushDevCaptionKey(key, $control.val());
+            };
+
+            $control.on("change.devsync", push);
+            $control.on("focus.devsync", function () {
+                self._devCaptionEditing = key;
+            });
+            if ($control.is("input:not([type='checkbox'])")) {
+                $control.on("input.devsync", function () {
+                    State.variables[key] = self.coerceDevCaptionValue(key, $control.val());
+                });
+                $control.on("blur.devsync", function () {
+                    self._devCaptionEditing = null;
+                    push();
+                });
+            } else {
+                $control.on("blur.devsync", function () {
+                    self._devCaptionEditing = null;
+                });
+            }
+        });
+    },
+
+    /* ==========================================================
+       OBSERVER DYNAMIC EVAL UI (used by <<dynamic-eval>> macro)
+       ========================================================== */
+
+    _escapeHtml: function (text) {
+        return String(text)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    },
+
+    /**
+     * Parse one faculty option string:
+     *   "Button label | energy | points | behavior | color | patientMessage | patientMessageColor"
+     * Optional fields 6–7: message shown to the Patient after Observer evaluates.
+     */
+    parseEvalOption: function (raw) {
+        var parts = String(raw).split("|").map(function (s) {
+            return s.trim();
+        });
+        if (!parts[0]) {
+            console.warn("dynamic-eval: option missing a label:", raw);
+            parts[0] = "Assessment";
+        }
+        var energy = Number(parts[1]);
+        var points = Number(parts[2]);
+        if (isNaN(energy)) {
+            energy = 0;
+        }
+        if (isNaN(points)) {
+            points = 0;
+        }
+        var behavior = parts[3] || "none";
+        var color = (parts[4] || "").toLowerCase();
+        if (color !== "green" && color !== "red" && color !== "blue") {
+            color = energy >= 0 ? "green" : "red";
+        }
+        var patientMessageColor = (parts[6] || "red").toLowerCase();
+        if (patientMessageColor !== "green" && patientMessageColor !== "red") {
+            patientMessageColor = energy >= 0 ? "green" : "red";
+        }
+        return {
+            label: parts[0],
+            energy: energy,
+            points: points,
+            behavior: behavior,
+            color: color,
+            patientMessage: parts[5] || "",
+            patientMessageColor: patientMessageColor
+        };
+    },
+
+    _formatEvalSubtitle: function (energy, points) {
+        var bits = [];
+        if (energy) {
+            bits.push((energy > 0 ? "+" : "") + energy + " Energy");
+        }
+        if (points) {
+            bits.push((points > 0 ? "+" : "") + points + " Pts");
+        }
+        return bits.join(" · ");
+    },
+
+    /** Apply one activity eval (same rules as Adjust_Energy / Adjust_Points / Track_Behavior) */
+    applyObserverEval: function (opt) {
+        var currentEnergy = this.getVal("Energy");
+        var newEnergy = currentEnergy + opt.energy;
+        if (newEnergy > 15) {
+            newEnergy = 15;
+        }
+        if (newEnergy < 0) {
+            newEnergy = 0;
+        }
+        this.setVal("Energy", newEnergy);
+        if ($("#energy-display").length) {
+            $("#energy-display").text(newEnergy);
+        }
+        this.updateHud();
+        if (newEnergy <= 0 && !this.isBriefingPassage()) {
+            this.goToSharedPassage("Game_Over_Energy");
+            return;
+        }
+
+        if (opt.points) {
+            var currentPoints = this.getVal("Points");
+            var newPoints = currentPoints + opt.points;
+            this.setVal("Points", newPoints);
+            if ($("#points-display").length) {
+                $("#points-display").text(newPoints);
+            }
+        }
+
+        if (opt.behavior && opt.behavior !== "none") {
+            var currentVal = this.getVal(opt.behavior) || 0;
+            this.setVal(opt.behavior, currentVal + 1);
+        }
+
+        if (opt.patientMessage) {
+            this.setVal("patientFeedback", opt.patientMessage, true);
+            this.setVal("patientFeedbackColor", opt.patientMessageColor || "red", true);
+        }
+
+        this.setVal("evalComplete", true);
+    },
+
+    /**
+     * Build eval buttons in the observer footer (#dynamic-observer-evals).
+     * Called by the <<dynamic-eval>> macro after the passage renders.
+     */
+    mountDynamicEval: function (activityTitle, options) {
+        var $target = $("#dynamic-observer-evals");
+        if (!$target.length) {
+            console.warn("dynamic-eval: #dynamic-observer-evals not found (is this an [activity] passage?)");
+            return;
+        }
+        if (!options || !options.length) {
+            console.warn("dynamic-eval: no options provided for", activityTitle);
+            return;
+        }
+
+        /* New activity station — Patient waits for a fresh Observer eval */
+        this.setVal("evalComplete", false, true);
+        this.setVal("patientFeedback", "", true);
+        this.setVal("patientFeedbackColor", "", true);
+
+        var self = this;
+        var recordedHtml =
+            '<div class="gray-box" style="width:100%;">' +
+            '<span style="font-weight:bold;">Assessment Recorded</span></div>';
+
+        var html = '<div id="dynamic-eval-root" class="dynamic-eval-root">';
+        html += '<div class="dynamic-eval-heading">' + this._escapeHtml(activityTitle) + "</div>";
+        html += '<div class="eval-grid dynamic-eval-grid">';
+
+        options.forEach(function (opt, index) {
+            var sub = self._formatEvalSubtitle(opt.energy, opt.points);
+            var subHtml = sub
+                ? '<div class="eval-sub">' + self._escapeHtml(sub) + "</div>"
+                : "";
+            html +=
+                '<span class="eval-wrap ' +
+                self._escapeHtml(opt.color) +
+                '-wrap" data-eval-index="' +
+                index +
+                '">' +
+                '<button type="button" class="dynamic-eval-btn">' +
+                '<div class="eval-title">' +
+                self._escapeHtml(opt.label) +
+                "</div>" +
+                subHtml +
+                "</button></span>";
+        });
+
+        html += "</div></div>";
+        $target.html(html);
+
+        $target.find(".dynamic-eval-btn").on("click", function () {
+            var index = Number($(this).closest("[data-eval-index]").attr("data-eval-index"));
+            var choice = options[index];
+            if (!choice) {
+                return;
+            }
+            self.applyObserverEval(choice);
+            $target.html(
+                '<div id="dynamic-eval-root" class="dynamic-eval-root">' +
+                '<div class="dynamic-eval-heading">' +
+                self._escapeHtml(activityTitle) +
+                "</div>" +
+                recordedHtml +
+                "</div>"
+            );
+        });
+    },
+
+    /* ==========================================================
+       PATIENT FOOTER UI (<<patient-choices>> / <<patient-next>>)
+       ========================================================== */
+
+    _patientNextTimer: null,
+    _patientNextConfig: null,
+    _patientChoiceResolved: true,
+
+    clearPatientFooterTimers: function () {
+        if (this._patientNextTimer) {
+            clearInterval(this._patientNextTimer);
+            this._patientNextTimer = null;
+        }
+    },
+
+    /**
+     * Parse patient choice string:
+     *   "Label | energy | buttonColor | consequenceColor | message..."
+     * Or 4 fields (consequence color auto from energy sign):
+     *   "Label | energy | buttonColor | message..."
+     */
+    parsePatientChoice: function (raw) {
+        var parts = String(raw).split("|").map(function (s) {
+            return s.trim();
+        });
+        if (!parts[0]) {
+            parts[0] = "Choice";
+        }
+        var energy = Number(parts[1]);
+        if (isNaN(energy)) {
+            energy = 0;
+        }
+        var btnColor = (parts[2] || "").toLowerCase().replace(/[^a-z0-9-]/g, "");
+        /* Any theme name works if matching CSS exists (hot, warm, cold, green, red, blue, …) */
+        if (!btnColor) {
+            btnColor = energy >= 0 ? "green" : "red";
+        }
+        var msgColor;
+        var message;
+        var nextPassage = "";
+        var stateSet = {};
+        var partIdx;
+
+        if (parts.length >= 6) {
+            msgColor = (parts[3] || "").toLowerCase();
+            message = (parts[4] || "").trim();
+            nextPassage = (parts[5] || "").trim();
+            for (partIdx = 6; partIdx < parts.length; partIdx++) {
+                var segment = parts[partIdx];
+                if (!segment) {
+                    continue;
+                }
+                var eq = segment.indexOf("=");
+                if (eq === -1) {
+                    continue;
+                }
+                var stateKey = segment.slice(0, eq).trim();
+                var stateRaw = segment.slice(eq + 1).trim();
+                if (!stateKey) {
+                    continue;
+                }
+                if (stateRaw === "true") {
+                    stateSet[stateKey] = true;
+                } else if (stateRaw === "false") {
+                    stateSet[stateKey] = false;
+                } else if (stateRaw !== "" && !isNaN(Number(stateRaw))) {
+                    stateSet[stateKey] = Number(stateRaw);
+                } else {
+                    stateSet[stateKey] = stateRaw;
+                }
+            }
+        } else if (parts.length >= 5) {
+            msgColor = (parts[3] || "").toLowerCase();
+            message = parts.slice(4).join("|").trim();
+        } else {
+            message = (parts[3] || "").trim();
+            msgColor = energy >= 0 ? "green" : "red";
+        }
+        if (parts.length < 6) {
+            if (msgColor !== "green" && msgColor !== "red") {
+                msgColor = energy >= 0 ? "green" : "red";
+            }
+        } else if (msgColor !== "green" && msgColor !== "red") {
+            msgColor = energy >= 0 ? "green" : "red";
+        }
+        return {
+            label: parts[0],
+            energy: energy,
+            btnColor: btnColor,
+            msgColor: msgColor,
+            message: message || "You make your choice.",
+            nextPassage: nextPassage,
+            stateSet: stateSet
+        };
+    },
+
+    /** Apply energy change for a patient decision; returns false if game over fired */
+    applyPatientEnergy: function (energy) {
+        var currentEnergy = this.getVal("Energy");
+        var newEnergy = currentEnergy + energy;
+        if (newEnergy > 15) {
+            newEnergy = 15;
+        }
+        if (newEnergy < 0) {
+            newEnergy = 0;
+        }
+        this.setVal("Energy", newEnergy);
+        this.updateHud();
+        if (newEnergy <= 0 && !this.isBriefingPassage()) {
+            this.goToSharedPassage("Game_Over_Energy");
+            return false;
+        }
+        return true;
+    },
+
+    _renderPatientHudHint: function () {
+        return (
+            '<div class="patient-footer-hint">Look at your HUD at the top of the screen to see how this affected your work of breathing.</div>'
+        );
+    },
+
+    _renderPatientConsequence: function (message, msgColor) {
+        var cssColor = msgColor === "green" ? "#28a745" : "#dc3545";
+        return (
+            '<div class="patient-consequence" style="color:' +
+            cssColor +
+            ';">' +
+            "<strong>" +
+            this._escapeHtml(message) +
+            "</strong></div>"
+        );
+    },
+
+    mountPatientChoices: function (sectionTitle, options, settings) {
+        settings = settings || {};
+        var skipObserverEval = !!settings.skipObserverEval;
+        var $target = $("#patient-footer-choices");
+        if (!$target.length) {
+            console.warn("patient-choices: #patient-footer-choices not found ([activity] passage?)");
+            return;
+        }
+        if (!options || !options.length) {
+            console.warn("patient-choices: no options for", sectionTitle);
+            return;
+        }
+
+        this._patientChoiceResolved = false;
+        this.setVal("evalComplete", false, true);
+        this.setVal("patientFeedback", "", true);
+        this.setVal("patientFeedbackColor", "", true);
+
+        var self = this;
+        var html = '<div class="patient-choices-root">';
+        html += '<div class="patient-footer-heading">' + this._escapeHtml(sectionTitle) + "</div>";
+        html += '<div class="patient-choice-grid">';
+
+        options.forEach(function (opt, index) {
+            html +=
+                '<span class="eval-wrap ' +
+                self._escapeHtml(opt.btnColor) +
+                '-wrap" data-patient-choice="' +
+                index +
+                '">' +
+                '<button type="button" class="patient-choice-btn">' +
+                '<div class="eval-title">' +
+                self._escapeHtml(opt.label) +
+                "</div>" +
+                "</button></span>";
+        });
+
+        html += "</div></div>";
+        $target.html(html);
+
+        $target.find(".patient-choice-btn").on("click", function () {
+            var index = Number($(this).closest("[data-patient-choice]").attr("data-patient-choice"));
+            var choice = options[index];
+            if (!choice) {
+                return;
+            }
+            if (!self.applyPatientEnergy(choice.energy)) {
+                return;
+            }
+            if (choice.stateSet) {
+                Object.keys(choice.stateSet).forEach(function (key) {
+                    self.setVal(key, choice.stateSet[key], true);
+                });
+            }
+            if (choice.nextPassage && self._patientNextConfig) {
+                self._patientNextConfig.targetPassage = choice.nextPassage;
+            }
+            if (skipObserverEval) {
+                self.setVal("evalComplete", true, true);
+            }
+            self._patientChoiceResolved = true;
+            var choiceHtml =
+                '<div class="patient-choices-root">' +
+                '<div class="patient-footer-heading">' +
+                self._escapeHtml(sectionTitle) +
+                "</div>";
+            if (choice.message) {
+                choiceHtml += self._renderPatientConsequence(choice.message, choice.msgColor);
+            } else {
+                choiceHtml += '<div class="gray-box patient-footer-hint">Waiting for your Observer to evaluate...</div>';
+            }
+            choiceHtml += "</div>";
+            $target.html(choiceHtml);
+            self.refreshPatientNextSlot();
+        });
+    },
+
+    mountPatientNext: function (buttonLabel, targetPassage, options) {
+        this._patientNextConfig = {
+            label: buttonLabel,
+            targetPassage: targetPassage,
+            resetBeforeStart: !!(options && options.resetBeforeStart)
+        };
+        this.clearPatientFooterTimers();
+        this.refreshPatientNextSlot();
+    },
+
+    refreshPatientNextSlot: function () {
+        var $slot = $("#patient-footer-next");
+        var cfg = this._patientNextConfig;
+        if (!$slot.length || !cfg) {
+            return;
+        }
+
+        var self = this;
+        var hasChoiceUI = $("#patient-footer-choices").length > 0;
+        var evalDone = this.getVal("evalComplete") === true;
+        var feedback = this.getVal("patientFeedback") || "";
+        var feedbackColor = this.getVal("patientFeedbackColor") || "red";
+
+        if (hasChoiceUI && !this._patientChoiceResolved) {
+            $slot.html(
+                '<div class="gray-box patient-footer-hint">Make your selection above, then wait for your Observer.</div>'
+            );
+            return;
+        }
+
+        if (hasChoiceUI && !evalDone) {
+            $slot.html(
+                '<div class="gray-box patient-footer-hint">Waiting for Observer evaluation...</div>'
+            );
+            if (!this._patientNextTimer) {
+                this._patientNextTimer = setInterval(function () {
+                    if (!self._patientNextConfig) {
+                        self.clearPatientFooterTimers();
+                        return;
+                    }
+                    if (self._patientChoiceResolved && self.getVal("evalComplete") === true) {
+                        self.refreshPatientNextSlot();
+                    }
+                }, 500);
+            }
+            return;
+        }
+
+        var html = "";
+        if (feedback) {
+            html += this._renderPatientConsequence(feedback, feedbackColor);
+            html += this._renderPatientHudHint();
+        }
+        html +=
+            '<button type="button" class="patient-next-btn">' +
+            cfg.label +
+            "</button>";
+        $slot.html(html);
+        $slot.find(".patient-next-btn").on("click", function () {
+            if (cfg.resetBeforeStart) {
+                self.resetSimulationForStart();
+            }
+            self.nextPassage(cfg.targetPassage);
+        });
+        this.clearPatientFooterTimers();
+    }
+};
+
+/* ========================================================
+   3. <<dynamic-eval>> MACRO — faculty activity assessments
+   ------------------------------------------------------------
+   Observer-only. Renders buttons in the footer toolbar.
+
+   USAGE (any number of options):
+
+   <<dynamic-eval "Activity: Getting Out of Bed"
+     "Label | energy | points | behaviorVariable | green"
+     "Other label | -2 | 1 | rushed | red | Message shown to Patient after eval | red"
+   >>
+
+   Fields per option (pipe-separated):
+     1. Button label (required)
+     2. Energy change (number, e.g. -2 or 2)
+     3. Points change (number)
+     4. Behavior variable to increment (or none)
+     5. Button color: green, red, or blue (optional)
+     6. Patient feedback message after eval (optional, for tutorials)
+     7. Patient feedback color: green or red (optional)
+
+   Subtitle under the label is auto-generated from energy/points.
+   ======================================================== */
+(function () {
+    "use strict";
+
+    Macro.add("dynamic-eval", {
+        handler: function () {
+            if (!window.SimApp || SimApp.getRole() !== "observer") {
+                return;
+            }
+
+            var activityTitle = this.args.length
+                ? String(this.args[0])
+                : "Activity Assessment";
+            var options = [];
+            var i;
+
+            for (i = 1; i < this.args.length; i++) {
+                options.push(SimApp.parseEvalOption(String(this.args[i])));
+            }
+
+            var passageTitle = passage();
+            setTimeout(function () {
+                if (passage() === passageTitle) {
+                    SimApp.mountDynamicEval(activityTitle, options);
+                }
+            }, Engine.minDomActionDelay);
+        }
+    });
+}());
+
+/* ========================================================
+   4. PATIENT FOOTER MACROS — choices + next station button
+   ------------------------------------------------------------
+   Passage must be tagged [simulation] (and [activity] for choices).
+   Footer slots: #patient-footer-choices, #patient-footer-next
+
+   CHOICES (Harlowe-style replace — pick one, see consequence, then Observer eval):
+
+   <<patient-choices "Water temperature"
+     "Hot Water | -4 | green | red | All the steam makes it hard to breathe!"
+     "Warm Water | -1 | green | green | The warm water is soothing."
+     "Cold Water | -2 | green | red | The cold water makes you gasp!"
+   >>
+
+   Per option (pipe-separated):
+     1. Button label
+     2. Energy change (hidden from patient UI)
+     3. Button theme for CSS: green, red, blue, hot, warm, cold, …
+     4. Consequence text color: green or red (optional if 5+ fields)
+     5. Consequence message (shown after click)
+
+   Energy/points are never shown on patient choice buttons.
+
+   NEXT STATION (waits for Observer eval, then navigates):
+
+   <<patient-next "Continue Your Day" "Next_Passage_Name">>
+   <<patient-next "Start Simulation" "Good_Morning_Mr._Holland" "reset">>
+   Optional 3rd arg "reset" — resets all stats and the timer before navigating.
+   ======================================================== */
+(function () {
+    "use strict";
+
+    Macro.add("patient-choices", {
+        handler: function () {
+            if (!window.SimApp || SimApp.getRole() !== "patient") {
+                return;
+            }
+
+            var sectionTitle = this.args.length
+                ? String(this.args[0])
+                : "Your choice";
+            var options = [];
+            var i;
+            var startIdx = 1;
+            var skipObserverEval = false;
+
+            if (this.args.length > 1 && String(this.args[1]).toLowerCase() === "no-eval") {
+                skipObserverEval = true;
+                startIdx = 2;
+            }
+
+            for (i = startIdx; i < this.args.length; i++) {
+                options.push(SimApp.parsePatientChoice(String(this.args[i])));
+            }
+
+            var passageTitle = passage();
+            setTimeout(function () {
+                if (passage() === passageTitle) {
+                    SimApp.clearPatientFooterTimers();
+                    SimApp.mountPatientChoices(sectionTitle, options, {
+                        skipObserverEval: skipObserverEval
+                    });
+                }
+            }, Engine.minDomActionDelay);
+        }
+    });
+
+    Macro.add("patient-next", {
+        handler: function () {
+            if (!window.SimApp || SimApp.getRole() !== "patient") {
+                return;
+            }
+            if (this.args.length < 2) {
+                console.warn("patient-next: needs button label and target passage name");
+                return;
+            }
+
+            var buttonLabel = String(this.args[0]);
+            var targetPassage = String(this.args[1]);
+            var resetBeforeStart =
+                this.args.length >= 3 && String(this.args[2]).toLowerCase() === "reset";
+            var passageTitle = passage();
+
+            setTimeout(function () {
+                if (passage() === passageTitle) {
+                    SimApp.mountPatientNext(buttonLabel, targetPassage, {
+                        resetBeforeStart: resetBeforeStart
+                    });
+                }
+            }, Engine.minDomActionDelay);
+        }
+    });
+
+    /* Clear patient footer polling when leaving a passage */
+    $(document).on(":passagestart", function () {
+        if (window.SimApp) {
+            SimApp.clearPatientFooterTimers();
+            SimApp._patientNextConfig = null;
+            $("#patient-footer-choices").empty();
+            $("#patient-footer-next").empty();
+            if (SimApp.isDevCaptionActive()) {
+                setTimeout(function () {
+                    SimApp.wireDevCaptionControls();
+                }, Engine.minDomActionDelay);
+            }
+        }
+    });
+}());
+
+(function () {
+    "use strict";
+    /* iOS safe-area + real-device viewport (GitHub Pages / mobile Safari) */
+    var vp = document.querySelector('meta[name="viewport"]');
+    if (vp) {
+        vp.setAttribute(
+            "content",
+            "width=device-width, initial-scale=1, viewport-fit=cover"
+        );
+    }
+}());
+
+/* Load Playroom Kit via SugarCube CDN importer */
+importScripts("https://unpkg.com/playroomkit/multiplayer.full.umd.js")
+    .then(function () {
+        window.SimApp.isPlayroomLoaded = true;
+        window.SimApp.registerPlayerHandlers();
+        var loader = document.getElementById("loading-overlay");
+        var btnContainer = document.getElementById("connect-container");
+        if (loader && btnContainer) {
+            loader.classList.add("hidden");
+            btnContainer.classList.remove("hidden");
+        }
+    })
+    .catch(function (error) {
+        console.error("Playroom script failed to load:", error);
+        var loader = document.getElementById("loading-overlay");
+        if (loader) {
+            loader.innerHTML = "Failed to load multiplayer services. Please check your internet and refresh the page.";
+            loader.style.color = "red";
+        }
+    });
+
+:: StoryStylesheet [stylesheet]
+/* Global box model — prevents padding from pushing content past the viewport */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+/* 1. Hide default SugarCube Sidebar and reset layout */
+#ui-bar {
+    display: block;
+}
+
+/*
+ * SugarCube ui-bar sibling selectors (#ui-bar.stowed ~ #story) beat plain #story
+ * and leave a 3.5em left margin on phones even when the sidebar is hidden.
+ */
+#story,
+#ui-bar ~ #story,
+#ui-bar.stowed ~ #story {
+    margin: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding-top: calc(60px + env(safe-area-inset-top, 0px));
+    box-sizing: border-box;
+    display: block;
+    z-index: 10;
+}
+
+@media screen and (max-width: 1136px) {
+    #story,
+    #ui-bar ~ #story,
+    #ui-bar.stowed ~ #story {
+        margin: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    #story,
+    #ui-bar ~ #story,
+    #ui-bar.stowed ~ #story {
+        margin: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
+}
+
+#passages {
+    max-width: min(600px, 100%) !important;
+    width: 100%;
+    margin-inline: auto;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    box-sizing: border-box;
+    overflow-x: clip;
+    overflow-wrap: anywhere;
+    word-wrap: break-word;
+    word-break: break-word;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 18px;
+    line-height: 1.6;
+}
+
+#passages .passage {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: auto;
+    text-align: left;
+    overflow-wrap: anywhere;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+#passages .passage img,
+#passages .passage video,
+#passages .passage table,
+#passages .passage pre {
+    max-width: 100%;
+}
+
+#passages .passage table {
+    display: block;
+    overflow-x: auto;
+}
+
+/* Strip the wasted spacing from the top of the passage titles */
+.passage h1:first-child {
+    margin-top: 0;
+    padding-top: 5px;
+}
+
+/* 2. Global styling for a clean, app-like feel */
+
+/* Touch-friendly Buttons */
+button {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    margin: 12px 0;
+    font-size: 1.1em;
+    font-weight: bold;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background-color: #2c3e50;
+    color: #ffffff;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    transition: transform 0.1s, background-color 0.2s;
+}
+
+button:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+button:hover {
+    background-color: #34495e;
+}
+
+/* Inline Link Styling (for choose your own adventure choices) */
+a.macro-link {
+    display: block;
+    padding: 12px;
+    margin-bottom: 10px;
+    background-color: #ffffff;
+    border: 2px solid #2c3e50;
+    border-radius: 8px;
+    color: #2c3e50;
+    text-decoration: none;
+    font-weight: bold;
+    text-align: center;
+    transition: all 0.2s;
+}
+a.macro-link:hover {
+    background-color: #e0e7ea;
+}
+/* Style the summary headers to look exactly like your buttons */
+summary {
+    display: block;
+    padding: 12px;
+    margin-bottom: 10px;
+    background-color: #ffffff;
+    border: 2px solid #2c3e50;
+    border-radius: 8px;
+    color: #2c3e50;
+    font-weight: bold;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: pointer;
+    list-style: none; /* Hides the default browser arrow if you want a clean button look */
+}
+
+summary:hover {
+    background-color: #e0e7ea;
+}
+
+/* Optional: Hides the arrow in Safari/Chrome */
+summary::-webkit-details-marker {
+    display: none;
+}
+
+/* 3. Top Header HUD (Centered and identical height for both roles) */
+.hud-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    height: calc(50px + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+    background-color: #1e272e;
+    color: #ffffff; 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: clamp(0.75em, 2.5dvw, 1.1em);
+    white-space: nowrap;
+    box-sizing: border-box;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* 4. Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+/* Host invite modal — reopen Playroom QR after leaving the lobby */
+.sim-invite-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    box-sizing: border-box;
+}
+
+.sim-invite-modal.hidden {
+    display: none !important;
+}
+
+.sim-invite-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.sim-invite-panel {
+    position: relative;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 24px 20px 20px;
+    max-width: 320px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
+}
+
+.sim-invite-panel h2 {
+    margin: 0 0 12px;
+    font-size: 1.25em;
+}
+
+.sim-invite-status {
+    margin: 0 0 16px;
+    font-size: 0.95em;
+    line-height: 1.4;
+}
+
+.sim-invite-qr {
+    display: block;
+    width: 240px;
+    height: 240px;
+    max-width: 100%;
+    margin: 0 auto 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.sim-invite-room {
+    margin: 0 0 16px;
+    font-size: 0.95em;
+}
+
+.sim-invite-room code {
+    font-size: 1.1em;
+    letter-spacing: 0.05em;
+}
+
+.sim-invite-close {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 4px 10px !important;
+    font-size: 1.5em !important;
+    line-height: 1;
+    background: transparent !important;
+    color: #555 !important;
+    box-shadow: none !important;
+}
+
+.sim-invite-copy {
+    background-color: #27ae60 !important;
+}
+
+.sim-invite-copy:hover {
+    background-color: #219a52 !important;
+}
+
+button.host-invite-btn {
+    background-color: #3498db;
+    margin-bottom: 16px;
+}
+
+button.host-invite-btn:hover {
+    background-color: #2980b9;
+}
+
+#loading-overlay {
+    text-align: center;
+    padding: 20px;
+    font-weight: bold;
+    color: #2c3e50;
+    background-color: #e0e7ea;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+
+/* 5. Observer footer toolbar */
+#observer-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    background-color: black; 
+    color: white;
+    padding: 5px max(10px, env(safe-area-inset-right)) calc(5px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left));
+    border-top: 2px solid #333;
+    z-index: 1000;
+    box-sizing: border-box;
+}
+
+.eval-grid,
+.dynamic-eval-grid,
+.patient-choice-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto 8px auto;
+    box-sizing: border-box;
+}
+
+.eval-grid > .eval-wrap,
+.dynamic-eval-grid > .eval-wrap,
+.patient-choice-grid > .eval-wrap {
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
+/* Odd last button (1, 3, 5… options) — one column wide, centered in the grid */
+.dynamic-eval-grid > .eval-wrap:last-child:nth-child(odd),
+.eval-grid > .eval-wrap:last-child:nth-child(odd),
+.patient-choice-grid > .eval-wrap:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    width: calc(50% - 4px);
+    justify-self: center;
+}
+
+/* Full-width footer controls aligned to the eval grid (inhaler, patient next) */
+.footer-control-row,
+#patient-footer-next,
+#patient-footer-choices,
+.dynamic-eval-root,
+.patient-choices-root {
+    max-width: 800px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+}
+
+.footer-control-row.inhaler-row {
+    margin-top: 5px;
+    margin-bottom: 8px;
+}
+
+#observer-footer .inhaler-row .eval-wrap,
+#observer-footer .inhaler-row .gray-box {
+    display: block;
+    width: 100%;
+}
+
+#observer-footer .inhaler-row .blue-wrap button {
+    width: 100%;
+    margin: 0;
+    height: clamp(45px, 8dvh, 70px);
+}
+
+#observer-footer .inhaler-row .gray-box {
+    width: 100%;
+    height: clamp(45px, 8dvh, 70px);
+}
+/* 6. Text Formating */
+.holland {
+  color: green;
+  font-weight: bold;
+}
+.observer {
+  color: blue;
+  font-weight: bold;
+}
+  /* Core Heading Base Class */
+
+    .center-heading1 {
+      font-size: 2em;
+      font-weight: bold;
+      text-align: center;
+      display: block;
+      margin-bottom: 2px; /* Super small gap below main title */
+      line-height: 1.2;
+    }
+
+    .center-heading2 {
+      font-size: 1.15em;    /* Balanced size for subtitle */
+      font-weight: bold;
+      text-align: center;
+      display: block;
+      margin-bottom: 4px;  /* Small gap below author line */
+      line-height: 1.0;
+    }
+
+    .center-heading3 {
+      font-size: 0.9em;    /* Clean, unobtrusive footer */
+      font-weight: bold;
+      text-align: center;
+      display: block;
+      margin-bottom: 20px; /* Healthy breathing room before game content */
+      line-height: 1.0;
+    }
+/* ============================================================= 
+	7. Scaled up the buttons to be larger and easier to read/tap 
+   ============================================================= */
+#observer-footer button {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: clamp(45px, 8dvh, 70px);
+    border-radius: 6px;
+    box-sizing: border-box;
+    line-height: 1.2;
+    padding: 4px;
+    width: 100%;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+    transition: opacity 0.2s;
+}
+
+#observer-footer button:hover {
+    opacity: 0.8;
+}
+
+#observer-footer .eval-title { font-weight: bold; font-size: clamp(0.85em, 2.5dvw, 1.1em); }
+#observer-footer .eval-sub { font-size: clamp(0.7em, 2dvw, 0.9em); opacity: 0.9; margin-top: 2px; }
+
+.dynamic-eval-heading {
+    text-align: center;
+    font-size: 0.75em;
+    color: #aaa;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.dynamic-eval-root {
+    margin-bottom: 10px;
+    margin-top: 4px;
+}
+
+/* Green Buttons (Left) */
+.green-wrap button { background-color: #28a745; color: white; }
+.green-wrap button:disabled { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; cursor: not-allowed; opacity: 1; }
+
+/* Red Buttons (Right) */
+.red-wrap button { background-color: #dc3545; color: white; }
+.red-wrap button:disabled { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; cursor: not-allowed; opacity: 1; }
+
+/* Blue Inhaler Button — width set by .inhaler-row / eval-grid context */
+.blue-wrap button { background-color: #007bff; color: white; }
+
+/* Gray Box for missing Inhaler */
+.gray-box {
+    background-color: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #d6d8db;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 6px;
+}
+
+/* 8. Patient footer toolbar (mirrors observer layout) */
+#patient-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    background-color: #1e272e;
+    color: #ffffff;
+    padding: 8px max(10px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left));
+    border-top: 2px solid #333;
+    z-index: 1000;
+    box-sizing: border-box;
+}
+
+.patient-footer-heading {
+    text-align: center;
+    font-size: 0.75em;
+    color: #aaa;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.patient-consequence {
+    text-align: center;
+    padding: 10px 8px;
+    font-size: 1em;
+    line-height: 1.35;
+}
+
+.patient-footer-hint {
+  	text-align: center;
+  	padding: 4px 4px;
+ 	width: 100% !important;
+    font-size: 0.95em;
+}
+
+#patient-footer .patient-choice-btn,
+#patient-footer .patient-next-btn {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: clamp(45px, 8dvh, 64px);
+    border-radius: 6px;
+    box-sizing: border-box;
+    line-height: 1.2;
+    padding: 8px;
+    width: 100%;
+    margin: 0;
+    border: none;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    color: #fff;
+}
+
+#patient-footer .patient-next-btn {
+    background-color: #2c3e50;
+    min-height: clamp(48px, 9dvh, 72px);
+    width: 100%;
+    max-width: 100%;
+}
+
+#patient-footer .patient-next-btn:hover {
+    background-color: #34495e;
+}
+
+#patient-footer .eval-wrap.green-wrap .patient-choice-btn {
+    background-color: #28a745;
+}
+
+#patient-footer .eval-wrap.red-wrap .patient-choice-btn {
+    background-color: #dc3545;
+}
+
+#patient-footer .eval-wrap.blue-wrap .patient-choice-btn {
+    background-color: #007bff;
+}
+
+/* Patient choice themes (add new themes as .yourname-wrap in CSS) */
+#patient-footer .eval-wrap.hot-wrap .patient-choice-btn {
+    background-color: #ff4500;
+}
+
+#patient-footer .eval-wrap.warm-wrap .patient-choice-btn {
+    background-color: #ffb300;
+    color: #2c3e50;
+}
+
+#patient-footer .eval-wrap.cold-wrap .patient-choice-btn {
+    background-color: #17a2b8;
+}
+
+#patient-footer .eval-wrap.green-wrap .patient-choice-btn:hover {
+    background-color: #28a745;
+}
+
+#patient-footer .eval-wrap.red-wrap .patient-choice-btn:hover {
+    background-color: #dc3545;
+}
+
+#patient-footer .eval-wrap.blue-wrap .patient-choice-btn:hover {
+    background-color: #007bff;
+}
+
+#patient-footer .eval-wrap.hot-wrap .patient-choice-btn:hover {
+    background-color: #ff4500;
+}
+
+#patient-footer .eval-wrap.warm-wrap .patient-choice-btn:hover {
+    background-color: #ffb300;
+}
+
+#patient-footer .eval-wrap.cold-wrap .patient-choice-btn:hover {
+    background-color: #17a2b8;
+}
+
+#patient-footer button.patient-choice-btn:hover {
+    filter: brightness(1.06);
+}
+
+#patient-footer .eval-wrap.warm-wrap .patient-choice-btn:hover {
+    filter: brightness(0.96);
+}
+
+#patient-footer .eval-title {
+    font-weight: bold;
+    font-size: clamp(0.9em, 2.5dvw, 1.1em);
+}
+
+#patient-footer .eval-sub {
+    font-size: clamp(0.75em, 2dvw, 0.9em);
+    opacity: 0.9;
+    margin-top: 2px;
+}
+
+/* Room for fixed footers */
+body.role-observer #passages {
+    padding-bottom: calc(45dvh + env(safe-area-inset-bottom, 0px));
+}
+
+body.role-patient #passages {
+    padding-bottom: calc(38dvh + env(safe-area-inset-bottom, 0px));
+}
