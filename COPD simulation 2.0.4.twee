@@ -1,5 +1,5 @@
 :: StoryTitle
-COPD simulation 2.0.7
+COPD simulation 2.0.8
 
 
 :: StoryData
@@ -21,20 +21,20 @@ COPD simulation 2.0.7
 :: Breakfast [simulation activity] {"position":"1400,650","size":"100,100"}
 !Breakfast Time
 <hr>\
-<<if $myRole == "patient">>\
-It's time for breakfast. What would you like to have for breakfast today @@holland;Mr. Holland@@? As you think about what to have you try figure out which option will give you the most energy for your errands today.
+<<if State.variables.myRole == "patient">>\
+It's time for breakfast. What would you like to have for breakfast today @@.holland;Mr. Holland@@? As you think about what to have you try figure out which option will give you the most energy for your errands today.
 
-<<patient-choices "Breakfast choices"
-	"A 24-once high protein smoothie and a 20-ounce cup of coffee | -2 | warm | red | Too much liquid all at once makes you feel really full and makes it harder to breathe"
-    "An 8-ouncel cup of coffee, cottage cheese with fruit | 1 | warm | green | Just the right amount of food and liquid in one meal is easier for you to eat . You feel refreshed and plan to pack a protein bar as a snack for later"
-	"An 8-ounce cup of coffee, a glass of orange juice, two slices of toast, two fried eggs, two turkey sausage links and an apple | -1 | warm | red | It was delicious, but your body can't handle eating the way you did as a teenager anymore. All that food and liquid was filling and made it harder to breath"
+<<patient-choices "Breakfast choices" "no-eval"
+	"A 24-once high protein smoothie and a 20-ounce cup of coffee | -2 | warm | red | Too much liquid all at once makes you feel really full and makes it harder to breathe | | Points+=1"
+    "An 8-ounce cup of coffee, cottage cheese with fruit | 1 | warm | green | Just the right amount of food and liquid in one meal is easier for you to eat . You feel refreshed and plan to pack a protein bar as a snack for later | | Points+=1"
+	"An 8-ounce cup of coffee, a glass of orange juice, two slices of toast, two fried eggs, two turkey sausage links and an apple | -2 | warm | red | It was delicious, but your body can't handle eating the way you did as a teenager anymore. All that food and liquid was filling and made it harder to breath | | Points+=1"
 >>\
 
 <<patient-next "Time to run errands" "Hallway_Out">>\
 
 <<else>>\
 
-@@holland;Mr. Holland@@ is going to pick what he wants for breakfast. Here are his options this morning. Which do you think he'll choose? What will give him the most energy for the busy day ahead?
+@@.holland;Mr. Holland@@ is going to pick what he wants for breakfast. Here are his options this morning. Which do you think he'll choose? What will give him the most energy for the busy day ahead?
 
 * A 24-once high protein smoothie and a 20-ounce cup of coffee
 * An 8-ouncel cup of coffee, cottage cheese with fruit
@@ -48,7 +48,7 @@ It's time for breakfast. What would you like to have for breakfast today @@holla
 :: Dressing [simulation activity] {"position":"1600,650","size":"100,100"}
 ! Getting Dressed
 <hr>\
-<<if $myRole == "patient">>\
+<<if State.variables.myRole == "patient">>\
 Time to get dressed for the day. ''Make sure to put on your socks and shoes'' so you can run your errands.
 
 <<patient-next "Time for breakfast!" "Breakfast">>\
@@ -68,6 +68,17 @@ It's time for @@.holland;Mr Holland@@ to get dressed. Once they are done getting
 <!--[[Breakfast]]-->
 
 
+:: Errands_Hub [simulation] {"position":"1600,1100","size":"100,100"}
+! Whistle Stop Park
+<hr>\
+<<if $myRole == "patient">>\
+You've made it to Whistle Stop Park. Your errands await — grocery store, pharmacy, clinic, and more (coming soon).
+
+<<else>>\
+@@.holland;Mr. Holland@@ has arrived at Whistle Stop Park. More errand stations will be added here.
+<</if>>
+
+
 :: Game_Over_Energy {"position":"1000,100","size":"100,100"}
 ! Game Over
 
@@ -83,7 +94,7 @@ Your heart is racing and feels like it is about to jump out of your chest. It hu
 :: Good_Morning_Mr._Holland [simulation activity] {"position":"1800,450","size":"100,100"}
 ! Good Morning
 <hr>\
-<<if $myRole == "patient">>\
+<<if State.variables.myRole == "patient">>\
 Your alarm wakes you and its time to get up. You get the strangest feeling that this was the same song you woke up to yesterday morning...
 
 Before you spend too much time thinking about the radio playlist you remember you've got a lot of things to do today. You hope that you will be able to get it all done.
@@ -99,30 +110,53 @@ Once you are fully standing and ready to start your day, click below to head to 
 <hr>\
 Tell @@.holland;Mr. Holland@@ to physically get out of bed. Observe their actions carefully as they do this.
     
-Once they are fully standing, click the appropriate evaluation below.
+Once he is fully standing, click the appropriate evaluation below.
 <<dynamic-eval "Activity: Getting Out of Bed"
-  "They sat and rested on the edge before standing | -1 | 1 | satAndRested | green"
-  "They got straight out of bed without resting | -2 | 1 | rushed | red"
+  "He sat and rested on the edge before standing | -1 | 1 | satAndRested | green"
+  "He got straight out of bed without resting | -2 | 1 | rushed | red"
 >>\
 <</if>>
 
 <!--[[Showering]]-->
 
 
+:: Hallway_In_Repeat [simulation activity] {"position":"1400,800","size":"100,100"}
+<<if State.variables.myRole == "patient">>\
+!Walking back to get $yourItem
+<hr>\
+@@.holland;Mr. Holland@@ Go ahead and walk back to your apartment to pick up $yourItem. 
+
+<<patient-next "Back in your apartment" "Item_Pickup">>\
+
+<<else>>\
+!Walking back to get $hisItem
+<hr>\
+@@.holland;Mr. Holland@@ needs to walk back inside to retrieve $hisItem. Evaluate how he moves through the building on the way back to his apartment.
+
+<<dynamic-eval "Activity: Walking up stairs"
+" They took the elevator | -1 | 1 | elevator | green | Taking the elevator make is a lot easier | green"
+"They took the stairs | -7 | 1 | stairs | red | You can't believe you made it up all those stairs. It felt like climbing a mountain! | red"
+>>
+
+<</if>>
+
+<!--[[Item_Pickup]]-->
+
+
 :: Hallway_Out [simulation activity] {"position":"1200,650","size":"100,100"}
 !Walking out to the lobby
 <hr>\
-<<if $myRole == "patient">>\
+<<if State.variables.myRole == "patient">>\
 Now that you are done with breakfast it's time to start your day. Go ahead and start walking down stairs to the lobby.
 
 <<patient-next "Time to head outside" "Wildcard_Router">>
 
 <<else>>\
-Now that @@holland;Mr. Holland@@ is done with his breakfast he is ready to start his day. His first step is to walk down to the lobby. As he navigates the hallway make sure to evaluate his actions. Use the general observer controls to record if he ''sits in a chair to rest'' along the way or if he ''rushes''. 
+Now that @@.holland;Mr. Holland@@ is done with his breakfast he is ready to start his day. His first step is to walk down to the lobby. As he navigates the hallway make sure to evaluate his actions. Use the general observer controls to record if he ''sits in a chair to rest'' along the way or if he ''rushes''. 
 
 <<dynamic-eval "Activity: Walking down stairs"
-" They used the stairs | -1 | 1 | satAndRested | green | You're dressed and ready for breakfast | green"
-"They took the elevator | -3 | 1 | standing | red | Even putting your clothes on for the day makes you feel winded, you wonder if you'll be able to do all your errands today | red"
+" They took the elevator | -1 | 1 | elevator | green | You're glad your apartment has an elevator | green"
+"They took the stairs | -3 | 1 | stairs | red | Even going down the stairs takes a lot of energy | red"
 >>
 
 <</if>>
@@ -130,10 +164,47 @@ Now that @@holland;Mr. Holland@@ is done with his breakfast he is ready to start
 <!--[[Wildcard_Router]]-->
 
 
+:: Hallway_Out_Again {"position":"1800,800","size":"100,100"}
+!Walking back downstairs
+<hr>\
+<<if State.variables.myRole == "patient">>\
+You have $yourItem and head back down stairs. Time to start those errands
+
+<<patient-next "Time to head outside" "Whistle_Stop_Out">>
+
+<<else>>\
+Now that @@holland;Mr. Holland@@ has $hisItem its time to head back downstairs again. Use the general observer controls to record if he ''sits in a chair to rest'' along the way or if he ''rushes''. 
+
+<<dynamic-eval "Activity: Walking down stairs"
+" They took the elevator | -1 | 1 | elevator | green | You're glad your apartment has an elevator | green"
+"They took the stairs | -3 | 1 | stairs | red | Even going down the stairs takes a lot of energy | red"
+>>
+
+<</if>>
+
+<!--[[Whistle_Stop_Out]]-->
+
+
+:: Item_Pickup [simulation activity] {"position":"1600,800","size":"100,100"}
+! Back Inside
+<hr>\
+<<if State.variables.myRole == "patient">>\
+You're back at your apartment and grab $yourItem. It's taxing having to retrace your steps, but your glad you did. It could have been dangerous going outside without $yourItem.
+
+<<patient-next "Head back downstairs again" "Hallway_Out_Again">>
+
+<<else>>
+@@.holland;Mr. Holland@@ is back in his apartment to pick up $hisItem. It takes a lot of energy to retrace your steps. If your were in @@.holland;Mr. Holland's@@ role would you have gone back for $yourItem or kept going without it?
+
+<</if>>
+
+<!--[[Hallway_Out_Again]]-->
+
+
 :: Lotion [simulation activity] {"position":"1800,650","size":"100,100"}
 !Lotion
 <hr>\
-<<if $myRole == "patient">>\
+<<if State.variables.myRole == "patient">>\
 Your skin has been feeling dry lately. Perhaps some lotion would help your skin feel better. What would you like to do?
 
 <<patient-choices "Lotion choices"
@@ -225,17 +296,18 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
 
 :: PassageHeader {"position":"500,200","size":"100,100"}
 <<nobr>>
+<<if tags().includes("simulation")>>
+    <<run SimApp.syncFromPlayroom()>>
+    <<run State.variables.myRole = window.SimApp ? SimApp.getRole() : State.variables.myRole>>
+<</if>>
 <<script>>
     /* Restore role CSS class after SugarCube passage transitions */
-    var role = window.SimApp && (window.SimApp.myRole || State.variables.myRole);
+    var role = window.SimApp && SimApp.getRole();
     if (role) {
         $("body").removeClass("role-patient role-observer").addClass("role-" + role);
     }
 <</script>>
 <<if tags().includes("simulation")>>
-    /* Mirror persistent role + pull latest Playroom stats for this passage render */
-    <<run State.variables.myRole = window.SimApp.myRole || State.variables.myRole>>
-    <<run SimApp.syncFromPlayroom()>>
     <<set $Energy to SimApp.getVal("Energy")>>
     <<set $Inhaler to SimApp.getVal("Inhaler")>>
     <<set $Points to SimApp.getVal("Points")>>
@@ -328,7 +400,7 @@ Please coordinate with your partner. One of you must be the Patient, and the oth
 :: Showering [simulation activity] {"position":"2000,450","size":"100,100"}
 ! Showering
 <hr>\
-<<if $myRole == "patient">>\
+<<if State.variables.myRole == "patient">>\
 First things first — you could use a shower. Walk over to the shower station.
 
 Once you are there, what temperature will you set the water to?
@@ -629,7 +701,7 @@ setTimeout(function () {
 :: Teeth_Brushing [simulation activity] {"position":"2000,650","size":"100,100"}
 !Teeth Brushing
 <hr>\
-<<if $myRole == "patient">>\
+<<if State.variables.myRole == "patient">>\
 Now that you are done showering it is time to brush your teeth. Go ahead and walk to the sink and brush your teeth.
 
 <<patient-next "Your skin has been feeling dry, how about some lotion?" "Lotion">>\
@@ -639,8 +711,8 @@ Now that you are done showering it is time to brush your teeth. Go ahead and wal
 Now that @@.holland;Mr. Holland@@ is done showering he needs to brush his teeth. Go ahead to assess what technique he uses as he brushes his teeth,
 
 <<dynamic-eval "Activity: Brushing Teeth" 
-"They brushed sitting down | -1 | +1 | satAndRested | green | sitting down for this task helped conserve your energy | green" 
-"They brushed standing up | -2 | +1 | standing | red | Even small activities of daily living take their toll on your energy | red" >>\
+"He brushed sitting down | -1 | +1 | satAndRested | green | sitting down for this task helped conserve your energy | green" 
+"He brushed standing up | -2 | +1 | standing | red | Even small activities of daily living take their toll on your energy | red" >>\
 
 <</if>>
 
@@ -656,7 +728,7 @@ You are breathing great right now — look at the top of the page. How about try
 Go ahead and do them now, then tap the button below when you are finished.
 <hr>\
 <<patient-choices "Practice Activity"
-  "Do 5 jumping jacks (click when done) | 0 | blue | "
+  "Do 5 jumping jacks (click when done) | 0 | blue | red | You're not sure that was wise"
 >>\
 <<patient-next "Continue" "Tutorial_Rest">>
 <<else>>\
@@ -681,11 +753,11 @@ Once you are seated and breathing, tap the button below.
 >>\
 <<patient-next "Start Simulation<br>Good Morning Mr. Holland" "Good_Morning_Mr._Holland" "reset">>\
 <<else>>\
-@@.holland;Mr. Holland@@ should sit and rest. Evaluate their recovery technique below.
+@@.holland;Mr. Holland@@ should sit and rest. Evaluate his recovery technique below.
 <<dynamic-eval "Practice: Rest & Recovery"
   "Sat and did pursed lip breathing | +4 | 0 | pursedLip | green |That feels a little better. You are still winded, but not as bad. | green| "
 >>\
-Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, they will start the simulation from their screen.
+Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will start the simulation from their screen.
 <</if>>
 <!--[[Good_Morning_Mr._Holland]]-->
 
@@ -744,6 +816,29 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, they will s
 <!--[[Simulation_Hub]]-->
 
 
+:: Whistle_Stop_Out [simulation activity] {"position":"2200,800","size":"100,100"}
+! Whistle Stop Park
+<hr>\
+<<if $myRole == "patient">>\
+You start walking toward Whistle Stop Park to begin your errands for the day.
+
+<<patient-next "Continue your errands" "Errands_Hub">>\
+
+<<else>>\
+
+@@.holland;Mr. Holland@@ is walking out toward Whistle Stop Park. Evaluate his pace and technique as he heads out.
+
+<<dynamic-eval "Activity: Walk to Whistle Stop Park"
+  "Walked at a steady, energy-conserving pace | -1 | 1 | satAndRested | green | A good start to a busy day | green"
+  "Walked too fast and became short of breath | -3 | 0 | rushed | red | You need to slow down — you've got a long day ahead | red"
+  "Used pursed-lip breathing while walking | 0 | 1 | pursedLip | green | That's a great technique for conserving energy while walking | green"
+>>\
+
+<</if>>
+
+<!--[[Errands_Hub]]-->
+
+
 :: Widgets [widget] {"position":"500,400","size":"100,100"}
 <<nobr>>
 /* SMART WIDGET: Energy changes sync to Playroom; triggers shared game over */
@@ -759,7 +854,7 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, they will s
     <<run $("#energy-display").text(_newEnergy)>>
 
     <<if _newEnergy <= 0 and !tags().includes("briefing")>>
-        <<run SimApp.goToSharedPassage("Game_Over_Energy")>>
+        <<run SimApp.scheduleGameOver("Game_Over_Energy")>>
     <</if>>
 <</widget>>
 
@@ -773,8 +868,8 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, they will s
 
     <<Adjust_Energy 2>>
 
-    <<if _newInhaler >= 7 and !tags().includes("briefing")>>
-        <<run SimApp.goToSharedPassage("Game_Over_Inhaler")>>
+    <<if _newInhaler >= 7 and !tags().includes("briefing") and !SimApp.isGameOverPending()>>
+        <<run SimApp.scheduleGameOver("Game_Over_Inhaler")>>
     <</if>>
 <</widget>>
 
@@ -863,7 +958,7 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, they will s
 :: Wildcard1 [simulation activity] {"position":"1300,1000","size":"100,100"}
 ! Forgotten Inhaler!
 <hr>\
-<<if $myRole == "patient">>\
+<<if State.variables.myRole == "patient">>\
 You step outside and pat your pockets. Oh no... you realize you left your rescue inhaler sitting on the counter inside!
 
 What do you want to do?
@@ -887,65 +982,23 @@ What do you want to do?
 <!--[[Whistle_Stop_Out]]-->
 
 
-:: Hallway_In_Repeat [simulation activity] {"position":"1400,1100","size":"100,100"}
-! Back Inside for Your Inhaler
+:: Wildcard2 [simulation activity] {"position":"1300,1200","size":"100,100"}
+! Cigarette Craving
 <hr>\
-<<if $myRole == "patient">>\
-You head back upstairs to your apartment and grab your rescue inhaler from the counter. Relief — it's back in your pocket where it belongs.
+<<if State.variables.myRole == "patient">>\
 
-<<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>\
+As you step outside, a strong craving for a cigarette hits you out of nowhere.
 
-<<else>>\
-
-@@.holland;Mr. Holland@@ walked back inside to retrieve his inhaler. Evaluate how he moves through the building on the way back to his apartment.
-
-<<dynamic-eval "Activity: Walk Back for Inhaler"
-  "Walked back at a reasonable pace | -1 | 1 | satAndRested | green | You're glad you went back for it | green"
-  "Rushed back upstairs | -3 | 0 | rushed | red | You're winded from hurrying, but at least you have your inhaler | red"
-  "Used the elevator | -1 | 1 | elevator | green | Smart — you saved your energy for the day ahead | green"
+<<patient-choices "Cigarette craving?" "no-eval"
+  "You know you shouldn't, but the urge is overpowering | -5 | red | red | You light up a cigarette and take a couple long slow drags. It doesn't take long for you to start coughing and wheezing. You know you should quit, but sometimes its really hard.
 >>\
 
-<</if>>
+<<patient-next "Start walking to Whistle Stop Park""Whistle_Stop_Out">>
 
-<!--[[Whistle_Stop_Out]]-->
-
-
-:: Whistle_Stop_Out [simulation activity] {"position":"1500,1100","size":"100,100"}
-! Whistle Stop Park
-<hr>\
-<<if $myRole == "patient">>\
-You start walking toward Whistle Stop Park to begin your errands for the day.
-
-<<patient-next "Continue your errands" "Errands_Hub">>\
-
-<<else>>\
-
-@@.holland;Mr. Holland@@ is walking out toward Whistle Stop Park. Evaluate his pace and technique as he heads out.
-
-<<dynamic-eval "Activity: Walk to Whistle Stop Park"
-  "Walked at a steady, energy-conserving pace | -1 | 1 | satAndRested | green | A good start to a busy day | green"
-  "Walked too fast and became short of breath | -3 | 0 | rushed | red | You need to slow down — you've got a long day ahead | red"
-  "Used pursed-lip breathing while walking | 0 | 1 | pursedLip | green | That's a great technique for conserving energy while walking | green"
->>\
+<<Else>>\
+@@.holland;Mr. Holland@@ suddenly gets an over powering craving for cigarette. He can't resist, and lights one up. Addiction can be hard to overcome even when you know it is hurting you.
 
 <</if>>
-
-<!--[[Errands_Hub]]-->
-
-
-:: Errands_Hub [simulation] {"position":"1600,1100","size":"100,100"}
-! Whistle Stop Park
-<hr>\
-<<if $myRole == "patient">>\
-You've made it to Whistle Stop Park. Your errands await — grocery store, pharmacy, clinic, and more (coming soon).
-
-<<else>>\
-@@.holland;Mr. Holland@@ has arrived at Whistle Stop Park. More errand stations will be added here.
-<</if>>
-
-
-:: Wildcard2 {"position":"1300,1200","size":"100,100"}
-
 
 
 :: Wildcard3 {"position":"1500,1300","size":"100,100"}
@@ -967,7 +1020,7 @@ You've made it to Whistle Stop Park. Your errands await — grocery store, pharm
 :: Wildcard_Router [simulation] {"position":"1600,1100","size":"100,100"}
 <<silently>>
 <<if typeof Playroom !== "undefined" and Playroom.isHost()>>
-<<set _wildRoll to random(1, 6)>>
+<<set _wildRoll to 1>>
 <<run SimApp.setVal("wildRoll", _wildRoll, true); SimApp.setVal("wildCarded", true, true)>>
 <<else>>
 <<run SimApp.syncFromPlayroom()>>
@@ -975,17 +1028,17 @@ You've made it to Whistle Stop Park. Your errands await — grocery store, pharm
 <</if>>
 <</silently>>
 <<if _wildRoll is 1>>
-<<run SimApp.setVal("yourItem", "your inhaler", true); SimApp.setVal("hisItem", "his inhaler", true); SimApp.goToSharedPassage("Wildcard1")>>
+<<run SimApp.setVal("yourItem", "your inhaler", true); SimApp.setVal("hisItem", "his inhaler", true); SimApp.deferGoToSharedPassage("Wildcard1")>>
 <<elseif _wildRoll is 2>>
-<<run SimApp.goToSharedPassage("Wildcard2")>>
+<<run SimApp.deferGoToSharedPassage("Wildcard2")>>
 <<elseif _wildRoll is 3>>
-<<run SimApp.setVal("yourItem", "a mask", true); SimApp.setVal("hisItem", "a mask", true); SimApp.goToSharedPassage("Wildcard3")>>
+<<run SimApp.setVal("yourItem", "a mask", true); SimApp.setVal("hisItem", "a mask", true); SimApp.deferGoToSharedPassage("Wildcard3")>>
 <<elseif _wildRoll is 4>>
-<<run SimApp.setVal("yourItem", "a scarf", true); SimApp.setVal("hisItem", "a scarf", true); SimApp.goToSharedPassage("Wildcard4")>>
+<<run SimApp.setVal("yourItem", "a scarf", true); SimApp.setVal("hisItem", "a scarf", true); SimApp.deferGoToSharedPassage("Wildcard4")>>
 <<elseif _wildRoll is 5>>
-<<run SimApp.goToSharedPassage("Wildcard5")>>
+<<run SimApp.deferGoToSharedPassage("Wildcard5")>>
 <<else>>
-<<run SimApp.goToSharedPassage("Wildcard6")>>
+<<run SimApp.deferGoToSharedPassage("Wildcard6")>>
 <</if>>
 
 <!--[[Wildcard1]]-->
@@ -1152,6 +1205,29 @@ window.SimApp = {
     players: {},
     myRole: "",
     _syncTimer: null,
+    _gameOverInterval: null,
+    _gameOverFinalizing: false,
+
+    GAME_OVER_SECONDS: 8,
+    GAME_OVER_MESSAGES: {
+        Game_Over_Energy: "You have pushed your body too far...",
+        Game_Over_Inhaler: "You have used your rescue inhaler too many times..."
+    },
+
+    PATIENT_MESSAGE_COLORS: {
+        green: "#28a745",
+        red: "#dc3545",
+        yellow: "#ffc107",
+        white: "#ffffff"
+    },
+
+    normalizePatientMessageColor: function (msgColor, energy) {
+        var c = String(msgColor || "").toLowerCase();
+        if (this.PATIENT_MESSAGE_COLORS[c]) {
+            return c;
+        }
+        return energy >= 0 ? "green" : "red";
+    },
 
     /**
      * Passages the Observer must NOT be pulled into via tether.
@@ -1168,7 +1244,8 @@ window.SimApp = {
         "wildCarded", "wildRoll", "yourItem", "hisItem",
         "visitedHallway", "visitedGrocery", "visitedPharmacy",
         "visitedToyStore", "visitedClinic", "errandsRun",
-        "hasInhaler", "hasMedications", "hasToy"
+        "hasInhaler", "hasMedications", "hasToy",
+        "pendingGameOver", "gameOverDeadline"
     ],
 
     /** True when an active simulation is already running in this room */
@@ -1211,7 +1288,14 @@ window.SimApp = {
         errandsRun: 0,
         hasInhaler: true,
         hasMedications: false,
-        hasToy: false
+        hasToy: false,
+        pendingGameOver: "",
+        gameOverDeadline: 0
+    },
+
+    isGameOverPending: function () {
+        var pending = this.getVal("pendingGameOver");
+        return !!(pending && String(pending).length);
     },
 
     isBriefingPassage: function (passageName) {
@@ -1478,6 +1562,145 @@ window.SimApp = {
         }
     },
 
+    /** Defer game over so players can read the current passage */
+    scheduleGameOver: function (targetPassage) {
+        if (!targetPassage || this.isBriefingPassage()) {
+            return;
+        }
+        if (this.isGameOverPending()) {
+            return;
+        }
+        var deadline = Date.now() + this.GAME_OVER_SECONDS * 1000;
+        this.setVal("pendingGameOver", targetPassage, true);
+        this.setVal("gameOverDeadline", deadline, true);
+        this.mountGameOverSequence();
+    },
+
+    mountGameOverSequence: function () {
+        var target = this.getVal("pendingGameOver");
+        var deadline = Number(this.getVal("gameOverDeadline"));
+        if (!target || !deadline) {
+            return;
+        }
+        var remaining = Math.ceil((deadline - Date.now()) / 1000);
+        if (remaining <= 0) {
+            this.finalizeGameOver();
+            return;
+        }
+        var message =
+            this.GAME_OVER_MESSAGES[target] || this.GAME_OVER_MESSAGES.Game_Over_Energy;
+        var $p = $("#passages .passage");
+        if (!$p.length) {
+            return;
+        }
+        $("body").addClass("game-over-pending");
+        $p.find(".game-over-sequence").remove();
+        $p.find(".game-over-separator").remove();
+        $p.append(
+            '<hr class="game-over-separator">' +
+            '<div class="game-over-sequence">' +
+            '<p class="game-over-warning">' +
+            this._escapeHtml(message) +
+            "</p>" +
+            '<p class="game-over-countdown-line">Simulation ending in: ' +
+            '<span class="game-over-countdown">' +
+            remaining +
+            "</span></p>" +
+            "</div>"
+        );
+        var self = this;
+        if (!this._gameOverInterval) {
+            this._gameOverInterval = setInterval(function () {
+                self._updateGameOverCountdown();
+            }, 1000);
+        }
+    },
+
+    _updateGameOverCountdown: function () {
+        var target = this.getVal("pendingGameOver");
+        var deadline = Number(this.getVal("gameOverDeadline"));
+        if (!target || !deadline) {
+            this.clearGameOverSequence();
+            return;
+        }
+        var remaining = Math.ceil((deadline - Date.now()) / 1000);
+        if (remaining <= 0) {
+            this.finalizeGameOver();
+            return;
+        }
+        var $countdown = $("#passages .passage .game-over-countdown");
+        if ($countdown.length) {
+            $countdown.text(remaining);
+        } else {
+            this.mountGameOverSequence();
+        }
+    },
+
+    refreshGameOverSequence: function () {
+        if (!this.isGameOverPending()) {
+            return;
+        }
+        var deadline = Number(this.getVal("gameOverDeadline"));
+        if (!deadline) {
+            return;
+        }
+        if (deadline - Date.now() <= 0) {
+            this.finalizeGameOver();
+            return;
+        }
+        if (!$("#passages .passage .game-over-sequence").length) {
+            this.mountGameOverSequence();
+        } else {
+            var remaining = Math.ceil((deadline - Date.now()) / 1000);
+            $("#passages .passage .game-over-countdown").text(remaining);
+        }
+    },
+
+    finalizeGameOver: function () {
+        if (this._gameOverFinalizing) {
+            return;
+        }
+        var target = this.getVal("pendingGameOver");
+        if (!target) {
+            this.clearGameOverSequence();
+            return;
+        }
+        this._gameOverFinalizing = true;
+        this.clearGameOverSequence();
+        this.setVal("pendingGameOver", "", true);
+        this.setVal("gameOverDeadline", 0, true);
+        this.goToSharedPassage(target);
+        var self = this;
+        setTimeout(function () {
+            self._gameOverFinalizing = false;
+        }, 500);
+    },
+
+    clearGameOverSequence: function () {
+        if (this._gameOverInterval) {
+            clearInterval(this._gameOverInterval);
+            this._gameOverInterval = null;
+        }
+        $("body").removeClass("game-over-pending");
+        $("#passages .passage .game-over-sequence").remove();
+        $("#passages .passage .game-over-separator").remove();
+    },
+
+    lockFooterForGameOver: function () {
+        $("body").addClass("game-over-pending");
+    },
+
+    /**
+     * Defer shared navigation to the next frame. Use from passage body (e.g. Wildcard_Router)
+     * — calling Engine.play during wikify can leave the destination passage body blank.
+     */
+    deferGoToSharedPassage: function (passageName) {
+        var self = this;
+        setTimeout(function () {
+            self.goToSharedPassage(passageName);
+        }, Engine.minDomActionDelay || 40);
+    },
+
     /** After role pick, sync lobby passage so tether does not yank to Role_Selection */
     goToWaitingRoom: function () {
         this.setVal("currentPassage", "Waiting_Room", true);
@@ -1636,6 +1859,7 @@ window.SimApp = {
                 return;
             }
             self.syncFromPlayroom();
+            self.refreshGameOverSequence();
             self.syncLobbyRolesFromPlayers();
             self.broadcastLobbyAdvance();
             self.tetherToPassage();
@@ -1690,6 +1914,9 @@ window.SimApp = {
     shouldObserverTether: function (dest) {
         if (!dest || this.LOBBY_PASSAGES.indexOf(dest) !== -1) {
             return false;
+        }
+        if (dest.indexOf("Game_Over") === 0) {
+            return true;
         }
         var pd = Story.get(dest);
         return pd && pd.tags && pd.tags.includes("simulation");
@@ -1925,10 +2152,7 @@ window.SimApp = {
         if (color !== "green" && color !== "red" && color !== "blue") {
             color = energy >= 0 ? "green" : "red";
         }
-        var patientMessageColor = (parts[6] || "red").toLowerCase();
-        if (patientMessageColor !== "green" && patientMessageColor !== "red") {
-            patientMessageColor = energy >= 0 ? "green" : "red";
-        }
+        var patientMessageColor = this.normalizePatientMessageColor(parts[6] || "red", energy);
         return {
             label: parts[0],
             energy: energy,
@@ -1967,7 +2191,7 @@ window.SimApp = {
         }
         this.updateHud();
         if (newEnergy <= 0 && !this.isBriefingPassage()) {
-            this.goToSharedPassage("Game_Over_Energy");
+            this.scheduleGameOver("Game_Over_Energy");
             return;
         }
 
@@ -2122,13 +2346,7 @@ window.SimApp = {
             message = (parts[3] || "").trim();
             msgColor = energy >= 0 ? "green" : "red";
         }
-        if (parts.length < 6) {
-            if (msgColor !== "green" && msgColor !== "red") {
-                msgColor = energy >= 0 ? "green" : "red";
-            }
-        } else if (msgColor !== "green" && msgColor !== "red") {
-            msgColor = energy >= 0 ? "green" : "red";
-        }
+        msgColor = this.normalizePatientMessageColor(msgColor, energy);
         return {
             label: parts[0],
             energy: energy,
@@ -2235,7 +2453,7 @@ window.SimApp = {
         this.setVal("Energy", newEnergy);
         this.updateHud();
         if (newEnergy <= 0 && !this.isBriefingPassage()) {
-            this.goToSharedPassage("Game_Over_Energy");
+            this.scheduleGameOver("Game_Over_Energy");
             return false;
         }
         return true;
@@ -2248,7 +2466,8 @@ window.SimApp = {
     },
 
     _renderPatientConsequence: function (message, msgColor) {
-        var cssColor = msgColor === "green" ? "#28a745" : "#dc3545";
+        var normalized = this.normalizePatientMessageColor(msgColor, 0);
+        var cssColor = this.PATIENT_MESSAGE_COLORS[normalized];
         return (
             '<div class="patient-consequence" style="color:' +
             cssColor +
@@ -2305,9 +2524,10 @@ window.SimApp = {
             if (!choice) {
                 return;
             }
-            if (!self.applyPatientEnergy(choice.energy)) {
+            if (self.isGameOverPending()) {
                 return;
             }
+            var gameOver = !self.applyPatientEnergy(choice.energy);
             if (choice.stateOps && choice.stateOps.length) {
                 self.applyPatientChoiceStateOps(choice.stateOps);
             }
@@ -2330,6 +2550,9 @@ window.SimApp = {
             }
             choiceHtml += "</div>";
             $target.html(choiceHtml);
+            if (gameOver) {
+                self.lockFooterForGameOver();
+            }
             self.refreshPatientNextSlot();
         });
     },
@@ -2472,7 +2695,7 @@ window.SimApp = {
      1. Button label
      2. Energy change (hidden from patient UI)
      3. Button theme for CSS: green, red, blue, hot, warm, cold, …
-     4. Consequence text color: green or red (optional if 5+ fields)
+     4. Consequence text color: green, red, yellow, or white (optional if 5+ fields)
      5. Consequence message (shown after click)
 
    Energy/points are never shown on patient choice buttons.
@@ -2550,6 +2773,7 @@ window.SimApp = {
     /* Clear patient footer polling when leaving a passage */
     $(document).on(":passagestart", function () {
         if (window.SimApp) {
+            SimApp.clearGameOverSequence();
             SimApp.clearPatientFooterTimers();
             SimApp._patientNextConfig = null;
             $("#patient-footer-choices").empty();
@@ -3121,6 +3345,38 @@ button.host-invite-btn:hover {
     padding: 10px 8px;
     font-size: 1em;
     line-height: 1.35;
+}
+
+.game-over-separator {
+    margin: 1.2em 0 0.8em;
+    border: none;
+    border-top: 1px solid #ccc;
+}
+
+.game-over-sequence {
+    color: #dc3545;
+    text-align: center;
+    padding: 0.5em 0 1em;
+    line-height: 1.5;
+}
+
+.game-over-warning {
+    margin: 0 0 0.75em;
+    font-weight: bold;
+}
+
+.game-over-countdown-line {
+    margin: 0;
+}
+
+.game-over-countdown {
+    font-weight: bold;
+}
+
+body.game-over-pending #observer-footer,
+body.game-over-pending #patient-footer {
+    pointer-events: none;
+    opacity: 0.5;
 }
 
 .patient-footer-hint {

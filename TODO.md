@@ -1,6 +1,6 @@
 # COPD Simulation 2.0 — Project TODO
 
-**Version:** 2.0.7 (Beta)  
+**Version:** 2.0.8 (Beta)  
 **Repo:** [Prof-Parker/COPD_Sim_2.0](https://github.com/Prof-Parker/COPD_Sim_2.0)  
 **Last updated:** May 2026
 

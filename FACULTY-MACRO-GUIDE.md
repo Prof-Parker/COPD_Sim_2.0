@@ -75,7 +75,7 @@ Presents one or more choice buttons (e.g., water temperature, forgot inhaler dec
 - Energy is adjusted (hidden from the Patient UI)
 - Optional **Playroom state** is updated (e.g. `hasInhaler=true`) via `setVal`
 - Optional **next passage** override for branching paths
-- A consequence message appears in the footer (green or red text)
+- A consequence message appears in the footer (green, red, yellow, or white text)
 - The Patient waits for the Observer to evaluate **unless** `"no-eval"` is used
 
 ### Syntax
@@ -114,7 +114,7 @@ The second argument `"no-eval"` is optional. When present, it must come **immedi
 | 1 | **Button label** | Text on the button (required) |
 | 2 | **Energy change** | Number added to energy (e.g. `-4`, `-1`, `0`). Not shown to the Patient. |
 | 3 | **Button color** | CSS theme for the button. Built-in themes: `green`, `red`, `blue`, `hot`, `warm`, `cold`. |
-| 4 | **Message color** | `green` or `red` — color of the consequence text after the Patient clicks. |
+| 4 | **Message color** | `green`, `red`, `yellow`, or `white` — color of the consequence text after the Patient clicks. |
 | 5 | **Message** | Consequence text shown in the footer after the Patient clicks. |
 | 6 | **Next passage** *(optional)* | Exact passage name. Overrides the target in `<<patient-next>>` when **this** choice is picked. Use for branching story paths. |
 | 7+ | **State set** *(optional)* | Playroom sync via `setVal`: `key=value` (assign), `key+=n` (add), or `key-=n` (subtract). Examples: `hasInhaler=true`, `Points+=1`, `errandsRun+=1`. Field 6 may be left blank (`| | Points+=1`). |
@@ -209,7 +209,7 @@ With optional Patient feedback (tutorial / special cases):
 | 4 | **Behavior variable** | Story variable to increment (e.g. `satAndRested`, `rushed`, `standing`), or `none` |
 | 5 | **Button color** | `green`, `red`, or `blue` (optional — defaults from energy sign) |
 | 6 | **Patient message** | *(Optional)* Text shown to the Patient in the footer after this eval |
-| 7 | **Patient message color** | *(Optional)* `green` or `red` for field 6 (defaults from energy sign) |
+| 7 | **Patient message color** | *(Optional)* `green`, `red`, `yellow`, or `white` for field 6 (defaults from energy sign) |
 
 Energy and points are shown automatically as a subtitle under the button label (e.g. `-2 Energy · 1 Pts`).
 
@@ -304,8 +304,9 @@ On passages **without** `<<patient-choices>>`, the Next button appears immediate
 | Situation | Use |
 |-----------|-----|
 | Patient taps **Next** after an activity | `<<patient-next>>` → `SimApp.nextPassage` (handled by macro) |
-| Host must move **everyone** to the same passage (game over, hub, wildcard router) | `SimApp.goToSharedPassage("Passage_Name")` via `<<run>>` |
-| Random or host-only logic (e.g. `Wildcard_Router`) | Host rolls and `setVal`s shared state; both clients use `goToSharedPassage` — **not** `<<goto>>` |
+| Host must move **everyone** to the same passage (game over, hub) | `SimApp.goToSharedPassage("Passage_Name")` via `<<run>>` |
+| **Auto-router** passages that jump immediately (e.g. `Wildcard_Router`) | `SimApp.deferGoToSharedPassage("Passage_Name")` — **not** `goToSharedPassage` during passage wikify |
+| Random or host-only logic (e.g. `Wildcard_Router`) | Host rolls and `setVal`s shared state; both clients defer-navigate — **not** `<<goto>>` |
 
 **Example — synced wildcard router (host rolls, team follows):**
 
@@ -320,8 +321,9 @@ On passages **without** `<<patient-choices>>`, the Next button appears immediate
 <</if>>
 <</silently>>
 <<if _wildRoll is 1>>
-<<run SimApp.goToSharedPassage("Wildcard1")>>
-...
+<<run SimApp.setVal("yourItem", "your inhaler", true); SimApp.setVal("hisItem", "his inhaler", true); SimApp.deferGoToSharedPassage("Wildcard1")>>
+<<else>>
+<<run SimApp.deferGoToSharedPassage("Wildcard6")>>
 <</if>>
 ```
 
@@ -429,7 +431,7 @@ Observe @@.holland;Mr. Holland@@. Use General Observations in the footer if need
 
 - **Passage names are case-sensitive** — `Showering` and `showering` are different. Use underscores for spaces in names (e.g. `Good_Morning_Mr._Holland`).
 - **Pipe character `|`** separates fields. If your message text needs a literal pipe, avoid it or rephrase — there is no escape character. When using fields 6–7, keep the message in field 5 only (do not use extra pipes in the message).
-- **Energy is capped** at 15 and floored at 0. Reaching 0 energy triggers game over on normal `[simulation]` passages; `[briefing]` passages are exempt.
+- **Energy is capped** at 15 and floored at 0. Reaching 0 energy (or 7 rescue inhaler uses) triggers an **8-second in-passage countdown** before both players are moved to the shared game-over passage. `[briefing]` passages are exempt.
 - **One eval per station** — design each `<<dynamic-eval>>` so the Observer picks the single best-matching option.
 - **`"no-eval"`** — use when the Patient choice *is* the activity (Breakfast, wildcard decisions). Put movement/technique eval on the **next** passage.
 - **Branching** — pair field 6 (next passage) with field 7 (state flags). Both players receive updates through Playroom.
