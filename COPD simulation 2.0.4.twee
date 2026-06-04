@@ -68,7 +68,7 @@ It's time for @@.holland;Mr Holland@@ to get dressed. Once they are done getting
 <!--[[Breakfast]]-->
 
 
-:: Errands_Hub [simulation] {"position":"1600,1100","size":"100,100"}
+:: Errands_Hub [simulation] {"position":"2800,1100","size":"100,100"}
 ! Whistle Stop Park
 <hr>\
 <<if $myRole == "patient">>\
@@ -120,6 +120,13 @@ Once he is fully standing, click the appropriate evaluation below.
 <!--[[Showering]]-->
 
 
+:: Hallway_In [simulation activity] {"position":"2600,700","size":"100,100"}
+! Heading back home
+<hr>\
+
+Placeholder
+
+
 :: Hallway_In_Repeat [simulation activity] {"position":"1400,800","size":"100,100"}
 <<if State.variables.myRole == "patient">>\
 !Walking back to get $yourItem
@@ -164,7 +171,7 @@ Now that @@.holland;Mr. Holland@@ is done with his breakfast he is ready to star
 <!--[[Wildcard_Router]]-->
 
 
-:: Hallway_Out_Again {"position":"1800,800","size":"100,100"}
+:: Hallway_Out_Again [simulation activity] {"position":"1800,800","size":"100,100"}
 !Walking back downstairs
 <hr>\
 <<if State.variables.myRole == "patient">>\
@@ -743,7 +750,7 @@ Watch @@.holland;Mr. Holland@@ perform the practice activity. Once they finish, 
 :: Tutorial_Rest [simulation briefing activity] {"position":"1600,450","size":"100,100"}
 ! Practice: Catch Your Breath
 <hr>\
-<<if State.variables.myRole == "patient">>\
+<<if State.variables.mTutorial_RestyRole == "patient">>\
 That was a lot of work! How about you try ''sitting down and leaning over a table'' to do some pursed lip breathing and catch your breath?
 
 Once you are seated and breathing, tap the button below.
@@ -816,7 +823,7 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will sta
 <!--[[Simulation_Hub]]-->
 
 
-:: Whistle_Stop_Out [simulation activity] {"position":"2200,800","size":"100,100"}
+:: Whistle_Stop_Out [simulation activity] {"position":"2500,1100","size":"100,100"}
 ! Whistle Stop Park
 <hr>\
 <<if $myRole == "patient">>\
@@ -955,7 +962,7 @@ You start walking toward Whistle Stop Park to begin your errands for the day.
 <</nobr>>
 
 
-:: Wildcard1 [simulation activity] {"position":"1300,1000","size":"100,100"}
+:: Wildcard1 [simulation activity] {"position":"800,1000","size":"100,100"}
 ! Forgotten Inhaler!
 <hr>\
 <<if State.variables.myRole == "patient">>\
@@ -964,7 +971,7 @@ You step outside and pat your pockets. Oh no... you realize you left your rescue
 What do you want to do?
 
 <<patient-choices "What do you want to do?" "no-eval"
-  "Turn around and go back inside to get it | 0 | green | green | Walk back upstairs to your apartment to get your inhaler. | Hallway_In_Repeat | hasInhaler=true"
+  "Turn around and go back inside to get it | 0 | green | white | Walk back upstairs to your apartment to get your inhaler. | Hallway_In_Repeat | hasInhaler=true"
   "Keep going to your errands without it | 0 | green | red | You hope that you don't regret your decision to leave your inhaler behind. Start walking to Whistle Stop Park. | Whistle_Stop_Out | hasInhaler=false"
 >>\
 
@@ -982,7 +989,7 @@ What do you want to do?
 <!--[[Whistle_Stop_Out]]-->
 
 
-:: Wildcard2 [simulation activity] {"position":"1300,1200","size":"100,100"}
+:: Wildcard2 [simulation activity] {"position":"800,1300","size":"100,100"}
 ! Cigarette Craving
 <hr>\
 <<if State.variables.myRole == "patient">>\
@@ -990,34 +997,124 @@ What do you want to do?
 As you step outside, a strong craving for a cigarette hits you out of nowhere.
 
 <<patient-choices "Cigarette craving?" "no-eval"
-  "You know you shouldn't, but the urge is overpowering | -5 | red | red | You light up a cigarette and take a couple long slow drags. It doesn't take long for you to start coughing and wheezing. You know you should quit, but sometimes its really hard.
+  "You know you shouldn't, but the urge is overpowering | -5 | red | red | You light up a cigarette and take a couple long slow drags. It doesn't take long for you to start coughing and wheezing. You know you should quit, but sometimes its really hard."
 >>\
 
 <<patient-next "Start walking to Whistle Stop Park""Whistle_Stop_Out">>
 
-<<Else>>\
+<<else>>\
 @@.holland;Mr. Holland@@ suddenly gets an over powering craving for cigarette. He can't resist, and lights one up. Addiction can be hard to overcome even when you know it is hurting you.
 
 <</if>>
 
-
-:: Wildcard3 {"position":"1500,1300","size":"100,100"}
-
+<!--[[Whistle_Stop_Out]]-->
 
 
-:: Wildcard4 {"position":"1700,1300","size":"100,100"}
+:: Wildcard3 [simulation activity] {"position":"1000,1500","size":"100,100"}
+! Wildfire smoke!
+<hr>\
+<<if State.variables.myRole == "patient">>\
+You step outside and immediately start coughing. The sky is hazy with wildfire smoke, making the air thick and dangerous for your lungs.
+
+What do you want to do?
+
+<<patient-choices "What do you want to do?" "no-eval"
+  "Push through the smoke and keep going| -7 | blue | red | Your chest burns with every breath, but you force yourself to keep walking"
+  "Go back inside and grab an N95 mask | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back up stairs to your apartment to grab a mask. | Hallway_In_Repeat"
+"It's too dangerous to be outside with all this smoke. Skip your errands and stay inside | 0 | blue | yellow | You're sad you won't have a present for your granddaughter tomorrow, and worried about what you'll do without your medications. But wildfire smoke could be deadly to you. | Hallway_In"
+>>\
+
+<<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>\
+
+<<else>>\
+@@.holland;Mr. Holland@@ steps outside and immediately starts coughing. There is a wildfire somewhere and thick smoke has settled over the town. Watch what he decides.
+
+//There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
+
+<</if>>
+
+<!--[[Hallway_In_Repeat]]-->
+<!--[[Whistle_Stop_Out]]-->
+<!--[[Hallway_In]]-->
 
 
+:: Wildcard4 [simulation activity] {"position":"1300,1500","size":"100,100"}
+! Polar Vortex!
+<hr>\
+<<if State.variables.myRole == "patient">>\
+You step outside and are hit with a blast of freezing cold air. You immediately feel like it is harder to breath.
 
-:: Wildcard5 {"position":"1900,1200","size":"100,100"}
+What do you want to do?
+
+<<patient-choices "What do you want to do?" "no-eval"
+  "Back in my day I used to walk 5 miles in the snow to go to school! I can deal with this!| -6 | blue | red | As you start walking you remember that when you were younger your lungs were also healthier. You sigh as you remember being able to sprint across the playground for what seemed like hours. Now you keep walking and feel your lungs freezing with every breath"
+  "Go back inside and grab a scarf | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back up stairs to your apartment to grab a scarf. | Hallway_In_Repeat"
+"Its too much work to turn back now. Cover your mouth and nose with your hands | -4 | blue | yellow | Covering your mouth and noise to warm up the air before you breath helps some, but it’s still a challenge to breath"
+>>\
+
+<<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>\
+
+<<else>>\
+@@.holland;Mr. Holland@@ steps outside and is hit with a blast of fridgid air. A polar vortex is causing record breaking low temperatures in the area.
+//There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
+
+<</if>>
+
+<!--[[Hallway_In_Repeat]]-->
+<!--[[Whistle_Stop_Out]]-->
 
 
+:: Wildcard5 [simulation activity] {"position":"1400,1300","size":"100,100"}
+! Beautiful day!
+<hr>\
+<<if State.variables.myRole == "patient">>\
+You step outside and take a breath. It is a completely beautiful, mild, and sunny day. The weather is perfect and doesn't bother your breathing at all.
 
-:: Wildcard6 {"position":"1900,1000","size":"100,100"}
+<<patient-choices "It's a beautiful day and I can't stop myself from smilin'" "no-eval"
+	"You smile and enjoy the weather knowing that it is not always this nice | 0 | green | green | You're glad you get to run errands on a day like today. As you've gotten older you know how important it is to savor these beautiful days | | Points +=1"
+>>\
+
+<<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>\
+
+<<else>>
+It's a beautiful day outside. The weather is perfect, and the skies are clear. @@.holland;Mr. Holland@@ takes a deep breath in and smiles before continuing on with his errands.
+
+//There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
+
+<</if>>
+
+<!--[[Whistle_Stop_Out]]-->
 
 
+:: Wildcard6 [simulation activity] {"position":"1400,1000","size":"100,100"}
+! Pollen!
+<hr>\
+<<if State.variables.myRole == "patient">>\
+You step outside and immediately start coughing. The flowers on the trees look beautiful, but the pollen is really hurting your lungs!
 
-:: Wildcard_Router [simulation] {"position":"1600,1100","size":"100,100"}
+What do you want to do?
+
+<<patient-choices "What do you want to do?" "no-eval"
+  "Keep going and try and ignore the pollen| -7 | blue | red | Your chest tightens and you find yourself gasping as you walk outside into the clouds of yellow pollen"
+  "Go back inside and grab an N95 mask | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back up stairs to your apartment to grab a mask. | Hallway_In_Repeat"
+"Going outside when there is this much pollen in the air is too much. You decide to stay home for the day | 0 | blue | yellow | You're sad you won't have a present for your granddaughter tomorrow, and worried about what you'll do without your medications. But wildfire smoke could be deadly to you. | Hallway_In"
+>>\
+
+<<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>\
+
+<<else>>\
+@@.holland;Mr. Holland@@ steps outside and immediately starts coughing. It seems like every tree, bush and flower is in bloom right now. A dusting of yellow pollen is visible on every surface and gusts of wind stir more pollen into the air.
+
+//There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
+
+<</if>>
+
+<!--[[Hallway_In_Repeat]]-->
+<!--[[Whistle_Stop_Out]]-->
+<!--[[Hallway_In]]-->
+
+
+:: Wildcard_Router [simulation] {"position":"1100,1100","size":"100,100"}
 <<silently>>
 <<if typeof Playroom !== "undefined" and Playroom.isHost()>>
 <<set _wildRoll to 1>>
