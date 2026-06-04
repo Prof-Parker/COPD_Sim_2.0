@@ -1,31 +1,31 @@
 {
     "version": "2.0.0",
     "tasks": [
-        {
-            "label": "COPD Simulation 2.0 (Tweego)",
-            "type": "shell",
-            "command": "powershell",
-            "args": [
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-File",
-                "${workspaceFolder}/build.ps1"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            },
-            "presentation": {
-                "reveal": "always",
-                "panel": "shared",
-                "focus": false,
-                "clear": true
-            },
-            "problemMatcher": []
-        }
+      {
+        "label": "COPD Simulation 2.0(Tweego)",
+        "type": "shell",
+        "command": "powershell",
+        "args": [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-File",
+          "${workspaceFolder}/build.ps1"
+        ],
+        "options": {
+          "cwd": "${workspaceFolder}"
+        },
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "reveal": "always",
+          "panel": "shared",
+          "focus": false,
+          "clear": true
+        },
+        "problemMatcher": []
+      }
     ]
-}
+  }

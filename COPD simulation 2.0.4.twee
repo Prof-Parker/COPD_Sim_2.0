@@ -833,13 +833,8 @@ You start walking toward Whistle Stop Park to begin your errands for the day.
 
 <<else>>\
 
-@@.holland;Mr. Holland@@ is walking out toward Whistle Stop Park. Evaluate his pace and technique as he heads out.
-
-<<dynamic-eval "Activity: Walk to Whistle Stop Park"
-  "Walked at a steady, energy-conserving pace | -1 | 1 | satAndRested | green | A good start to a busy day | green"
-  "Walked too fast and became short of breath | -3 | 0 | rushed | red | You need to slow down — you've got a long day ahead | red"
-  "Used pursed-lip breathing while walking | 0 | 1 | pursedLip | green | That's a great technique for conserving energy while walking | green"
->>\
+@@.holland;Mr. Holland@@ is walking out toward Whistle Stop Park. 
+//Evaluate his pace and technique as he heads out using your general observer controls.//
 
 <</if>>
 
