@@ -17,7 +17,6 @@ export const SYSTEM_PASSAGES = new Set([
     "PassageHeader",
     "PassageFooter",
     "PassageReady",
-    "Widgets",
 ]);
 
 const TERMINAL_PASSAGES = new Set([

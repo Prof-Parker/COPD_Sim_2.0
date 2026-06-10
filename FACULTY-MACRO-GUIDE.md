@@ -4,6 +4,8 @@ This guide explains how to author **activity stations** in the COPD Simulation u
 
 All shared stats (Energy, Points, `hasInhaler`, etc.) sync through **Playroom** via `SimApp.setVal` / `SimApp.getVal`. Patient choices that change inventory or flags should use the optional **state set** field (field 7) so both devices stay in sync.
 
+**Runtime code:** All simulation logic lives in the **StoryScript** passage (`SimApp` + faculty macros). Legacy SugarCube widgets were removed — author activities with `<<dynamic-eval>>`, `<<patient-choices>>`, and `<<patient-next>>` only.
+
 ---
 
 ## Quick navigation

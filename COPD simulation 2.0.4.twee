@@ -1,5 +1,5 @@
 :: StoryTitle
-COPD simulation 2.0.11
+COPD simulation 2.0.12
 
 
 :: StoryData
@@ -10,9 +10,9 @@ COPD simulation 2.0.11
   "start": "Start",
   "tag-colors": {
     "simulation": "red",
-    "widget": "purple",
     "activity": "green",
-    "briefing": "orange"
+    "briefing": "orange",
+    "nobr": "purple"
   },
   "zoom": 1
 }
@@ -1201,7 +1201,7 @@ setTimeout(function () {
 
 /* Audio — register tracks in StoryInit; play with <<audio "id" …>> in passages */
 <<cacheaudio "siren" "Media/audio/siren.mp3">> /* Source: Pixabay.com royalty free audio */
-<<cacheaudio "alarm" "Media/audio/alarm.mp3">> /* Source: Sonny and Cher "I got you babe" (C) 1965. This audio is used under fair use for commentary and educational purposes */
+<<cacheaudio "alarm" "Media/audio/alarm.mp3">> /* Source: Aduio clip from Groundhog Day, Columbia Pictures (C)1993. Featuring audio from Sonny and Cher's "I got you babe" (C) 1965. This audio is used under fair use for commentary and educational purposes */
 
 /* Image Credits */
 /* Ambulance.png Source: Shutterstock.com royalty free image */
@@ -1340,122 +1340,6 @@ You start walking toward Whistle Stop Park to begin your errands for the day.
 <</if>>
 
 <!--[[Errands_Hub]]-->
-
-
-:: Widgets [widget] {"position":"500,400","size":"100,100"}
-<<nobr>>
-/* SMART WIDGET: Energy changes sync to Playroom; triggers shared game over */
-<<widget "Adjust_Energy">>
-    <<set _amount to _args[0]>>
-    <<set _currentEnergy to SimApp.getVal("Energy")>>
-    <<set _newEnergy to _currentEnergy + _amount>>
-
-    <<if _newEnergy > 15>><<set _newEnergy to 15>><</if>>
-    <<if _newEnergy < 0>><<set _newEnergy to 0>><</if>>
-
-    <<run SimApp.setVal("Energy", _newEnergy)>>
-    <<run $("#energy-display").text(_newEnergy)>>
-
-    <<if _newEnergy <= 0 and !tags().includes("briefing")>>
-        <<run SimApp.scheduleGameOver("Game_Over_Energy")>>
-    <</if>>
-<</widget>>
-
-/* SMART WIDGET: Rescue inhaler use + overdose game over */
-<<widget "Use_Inhaler">>
-    <<set _currentInhaler to SimApp.getVal("Inhaler")>>
-    <<set _newInhaler to _currentInhaler + 1>>
-
-    <<run SimApp.setVal("Inhaler", _newInhaler)>>
-    <<run $("#inhaler-display").text(_newInhaler)>>
-
-    <<Adjust_Energy 2>>
-
-    <<if _newInhaler >= 7 and !tags().includes("briefing") and !SimApp.isGameOverPending()>>
-        <<run SimApp.scheduleGameOver("Game_Over_Inhaler")>>
-    <</if>>
-<</widget>>
-
-/* OBSERVER WIDGET: General footer evaluation buttons */
-<<widget "Observer_Eval">>
-    <<set _varName to _args[0]>>
-    <<set _energyChange to _args[1]>>
-    <<set _btnWrapId to _args[2]>>
-
-    <<Track_Behavior _varName>>
-    <<Adjust_Energy _energyChange>>
-
-    <<run $("#" + _btnWrapId + " button").prop("disabled", true)>>
-<</widget>>
-
-/* SMART WIDGET: Points adjustments */
-<<widget "Adjust_Points">>
-    <<set _amount to _args[0]>>
-    <<set _currentPoints to SimApp.getVal("Points")>>
-    <<set _newPoints to _currentPoints + _amount>>
-
-    <<run SimApp.setVal("Points", _newPoints)>>
-    <<run $("#points-display").text(_newPoints)>>
-<</widget>>
-
-/* SMART WIDGET: Behavioral tracking for debriefing */
-<<widget "Track_Behavior">>
-    <<for _i to 0; _i < _args.length; _i++>>
-        <<set _behaviorName to _args[_i]>>
-        <<set _currentVal to SimApp.getVal(_behaviorName) || 0>>
-        <<run SimApp.setVal(_behaviorName, _currentVal + 1)>>
-    <</for>>
-<</widget>>
-
-/* LEGACY: Prefer <<dynamic-eval>> macro in passages (see StoryScript). */
-<<widget "Dynamic_Eval_Button">>
-    <<set _title to _args[0]>>
-    <<set _sub to _args[1]>>
-    <<set _energyChange to _args[2]>>
-    <<set _pointsChange to _args[3]>>
-    <<set _behavior to _args[4]>>
-    <<set _wrapClass to "eval-wrap " + _args[5] + "-wrap">>
-
-    <<set _btnText to '<div class="eval-title">' + _title + '</div><div class="eval-sub">' + _sub + '</div>'>>
-
-    <span class="<<print _wrapClass>>">
-        <<button _btnText>>
-            <<Adjust_Energy _energyChange>>
-            <<Adjust_Points _pointsChange>>
-            <<if _behavior neq "none" and _behavior neq "">>
-                <<Track_Behavior _behavior>>
-            <</if>>
-            <<run SimApp.setVal("evalComplete", true)>>
-            <<replace "#dynamic-eval-container">>
-                <div class="gray-box">Assessment Recorded</div>
-            <</replace>>
-        <</button>>
-    </span>
-<</widget>>
-
-/* LEGACY: Prefer <<patient-next>> macro (renders in #patient-footer-next). */
-<<widget "Patient_Next_Button">>
-    <<set _btnText to _args[0]>>
-    <<set _targetPassage to _args[1]>>
-
-    <span id="patient-next-container">
-        <div class="gray-box">Waiting for Observer Evaluation...</div>
-    </span>
-
-    <<silently>>
-        <<repeat 500ms>>
-            <<if SimApp.getVal("evalComplete") === true>>
-                <<replace "#patient-next-container">>
-                    <<button _btnText>>
-                        <<run SimApp.nextPassage(_targetPassage)>>
-                    <</button>>
-                <</replace>>
-                <<stop>>
-            <</if>>
-        <</repeat>>
-    <</silently>>
-<</widget>>
-<</nobr>>
 
 
 :: Wildcard1 [simulation activity] {"position":"800,1000","size":"100,100"}
@@ -1643,10 +1527,28 @@ What do you want to do?
 
 
 :: StoryScript [script]
-/* ========================================================
-   1. PASTE CHAPEL'S PLAYTIME MACRO JAVASCRIPT HERE
-   (Ensure you are only pasting raw JavaScript, no HTML tags)
-   ======================================================== */
+/* ============================================================
+   STORYSCRIPT — COPD Simulation runtime (v2.0.12)
+   ============================================================
+   1. Playtime (Chapel macro + <<playtime>>)
+   2. SimApp — multiplayer simulation framework
+      2a. Config, state keys, and variable access
+      2b. Playroom connection, lobby, and role routing
+      2c. Shared navigation and passage tethering
+      2d. Game-over scheduling and countdown
+      2e. Sync loop, HUD, and briefing helpers
+      2f. Observer footer — dynamic-eval mount/apply
+      2g. Patient footer — choices, next button, eval gate
+      2h. Debrief / restart helpers
+   3. SugarCube macros (faculty-facing)
+      3a. <<playtime>> (defined in section 1)
+      3b. <<dynamic-eval>>
+      3c. <<patient-choices>>
+      3d. <<patient-next>>
+   4. Bootstrap — viewport fix, Playroom CDN import
+   ============================================================ */
+
+/* --- 1. Playtime (Chapel macro + <<playtime>>) --- */
 (function () {
     'use strict';
     // play time system, by chapel; for SugarCube 2
@@ -1782,16 +1684,7 @@ What do you want to do?
     });
 }());
 
-/* ========================================================
-   2. SimApp — MULTIPLAYER FRAMEWORK (Playroom Kit + SugarCube)
-   ------------------------------------------------------------
-   FACULTY / AI AUTHORS:
-   - Add new shared variables to STATE_KEYS and initRoomState().
-   - Patients use <<patient-choices>> and <<patient-next>> in [activity] passages
-   - Patients navigate with SimApp.nextPassage (usually via <<patient-next>>)
-   - Observers evaluate via <<dynamic-eval>> (or setVal("evalComplete", true))
-   - Do NOT use <<goto>> for shared navigation during multiplayer.
-   ======================================================== */
+/* --- 2. SimApp — multiplayer simulation framework --- */
 
 window.SimApp = {
     isPlayroomLoaded: false,
@@ -1821,6 +1714,8 @@ window.SimApp = {
         }
         return energy >= 0 ? "green" : "red";
     },
+
+    /* --- 2a. Config, state keys, and variable access --- */
 
     /**
      * Passages the Observer must NOT be pulled into via tether.
@@ -1913,6 +1808,8 @@ window.SimApp = {
         this.updateHud();
     },
 
+    /* --- 2h. Debrief / restart helpers --- */
+
     /** Sync Playroom stats into State.variables and set win for Final_Report */
     prepareFinalReport: function (setWin) {
         var debriefKeys = [
@@ -1977,6 +1874,8 @@ window.SimApp = {
     isPlayroomHost: function () {
         return typeof Playroom !== "undefined" && Playroom.isHost();
     },
+
+    /* --- 2b. Playroom connection, lobby, and role routing --- */
 
     /** Join URL Playroom reads on load (#r=roomCode) */
     getInviteUrl: function () {
@@ -2191,6 +2090,8 @@ window.SimApp = {
         return State.variables[key];
     },
 
+    /* --- 2c. Shared navigation and passage tethering --- */
+
     /** Patient-driven navigation: updates global passage + resets eval lock */
     nextPassage: function (passageName) {
         this.setVal("evalComplete", false, true);
@@ -2207,6 +2108,8 @@ window.SimApp = {
             Engine.play(passageName);
         }
     },
+
+    /* --- 2d. Game-over scheduling and countdown --- */
 
     /** Defer game over so players can read the current passage */
     scheduleGameOver: function (targetPassage) {
@@ -2494,6 +2397,8 @@ window.SimApp = {
         return false;
     },
 
+    /* --- 2e. Sync loop, HUD, and briefing helpers --- */
+
     /** Single background loop: sync state, tether observer, refresh HUD */
     startSyncLoop: function () {
         if (this._syncTimer) {
@@ -2767,9 +2672,7 @@ window.SimApp = {
         });
     },
 
-    /* ==========================================================
-       OBSERVER DYNAMIC EVAL UI (used by <<dynamic-eval>> macro)
-       ========================================================== */
+    /* --- 2f. Observer footer — dynamic-eval mount/apply --- */
 
     _escapeHtml: function (text) {
         return String(text)
@@ -2828,7 +2731,7 @@ window.SimApp = {
         return bits.join(" · ");
     },
 
-    /** Apply energy delta (Adjust_Energy widget logic) */
+    /** Apply energy delta; clamps 0–15, updates HUD, may schedule game over */
     applyEnergyDelta: function (amount) {
         var currentEnergy = Number(this.getVal("Energy"));
         if (isNaN(currentEnergy)) {
@@ -2852,11 +2755,36 @@ window.SimApp = {
         return newEnergy;
     },
 
-    /** General footer observation buttons (PassageFooter — widgets lose _args inside <<button>>) */
-    applyGeneralObservation: function (behaviorName, energyDelta, wrapId) {
-        if (behaviorName) {
+    /** Apply points delta and refresh #points-display */
+    applyPointsDelta: function (amount) {
+        var currentPoints = Number(this.getVal("Points"));
+        if (isNaN(currentPoints)) {
+            currentPoints = 0;
+        }
+        var newPoints = currentPoints + amount;
+        this.setVal("Points", newPoints);
+        if ($("#points-display").length) {
+            $("#points-display").text(newPoints);
+        }
+        return newPoints;
+    },
+
+    /** Increment one or more debrief behavior counters by 1 each */
+    incrementBehavior: function () {
+        for (var i = 0; i < arguments.length; i++) {
+            var behaviorName = arguments[i];
+            if (!behaviorName) {
+                continue;
+            }
             var currentVal = this.getVal(behaviorName) || 0;
             this.setVal(behaviorName, currentVal + 1);
+        }
+    },
+
+    /** General footer observation buttons (PassageFooter) */
+    applyGeneralObservation: function (behaviorName, energyDelta, wrapId) {
+        if (behaviorName) {
+            this.incrementBehavior(behaviorName);
         }
         var newEnergy = this.applyEnergyDelta(energyDelta);
         if (wrapId) {
@@ -2880,38 +2808,19 @@ window.SimApp = {
         $("#wrap-inhaler button").prop("disabled", true);
     },
 
-    /** Apply one activity eval (same rules as Adjust_Energy / Adjust_Points / Track_Behavior) */
+    /** Apply one activity eval from <<dynamic-eval>> footer buttons */
     applyObserverEval: function (opt) {
-        var currentEnergy = this.getVal("Energy");
-        var newEnergy = currentEnergy + opt.energy;
-        if (newEnergy > 15) {
-            newEnergy = 15;
-        }
-        if (newEnergy < 0) {
-            newEnergy = 0;
-        }
-        this.setVal("Energy", newEnergy);
-        if ($("#energy-display").length) {
-            $("#energy-display").text(newEnergy);
-        }
-        this.updateHud();
-        if (newEnergy <= 0 && !this.isBriefingPassage()) {
-            this.scheduleGameOver("Game_Over_Energy");
+        this.applyEnergyDelta(opt.energy);
+        if (this.getVal("Energy") <= 0 && !this.isBriefingPassage()) {
             return;
         }
 
         if (opt.points) {
-            var currentPoints = this.getVal("Points");
-            var newPoints = currentPoints + opt.points;
-            this.setVal("Points", newPoints);
-            if ($("#points-display").length) {
-                $("#points-display").text(newPoints);
-            }
+            this.applyPointsDelta(opt.points);
         }
 
         if (opt.behavior && opt.behavior !== "none") {
-            var currentVal = this.getVal(opt.behavior) || 0;
-            this.setVal(opt.behavior, currentVal + 1);
+            this.incrementBehavior(opt.behavior);
         }
 
         if (opt.patientMessage) {
@@ -2992,9 +2901,7 @@ window.SimApp = {
         });
     },
 
-    /* ==========================================================
-       PATIENT FOOTER UI (<<patient-choices>> / <<patient-next>>)
-       ========================================================== */
+    /* --- 2g. Patient footer — choices, next button, eval gate --- */
 
     _patientNextTimer: null,
     _patientNextConfig: null,
@@ -3165,21 +3072,8 @@ window.SimApp = {
 
     /** Apply energy change for a patient decision; returns false if game over fired */
     applyPatientEnergy: function (energy) {
-        var currentEnergy = this.getVal("Energy");
-        var newEnergy = currentEnergy + energy;
-        if (newEnergy > 15) {
-            newEnergy = 15;
-        }
-        if (newEnergy < 0) {
-            newEnergy = 0;
-        }
-        this.setVal("Energy", newEnergy);
-        this.updateHud();
-        if (newEnergy <= 0 && !this.isBriefingPassage()) {
-            this.scheduleGameOver("Game_Over_Energy");
-            return false;
-        }
-        return true;
+        this.applyEnergyDelta(energy);
+        return !this.isGameOverPending();
     },
 
     _renderPatientHudHint: function () {
@@ -3364,9 +3258,9 @@ window.SimApp = {
     }
 };
 
-/* ========================================================
-   3. <<dynamic-eval>> MACRO — faculty activity assessments
-   ------------------------------------------------------------
+/* --- 3. SugarCube macros (faculty-facing) --- */
+
+/* --- 3b. <<dynamic-eval>> — Observer activity assessments (#dynamic-observer-evals) ---
    Observer-only. Renders buttons in the footer toolbar.
 
    USAGE (any number of options):
@@ -3386,7 +3280,7 @@ window.SimApp = {
      7. Patient feedback color: green or red (optional)
 
    Subtitle under the label is auto-generated from energy/points.
-   ======================================================== */
+   --- */
 (function () {
     "use strict";
 
@@ -3416,11 +3310,8 @@ window.SimApp = {
     });
 }());
 
-/* ========================================================
-   4. PATIENT FOOTER MACROS — choices + next station button
-   ------------------------------------------------------------
+/* --- 3c. <<patient-choices>> / 3d. <<patient-next>> — Patient footer (#patient-footer-choices, #patient-footer-next) ---
    Passage must be tagged [simulation] (and [activity] for choices).
-   Footer slots: #patient-footer-choices, #patient-footer-next
 
    CHOICES (Harlowe-style replace — pick one, see consequence, then Observer eval):
 
@@ -3444,7 +3335,7 @@ window.SimApp = {
    <<patient-next "Continue Your Day" "Next_Passage_Name">>
    <<patient-next "Start Simulation" "Good_Morning_Mr._Holland" "reset">>
    Optional 3rd arg "reset" — resets all stats and the timer before navigating.
-   ======================================================== */
+   --- */
 (function () {
     "use strict";
 
@@ -3530,6 +3421,7 @@ window.SimApp = {
     });
 }());
 
+/* --- 4. Bootstrap — viewport fix, Playroom CDN import --- */
 (function () {
     "use strict";
     /* iOS safe-area + real-device viewport (GitHub Pages / mobile Safari) */
