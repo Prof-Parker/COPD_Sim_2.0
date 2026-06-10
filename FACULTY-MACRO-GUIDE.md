@@ -36,6 +36,8 @@ Click a link to jump to that section, then click the section header to expand or
 | `simulation` | Any passage that shows the HUD and footer during gameplay |
 | `activity` | Activity stations that use `<<patient-choices>>` and/or `<<dynamic-eval>>` |
 | `briefing` | Tutorial or practice passages where game-over should **not** trigger (optional) |
+| `pausetimer` | Freezes the simulation clock while the player is on this passage (e.g. Bedtime, Game Over) |
+| `hidehud` | Hides the top HUD bar on debrief/endgame passages that still need `simulation` for sync/tether |
 
 **Example tag line in Twine:**
 
