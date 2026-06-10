@@ -1,5 +1,5 @@
 :: StoryTitle
-COPD simulation 2.0.8
+COPD simulation 2.0.9
 
 
 :: StoryData
@@ -19,7 +19,7 @@ COPD simulation 2.0.8
 
 
 :: Breakfast [simulation activity] {"position":"1400,650","size":"100,100"}
-!Breakfast Time
+<h2>Breakfast Time</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 It's time for breakfast. What would you like to have for breakfast today @@.holland;Mr. Holland@@? As you think about what to have you try figure out which option will give you the most energy for your errands today.
@@ -46,7 +46,7 @@ It's time for breakfast. What would you like to have for breakfast today @@.holl
 
 
 :: Dressing [simulation activity] {"position":"1600,650","size":"100,100"}
-! Getting Dressed
+<h2>Getting Dressed</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 Time to get dressed for the day. ''Make sure to put on your socks and shoes'' so you can run your errands.
@@ -69,30 +69,496 @@ It's time for @@.holland;Mr Holland@@ to get dressed. Once they are done getting
 
 
 :: Errands_Hub [simulation] {"position":"2800,1100","size":"100,100"}
-! Whistle Stop Park
+<h2>Whistle Stop Park</h2>\
 <hr>\
 <<if $myRole == "patient">>\
-You've made it to Whistle Stop Park. Your errands await — grocery store, pharmacy, clinic, and more (coming soon).
+You've made it to Whistle Stop Park. Choose an errand below, or head home when you are done for the day.
+
+<div class="errands-hub">
+  <div class="errands-grid eval-grid">
+    <<if !$visitedGrocery>>
+      <span class="eval-wrap green-wrap">
+        <<button "🛒 Grocery Store">>
+          <<run SimApp.nextPassage("Grocery_Store_Router")>>
+        <</button>>
+      </span>
+    <</if>>
+    <<if !$visitedPharmacy>>
+      <span class="eval-wrap green-wrap">
+        <<button "💊 Pharmacy">>
+          <<run SimApp.nextPassage("Pharmacy_Router")>>
+        <</button>>
+      </span>
+    <</if>>
+    <<if !$visitedClinic>>
+      <span class="eval-wrap green-wrap">
+        <<button "🩺 Pulmonary Clinic">>
+          <<run SimApp.nextPassage("Pulmonary_Clinic")>>
+        <</button>>
+      </span>
+    <</if>>
+    <<if !$visitedToyStore>>
+      <span class="eval-wrap green-wrap">
+        <<button "🧸 Toy Store">>
+          <<run SimApp.nextPassage("Toy_Store_Router")>>
+        <</button>>
+      </span>
+    <</if>>
+  </div>
+  <div class="errands-hub__footer">
+    <span class="eval-wrap blue-wrap errands-hub__done">
+      <<button "🏠 Done for the day. Head back home">>
+        <<run SimApp.nextPassage("Whistle_Stop_In")>>
+      <</button>>
+    </span>
+  </div>
+</div>
 
 <<else>>\
-@@.holland;Mr. Holland@@ has arrived at Whistle Stop Park. More errand stations will be added here.
+@@.holland;Mr. Holland@@ is at Whistle Stop Park. He may visit the grocery store, pharmacy, pulmonary clinic, or toy store. Use your general observation controls in the footer as he moves and completes each errand.
 <</if>>
 
 
+:: Grocery_Store_Router [simulation activity] {"position":"2900,1000","size":"100,100"}
+<<silently>>
+<<if typeof Playroom !== "undefined" and Playroom.isHost()>>
+<<set _groceryRoll to random(1, 2)>>
+<<run SimApp.setVal("groceryRoll", _groceryRoll, true); SimApp.setVal("visitedGrocery", true, true)>>
+<<else>>
+<<run SimApp.syncFromPlayroom()>>
+<<set _groceryRoll to SimApp.getVal("groceryRoll")>>
+<</if>>
+<</silently>>
+<<if _groceryRoll is 1>>
+<<run SimApp.deferGoToSharedPassage("Grocery_Store_1")>>
+<<else>>
+<<run SimApp.deferGoToSharedPassage("Grocery_Store_2")>>
+<</if>>
+
+<!--[[Grocery_Store_1]]-->
+<!--[[Grocery_Store_2]]-->
+:: Grocery_Store_1 [simulation activity] {"position":"2900,1000","size":"100,100"}
+<h2>Grocery Store</h2>\
+<hr>\
+<<if $myRole == "patient">>\
+@@.holland;Mr. Holland@@, You arrive at the grocery store to pick up a few essentials for the week.
+
+The parking lot is completely packed. You walk inside, but all of the motorized shopping carts are already in use. You have no choice but to grab a standard cart and push it through the crowded aisles yourself.
+
+<<patient-choices "What do you want to do?" "no-eval"
+  "Grab a regular shopping cart | -4 | blue | red | Pushing the heavy cart and dodging crowds is exhausting. | | Points+=1 | errandsRun+=1"
+  "It's too much work without a motorized cart. You'll come back tomorrow | 0 | blue | red | Hopefully you'll be able to find a motorized cart tomorrow. | | standing+=1 | Points-=1 | errandsRun+=1"
+>>\
+
+<<patient-next "Head back to the park" "Errands_Hub">>\
+
+<<else>>\
+@@.holland;Mr. Holland@@ is at the grocery store, but the parking lot is completely packed. Heading inside he discovers that all of the motorized shopping carts are already in use. He now has to decide if he wants to push the cart through the crowded aisles or if he'll come back tomorrow.
+
+<</if>>
+
+:: Grocery_Store_2 [simulation activity] {"position":"2900,1000","size":"100,100"}
+<h2>Grocery Store</h2>\
+<hr>\
+<<if $myRole == "patient">>\
+@@.holland;Mr. Holland@@, You arrive at the grocery store to pick up a few essentials for the week.
+
+The store is surprisingly quiet today. Right inside the door, there is a fully charged motorized shopping cart waiting for you! You sit down and comfortably glide through the aisles to gather your groceries.
+<<patient-choices "Time to shop" "no-eval"
+  "Grab the motorized cart | -1 | green | green | Using the motorized cart saves you a lot of energy | | Points+=1 | errandsRun+=1"
+>>\
+
+<<patient-next "Head back to the park" "Errands_Hub">>\
+
+<<else>>\
+@@.holland;Mr. Holland@@ is at the grocery store and the store is surprisingly quiet today. Heading inside he discovers that there is a fully charged motorized shopping cart waiting for him!
+
+<</if>>
+
+:: Pharmacy_Router [simulation activity] {"position":"3100,1000","size":"100,100"}
+<<silently>>
+<<if typeof Playroom !== "undefined" and Playroom.isHost()>>
+<<set _pharmacyRoll to random(1, 2)>>
+<<run SimApp.setVal("pharmacyRoll", _pharmacyRoll, true); SimApp.setVal("visitedPharmacy", true, true)>>
+<<else>>
+<<run SimApp.syncFromPlayroom()>>
+<<set _pharmacyRoll to SimApp.getVal("pharmacyRoll")>>
+<</if>>
+<</silently>>
+<<if _pharmacyRoll is 1>>
+<<run SimApp.deferGoToSharedPassage("Pharmacy_1")>>
+<<else>>
+<<run SimApp.deferGoToSharedPassage("Pharmacy_2")>>
+<</if>>
+
+<!--[[Pharmacy_1]]-->
+<!--[[Pharmacy_2]]-->
+:: Pharmacy_1 [simulation activity] {"position":"3100,1000","size":"100,100"}
+<h2>Pharmacy</h2>\
+<hr>\
+<<if $myRole == "patient">>\
+@@.holland;Mr. Holland@@, you are at the pharmacy.
+
+<<patient-choices "Time to pick up prescriptions" "no-eval"
+  "You get in line and wait for your turn | -5 | blue | red | You waited in line for 45 minutes to speak with someone at the pharmacy counter. Turns out your new insurance company denied your prescription refill. | | hasMedications=false | errandsRun+=1"
+  >>
+
+<<patient-next "Head back to the park" "Errands_Hub">>\
+
+<<else>>\
+@@.holland;Mr. Holland@@ is at the pharmacy. Observe his pacing and breathing using your general observation controls.
+<</if>>
+
+:: Pharmacy_2 [simulation activity] {"position":"3100,1000","size":"100,100"}
+<h2>Pharmacy</h2>\
+<hr>\
+<<if $myRole == "patient">>\
+@@.holland;Mr. Holland@@, you are at the pharmacy.
+
+<<patient-choices "Time to pick up prescriptions" "no-eval"
+  "You get in line and wait for your turn | -1 | blue | green | You are pleasantly surprised to find the express lane completely empty today! Because you called ahead using the automated system, your prescription is already bagged, paid for, and waiting for you.| | Points+=1 | hasMedications=true | errandsRun+=1"
+>>
+
+<<patient-next "Head back to the park" "Errands_Hub">>\
+
+<<else>>\
+@@.holland;Mr. Holland@@ is at the pharmacy. Observe his pacing and breathing using your general observation controls.
+<</if>>
+
+:: Pulmonary_Clinic [simulation activity] {"position":"2900,1200","size":"100,100"}
+<<silently>>
+<<if typeof Playroom !== "undefined" and Playroom.isHost()>>
+<<run SimApp.setVal("visitedClinic", true, true)>>
+<</if>>
+<</silently>>
+<h2>Pulmonary Clinic</h2>\
+<hr>\
+<<if $myRole == "patient">>\
+@@.holland;Mr. Holland@@, You arrive at the pulmonary rehab clinic
+
+<<patient-choices "Pulmonary Rehab Appointment" "no-eval"
+  "You get in line and wait for your turn | +2 | blue | green | The nurses at the pulmonary rehab clinic taught you some great energy conservation strategies. You already feel like your breathing easier | | Points+=2 | errandsRun+=1"
+>>
+
+<<patient-next "Head back to the park" "Errands_Hub">>\
+
+<<else>>\
+@@.holland;Mr. Holland@@ is at the pulmonary clinic. Observe his pacing and breathing using your general observation controls.
+<</if>>
+
+
+:: Toy_Store_Router [simulation activity] {"position":"3100,1200","size":"100,100"}
+<<silently>>
+<<if typeof Playroom !== "undefined" and Playroom.isHost()>>
+<<set _toyStoreRoll to random(1, 2)>>
+<<run SimApp.setVal("toyStoreRoll", _toyStoreRoll, true); SimApp.setVal("visitedToyStore", true, true)>>
+<<else>>
+<<run SimApp.syncFromPlayroom()>>
+<<set _toyStoreRoll to SimApp.getVal("toyStoreRoll")>>
+<</if>>
+<</silently>>
+<<if _toyStoreRoll is 1>>
+<<run SimApp.deferGoToSharedPassage("Toy_Store_1")>>
+<<else>>
+<<run SimApp.deferGoToSharedPassage("Toy_Store_2")>>
+<</if>>
+
+<!--[[Toy_Store_1]]-->
+<!--[[Toy_Store_2]]-->
+:: Toy_Store_1 [simulation activity] {"position":"3100,1200","size":"100,100"}
+<h2>Toy Store</h2>\
+<hr>\
+<<if $myRole == "patient">>\
+@@.holland;Mr. Holland@@, you are at the toy store to pick up a gift for your granddaughter.
+
+ The store is in total chaos with a weekend sale! To make matters worse, the specific doll she asked for is on the very bottom shelf at the back of the store.
+
+<<patient-choices "Look for a doll" "no-eval"
+  "Pick up the doll | -4 | blue | red | Bending down and navigating the chaotic store severely depletes your energy. But you're happy you got your granddaughter the doll she wanted. | | Points+=4 | bentOver+=1 | hasToy=true | errandsRun+=1"
+>>
+
+<<patient-next "Head back to the park" "Errands_Hub">>\
+
+<<else>>\
+@@.holland;Mr. Holland@@ is at the toy store to pick up a gift for his granddaughter. The store is in total chaos with a weekend sale! To make matters worse, the specific doll she asked for is on the very bottom shelf at the back of the store.
+Observe his pacing and breathing using your general observation controls.
+<</if>>
+
+:: Toy_Store_2 [simulation activity] {"position":"3100,1200","size":"100,100"}
+<h2>Toy Store</h2>\
+<hr>\
+<<if $myRole == "patient">>\
+@@.holland;Mr. Holland@@, you are at the toy store to pick up a gift for your granddaughter. As soon as you walk in, a friendly clerk greets you. They see that you might have a hard time navigating the aisles packed with kids for a weekend sale. When you mention the doll you are looking for, they offer to fetch it from the back room and bring it directly to the front register for you. You are able to wait comfortably near the entrance.
+
+
+<<patient-choices "Purchase the doll" "no-eval"
+  "Purchase the doll | -1 | blue | green | Asking for assistance prevents unnecessary exertion and keeps your breathing steady. You feel slightly embarrassed asking for help, but you're glad you got your granddaughter her birthday present | | Points+=4 | hasToy=true | errandsRun+=1"
+>>
+
+<<patient-next "Head back to the park" "Errands_Hub">>\
+
+<<else>>\
+@@.holland;Mr. Holland@@ is at the toy store to pick up a gift for his granddaughter. The store is in total chaos with a weekend sale! But a friendly clerk has offered to fetch the doll for @@.holland;Mr. Holland@@. while he waits comfortable in a chair up front.
+Observe his pacing and breathing using your general observation controls.
+<</if>>
+
+:: Whistle_Stop_In [simulation activity] {"position":"2700,1100","size":"100,100"}
+<<silently>>
+<<if typeof Playroom !== "undefined" and Playroom.isHost()>>
+<<set _errandsRun to SimApp.getVal("errandsRun")>>
+<<set _currentEnergy to SimApp.getVal("Energy")>>
+<<set _newEnergy to _currentEnergy - (_errandsRun * _errandsRun)>>
+<<if _newEnergy < 0>><<set _newEnergy to 0>><<elseif _newEnergy > 15>><<set _newEnergy to 15>><</if>>
+<<run SimApp.setVal("Energy", _newEnergy, true)>>
+<</if>>
+<</silently>>
+<h2>Heading back</h2>\
+<hr>\
+<<if $myRole == "patient">>\
+You wrap up your errands at Whistle Stop Park and prepare to head back to your apartment. 
+
+As you stand there, the cumulative physical toll of the day's activities suddenly hits you. Pushing through $errandsRun errands in one day has severely drained your reserves. 
+
+<<patient-choices "Continue inside" "no-eval"
+  "You sit down to rest for a moment | +1 | blue | green | You're exhausted and need a break. You sit down and rest for a moment before continuing your journey. | | satAndRested+=1"
+  "You push through the exhaustion and continue on | -4 | blue | red | You're determined to finish your errands today. You push through the exhaustion and continue on. | | rushed+=1"
+>>
+
+<<patient-next "Continue inside" "Hallway_In">>
+
+<<else>>\
+@@.holland;Mr. Holland@@ is heading back from Whistle Stop Park after a full day of errands. Observe his pacing and breathing using your general observation controls as he prepares to continue inside.
+<</if>>
+
+
+:: Hallway_In [simulation activity] {"position":"2600,700","size":"100,100"}
+<h2>Walking back to your apartment</h2>\
+<hr>\
+<<if $myRole == "patient">>\
+@@.holland;Mr. Holland@@ Go ahead and walk back to your apartment for the evening.
+
+<<patient-next "Time for Dinner" "Dinner">>\
+
+<<else>>\
+@@.holland;Mr. Holland@@ is back in his apartment building. Evaluate how he moves through the building on the way back to his apartment.
+
+<<dynamic-eval "Activity: Walking up stairs"
+"They took the elevator | -1 | 1 | elevator | green | Taking the elevator makes it a lot easier | green"
+"They took the stairs | -9 | 1 | stairs | red | You can't believe you made it up all those stairs, especially after a long day of running errands. It felt like climbing a mountain! | red"
+>>
+
+<</if>>
+
+:: Dinner [simulation activity] {"position":"2600,700","size":"100,100"}
+<h2>Dinnertime</h2>\
+<hr>\
+<<if $myRole == "patient">>\
+You are back at your apartment for the evening. Now that you are home, your thoughts turn towards dinner. You could either order yourself a pizza or cook your own meal.
+
+<<patient-choices "Dinner choices" "no-eval"
+  "Order a pizza | -1 | blue | red | The food is a little greasy and heavy, and you feel a little guilty spending the extra money instead of cooking. But you feel tired after a long day. And you can't deny that pizza tastes great!| | Points-=3"
+  "Cook your own meal | -3 | blue | red | After a long day cooking is exhausting. You hope you have enough energy left over to get you to bed. || Points+=1"
+>>
+
+<<patient-next "One last chore" "Laundry">>\
+
+<<else>>\
+@@.holland;Mr. Holland@@ is back in his apartment and it's time to eat dinner. He has to decide between ordering pizza or cooking his own meal.
+<</if>>
+
+:: Laundry [simulation activity] {"position":"2600,700","size":"100,100"}
+<h2>Laundry</h2>\
+<hr>\
+<<if $myRole == "patient">>\
+You make your way to the laundry area. The clothes are clean, but they are sitting in a heavy basket on the floor waiting to be folded. You are already feeling the exhaustion of the day settling deep into your chest.
+
+<<patient-choices "Laundry choices" "no-eval"
+  "Fold the clothes | -2 | green | red | You push through the fatigue to get the laundry folded. | Laundry_Fold"
+  "Leave the laundry for tomorrow | 0 | red | red | You decide to leave the laundry in the basket. It's frustrating to let chores pile up, but your body is begging for rest tonight. | Bedtime"
+>>
+
+<<patient-next "Continue" "Bedtime">>
+
+<<else>>\
+@@.holland;Mr. Holland@@ is back in his apartment and it's time to do laundry. Watch what he decides — if he skips folding, there is no activity-specific eval at this station.
+<</if>>
+
+:: Laundry_Fold [simulation activity] {"position":"2600,750","size":"100,100"}
+<h2>Folding Laundry</h2>\
+<hr>\
+<<if $myRole == "patient">>\
+You push through the fatigue and begin folding the clothes in the basket.
+
+<<patient-next "Time for bed" "Bedtime">>
+
+<<else>>\
+@@.holland;Mr. Holland@@ is folding laundry. Evaluate whether he sits or stands while folding.
+
+<<dynamic-eval "Activity: Folding laundry"
+  "They folded the clothes sitting down | -1 | 2 | satAndRested | green | You pushed through the fatigue to get the laundry folded. | green"
+  "They folded the clothes standing up | -3 | 0 | standing | red | The constant bending over to pull clothes out of the basket takes a toll on your breath. | red"
+>>
+<</if>>
+
+:: Bedtime [simulation activity] {"position":"2600,700","size":"100,100"}
+<h2>Bedtime</h2>\
+<hr>\
+<<if $myRole == "patient">>\
+You finally make it to your bedroom and sit on the edge of the mattress.
+
+    <<if Energy <=3>>
+    You're utterly exhausted and feel like you can barely breath, but you made it
+    <<elseif Energy <=7>>
+    You're a little winded, and glad to be done for the day.
+    <<else>>
+    You're feeling good and looking forward to a good night's sleep
+    <</if>>
+
+    <<if hasMedications is true>>
+    You change into your pajamas and set your medications on the night stand for tomorrow morning
+    <<else>>
+    As you change into your pajamas you worry about how you'll feel tomorrow without your maintenance medications
+    <</if>>
+    <<if hasToy is true>>
+    You lay your head on the pillow and close your eyes. As you drift off to sleep you think about how excited your grand daughter is going to be when you give her the doll you bought...
+    <<else>>
+    You lay your head on the pillow and close your eyes. As you drift off to sleep you feel guilty about not having a present for your granddaughter's birthday tomorrow...
+    <</if>>
+
+<<patient-next "Finish the day and view your final report" "Final_Report">>
+
+<<else>>
+    @@.holland;Mr. Holland@@ is back in his bedroom. As he drifts off to sleep he reflects on how his breathing is feeling and what he was able to get done today.
+<</if>>
+
+:: Final_Report [simulation briefing] {"position":"2600,800","size":"100,100"}
+<<silently>>
+<<run SimApp.prepareFinalReport()>>
+<<set _minutes to setup.playTime("minutes")>>
+<<set _seconds to setup.playTime("seconds")>>
+<<if _seconds < 10>>
+<<set _secondsPad to "0" + _seconds>>
+<<else>>
+<<set _secondsPad to "" + _seconds>>
+<</if>>
+<</silently>>
+
+<div style="text-align:center;">
+<h1>Simulation Complete</h1>
+<<if $win is true>>
+<h2>@@color:green;Mr. Holland made it through the day safely.@@</h2>
+<<else>>
+<h2>@@color:red;Mr. Holland ended up in the hospital.@@</h2>
+<</if>>
+</div>
+
+<hr>
+<br>
+
+<h3>Final Results:</h3>
+* **Time Elapsed:** <<print _minutes>>:<<print _secondsPad>>
+* **Remaining Energy:** $Energy / 15
+* **Total Points Earned:** $Points
+* **Rescue Inhaler Uses:** $Inhaler / 6
+
+<br>
+<hr>
+<br>
+
+<h3>Energy Debrief</h3>
+<<if $win is true>>
+@@color:green;Conservation Technique Stats:@@
+* **Pursed Lip Breathing:** Used $pursedLip times (Recovered $pursedLipTotal Energy)
+* **Sitting & Resting:** Used $satAndRested times (Recovered $restingTotal Energy)
+* **Total Energy Recaptured:** $totalRecovered points.
+
+<<if $Inhaler >= 4>>
+@@color:red;Needs Improvement:@@ You relied heavily on the rescue inhaler today. While it is there for emergencies, needing it this frequently indicates that Mr. Holland was pushed past his safe exertion limits. Next time, try to use more energy-conservation techniques!
+<<elseif $Energy <= 3>>
+@@color:yellow;Borderline:@@ You completed the day, but Mr. Holland is completely exhausted. You successfully avoided overusing the inhaler, but managing his pacing earlier in the day would have left him with a safer energy reserve.
+<<else>>
+@@color:green;Excellent Work:@@ You perfectly balanced Mr. Holland's daily errands with his energy limits. You used energy-conservation techniques effectively and kept his breathing stable without over-relying on his rescue medication!
+<</if>>
+
+<<else>>
+<<if $Energy is 0>>
+@@color:red;Mr. Holland is in the hospital:@@ You over exerted yourself today. Here is the breakdown of the physical demands of your day:
+<</if>>
+<<if $Inhaler is 7>>
+@@color:red;Mr. Holland is in the hospital:@@ You used your inhaler $Inhaler times. Using your inhaler too much increases your risk of tachycardic dysrhythmias due to albuterol's impact on beta-1 adrenergic receptors. Relying on the rescue inhaler instead of energy conservation techniques increases your risk for adverse medication reactions. Here is a breakdown of the physical demands of your day:
+<</if>>
+
+<ul style="margin-top:0; padding-top:0;">
+<<if $errandsRun >= 1>>
+<li>**Errands Completed:** $errandsRun (Exertion cost: $errandsDrain energy). Running multiple errands in one day takes an increasing toll on your limited energy reserves.</li>
+<</if>>
+<li>**Stair Climbs:** $stairs (Taking the stairs, even once, can cause severe shortness of breath.)</li>
+<li>**Bending Over:** $bentOver (Every time you bend over, you constrict your lungs and make it harder to breathe.)</li>
+<li>**Times Rushed:** $rushed (Rushing through tasks will make you winded quickly.)</li>
+<li>**Tasks Completed Standing:** $standing (Standing up while completing activities of daily living or errands is fatiguing. When possible, complete tasks sitting down to conserve energy.)</li>
+</ul>
+<</if>>
+
+<<if $wildCarded is true>>
+<h3>Wild Card Debrief:</h3>
+<<if $wildRoll is 1>>
+@@color:#007bff;Event: Forgot Inhaler@@
+<br>
+Realizing you forgot your rescue inhaler could have had devastating consequences. You either had to expend more energy to go back upstairs to your apartment or risk going all day without it. Going without your inhaler leaves you reliant on pacing yourself and using good breathing techniques to manage your energy, but you are only one asthma trigger away from needing an ambulance!
+<<elseif $wildRoll is 2>>
+@@color:#007bff;Event: Caved to a Craving@@
+<br>
+Nicotine addiction is a powerful hurdle. Smoking that cigarette caused immediate airway irritation and dropped Mr. Holland's energy. Managing chronic illness isn't about being perfect; it's about handling setbacks and continuing to try.
+<<elseif $wildRoll is 3>>
+@@color:#007bff;Event: Wildfire Smoke@@
+<br>
+The heavy particulate matter from the wildfire smoke made every breath a struggle today. Navigating severe environmental hazards requires strict energy conservation and recognizing when it is too dangerous to push forward.
+<<elseif $wildRoll is 4>>
+@@color:#007bff;Event: Freezing Cold Air@@
+<br>
+Cold, dry air is a major trigger for bronchospasms in COPD patients. Managing this sudden shock to the lungs meant pacing yourself carefully and taking extra time to recover after the exposure.
+<<elseif $wildRoll is 5>>
+@@color:#007bff;Event: Beautiful Day@@
+<br>
+Living with a chronic illness is incredibly taxing on mental health. Having a beautiful, clear day provided a much-needed morale boost, reminding you of the little things in life that make the daily struggle worth it!
+<<elseif $wildRoll is 6>>
+@@color:#007bff;Event: Heavy Pollen@@
+<br>
+The blooming trees filled the air with allergens, triggering airway inflammation. You had to carefully manage this extra respiratory burden while just trying to get through a normal daily routine.
+<</if>>
+<</if>>
+
+<hr>
+<br><br>
+<div style="text-align:center;">
+@@color:green;Great job! Please show this screen to your instructor.@@
+</div>
+<div style="text-align:center;">
+<<link "Try Again?">><<run SimApp.restartFromDebrief()>><</link>>
+</div>
+
+<!--[[Bedtime]]-->
+
 :: Game_Over_Energy {"position":"1000,100","size":"100,100"}
-! Game Over
+<h2>Game Over</h2>\
 
 You are very short of breath and can barely breath. You collapse on the ground and someone nearby calls an ambulance to bring you to the hospital.
 
+<hr>
+<<link "View debrief">><<run SimApp.prepareFinalReport(false); SimApp.goToSharedPassage("Final_Report")>><</link>>
+
 
 :: Game_Over_Inhaler {"position":"1200,100","size":"100,100"}
-! Game Over
+<h2>Game Over</h2>\
 
 Your heart is racing and feels like it is about to jump out of your chest. It hurts to breath and move. You curl up on the ground and a bystander calls an ambulance.
 
+<hr>
+<<link "View debrief">><<run SimApp.prepareFinalReport(false); SimApp.goToSharedPassage("Final_Report")>><</link>>
+
 
 :: Good_Morning_Mr._Holland [simulation activity] {"position":"1800,450","size":"100,100"}
-! Good Morning
+<h2>Good Morning</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 Your alarm wakes you and its time to get up. You get the strangest feeling that this was the same song you woke up to yesterday morning...
@@ -120,23 +586,16 @@ Once he is fully standing, click the appropriate evaluation below.
 <!--[[Showering]]-->
 
 
-:: Hallway_In [simulation activity] {"position":"2600,700","size":"100,100"}
-! Heading back home
-<hr>\
-
-Placeholder
-
-
 :: Hallway_In_Repeat [simulation activity] {"position":"1400,800","size":"100,100"}
 <<if State.variables.myRole == "patient">>\
-!Walking back to get $yourItem
+<h2>Walking back to get $yourItem</h2>\
 <hr>\
 @@.holland;Mr. Holland@@ Go ahead and walk back to your apartment to pick up $yourItem. 
 
 <<patient-next "Back in your apartment" "Item_Pickup">>\
 
 <<else>>\
-!Walking back to get $hisItem
+<h2>Walking back to get $hisItem</h2>\
 <hr>\
 @@.holland;Mr. Holland@@ needs to walk back inside to retrieve $hisItem. Evaluate how he moves through the building on the way back to his apartment.
 
@@ -151,7 +610,7 @@ Placeholder
 
 
 :: Hallway_Out [simulation activity] {"position":"1200,650","size":"100,100"}
-!Walking out to the lobby
+<h2>Walking out to the lobby</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 Now that you are done with breakfast it's time to start your day. Go ahead and start walking down stairs to the lobby.
@@ -172,7 +631,7 @@ Now that @@.holland;Mr. Holland@@ is done with his breakfast he is ready to star
 
 
 :: Hallway_Out_Again [simulation activity] {"position":"1800,800","size":"100,100"}
-!Walking back downstairs
+<h2>Walking back downstairs</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 You have $yourItem and head back down stairs. Time to start those errands
@@ -193,7 +652,7 @@ Now that @@holland;Mr. Holland@@ has $hisItem its time to head back downstairs a
 
 
 :: Item_Pickup [simulation activity] {"position":"1600,800","size":"100,100"}
-! Back Inside
+<h2>Back Inside</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 You're back at your apartment and grab $yourItem. It's taxing having to retrace your steps, but your glad you did. It could have been dangerous going outside without $yourItem.
@@ -209,7 +668,7 @@ You're back at your apartment and grab $yourItem. It's taxing having to retrace 
 
 
 :: Lotion [simulation activity] {"position":"1800,650","size":"100,100"}
-!Lotion
+<h2>Lotion</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 Your skin has been feeling dry lately. Perhaps some lotion would help your skin feel better. What would you like to do?
@@ -252,24 +711,24 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
             <!-- Row 1 -->
             <span id="wrap-sat" class="eval-wrap green-wrap">
                 <<button '<div class="eval-title">Sat & Rested</div><div class="eval-sub">+2 Energy</div>'>>
-                    <<Observer_Eval "satAndRested" 2 "wrap-sat">>
+                    <<run SimApp.applyGeneralObservation("satAndRested", 2, "wrap-sat")>>
                 <</button>>
             </span>
             <span id="wrap-rushed" class="eval-wrap red-wrap">
                 <<button '<div class="eval-title">Rushed</div><div class="eval-sub">-2 Energy</div>'>>
-                    <<Observer_Eval "rushed" -2 "wrap-rushed">>
+                    <<run SimApp.applyGeneralObservation("rushed", -2, "wrap-rushed")>>
                 <</button>>
             </span>
             
             <!-- Row 2 -->
             <span id="wrap-pursed" class="eval-wrap green-wrap">
                 <<button '<div class="eval-title">Pursed Lip Breathing</div><div class="eval-sub">+1 Energy</div>'>>
-                    <<Observer_Eval "pursedLip" 1 "wrap-pursed">>
+                    <<run SimApp.applyGeneralObservation("pursedLip", 1, "wrap-pursed")>>
                 <</button>>
             </span>
             <span id="wrap-bent" class="eval-wrap red-wrap">
                 <<button '<div class="eval-title">Bent Over</div><div class="eval-sub">-1 Energy</div>'>>
-                    <<Observer_Eval "bentOver" -1 "wrap-bent">>
+                    <<run SimApp.applyGeneralObservation("bentOver", -1, "wrap-bent")>>
                 <</button>>
             </span>
         </div>
@@ -279,7 +738,7 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
             <<if $hasInhaler>>
                 <span id="wrap-inhaler" class="eval-wrap blue-wrap">
                     <<button '<div class="eval-title">Use Rescue Inhaler</div><div class="eval-sub">+2 Energy</div>'>>
-                        <<Use_Inhaler>>
+                        <<run SimApp.applyInhalerUse()>>
                     <</button>>
                 </span>
             <<else>>
@@ -366,7 +825,7 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
 
 
 :: Role_Selection {"position":"1050,300","size":"100,100"}
-! Choose Your Role
+<h2>Choose Your Role</h2>\
 <hr>\
 Please coordinate with your partner. One of you must be the Patient, and the other must be the Observer.
 
@@ -405,7 +864,7 @@ Please coordinate with your partner. One of you must be the Patient, and the oth
 
 
 :: Showering [simulation activity] {"position":"2000,450","size":"100,100"}
-! Showering
+<h2>Showering</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 First things first — you could use a shower. Walk over to the shower station.
@@ -433,10 +892,10 @@ Once you are there, what temperature will you set the water to?
 
 
 :: Simulation_Hub [simulation briefing] {"position":"1200,450","size":"100,100"}
-! Tutorial & Controls Practice
+<h2>Tutorial & Controls Practice</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-!! Welcom to the game @@.holland;Mr. Holland@@ 
+<h2>Welcom to the game @@.holland;Mr. Holland@@</h2>\
 This is what your user interface will look like when you start the game. At the top of your screen you will see your heads up display (HUD) showing the time elapsed in the simulation, your current work of breathing, and whether you have your rescue inhaler with you.
 
 The clock is running now so you can see the real HUD in action. It will reset to zero when you start the actual simulation.
@@ -445,9 +904,9 @@ If you have your rescue inhaler with you, during the simulation you may demonstr
 
 For now, use the <strong><u>Practice Activity</u></strong> button at the bottom of your screen to try a sample action and see how it impacts your work of breathing.
 <hr>\
-    <<patient-next "Begin Practice Activity" "Tutorial_Jumping_Jacks""reset">>
+    <<patient-next "Begin Practice Activity" "Tutorial_Jumping_Jacks" "reset">>
 <<else>>\
-!! Welcome to the game @@.observer;Observer@@!
+<h2>Welcome to the game @@.observer;Observer@@!</h2>
 You will be following along with @@.holland;Mr. Holland@@ and assessing how well he conserves his energy as he goes about his day. 
 This is what your user interface will look like when you start the game. At the top of your screen you will see your heads up display (HUD) showing:
 *The time elapsed in the simulation. //Don't worry about the clock ticking right now it will reset after these tutorial pages when we start the actual simulation//
@@ -457,14 +916,14 @@ This is what your user interface will look like when you start the game. At the 
 
 The clock is running now so you can see the real HUD in action. It will reset to zero when you start the actual simulation.
 
-!!! How the Simulation Works
+<h3>How the Simulation Works</h3>
 * ''Hidden Stats:'' The student playing @@.holland;Mr. Holland@@ cannot see their exact energy or inhaler uses. They will only see a rough estimate of their breathing status.
 * ''Gaining Energy:'' They can use energy-conserving techniques to regain energy.
 * ''Inhaler Use:'' They can use their albuterol rescue inhaler to regain energy, but make sure your partner actually demonstrates correct technique for it to count.
 * ''Losing Energy:'' They will lose energy if they rush, don't take breaks, or bend over (which compresses their lungs and makes it harder to breathe).
 * ''Button Limits:'' The assessment buttons in the footer can only be used once per activity, but they will reset at the next station.
 
-!!! Practice Area
+<h3>Practice Area</h3>
 Try clicking the buttons at the bottom of the screen in ''General Observations'' right now to see how they affect @@.holland;Mr. Holland's@@ energy level!
 
 For some activities, you will be provided with different options that automatically assign points and energy based on how @@.holland;Mr. Holland@@ performed.
@@ -492,34 +951,34 @@ Once you feel comfortable with the controls and @@.holland;Mr. Holland@@ is comf
 Welcome to this live nursing simulation. You will need a partner to complete this activity. 
 Before we begin please review the briefing below.
 <hr>\
-!! Briefing
+<h2>Briefing</h2>\
 Today you and your partner will be living a day in the life of @@.holland;Mr. Bernard Holland@@, a 75-year-old male with COPD. He is 60-pack-year smoker who is currently trying to quit. He does not wear home oxygen, though he does often have to stop to catch his breath after walking for more than a few minutes on level ground.
 
-!!! Home Medications
+<h3>Home Medications</h3>
 * Albuterol sulfate rescue inhaler: 1-2 Puffs PRN for wheezing/shortness of breath every 4 hours *(Not to exceed 6 puffs per day!)*
 * Formoterol/budesonide maintenance inhaler: 1 puff, BID
 * Tiotropium maintenance inhaler: 1 puff, once daily
 * Theophylline ER: 400mg, PO once daily in the morning
 * Nicotine patch: 21mg, transdermal, once daily in the morning
 <br>
-!!! Your goal
+<h3>Your goal</h3>
 Your goal  is to accomplish as many tasks during your day as possible. This is a ''timed simulation''. You and your partner will be competing against your classmates!
 
 Each activity your team completes will earn you points, with some activities being worth more points than others.
 
 At the end of the simulation the winning team will be determined by the amount of points earned during the simulation. In the event of a tie, the fastest time will be used to break the tie.
 
-!!! Roles
+<h3>Roles</h3>
 * @@.holland;Mr. Holand@@: In this role you will be making choices about what activities to complete and how to perform those activities to conserve your energy. 
 * @@.observer;The Observer@@:  In this role you will be evaluating  @@.holland;Mr. Holand's@@ performance throughout his daily routine. You will be adding and deducting energy based on his performance, along with providing cues on what to do next.
 
-!!! Energy Management
+<h3>Energy Management</h3>
 * @@.holland;Mr. Holand@@ will start with @@color:green;10 energy@@. and can have a maximum of @@color:green;15 energy@@.
 * Each task you perform will cost energy, with certain tasks costing more than others. 
 * When you use energy conservation techniques or use your rescue inhaler @@.observer;The Observer@@ will be able to @@color:green; add energy@@. Conversly not using good breathing technique can result in @@color:red; subtracting energy@@
 * If @@.holland;Mr. Holand@@ reaches @@color:red; 0 energy@@, its game over and you will have to return to ''room 8220 for debriefing.''
 
-!!! Today's Itinerary
+<h3>Today's Itinerary</h3>
 The game will start with  @@.holland;Mr. Holand@@ getting out of bed in the morning, which will start the clock for the simulation. After that, you’ll need to shower, brush your teeth, get dressed, along with other activities of daily living.
 
 It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot of errands on his to-do list including:
@@ -528,13 +987,13 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 * Visit the pulmonary rehab clinic.
 * Go to the toy store to buy a gift for his granddaughter's 7th birthday tomorrow.
 
-!!! Augmented Reality Approach
+<h3>Augmented Reality Approach</h3>
 * To give you an understanding of what it is like to live with a chronic illness the student playing the role of  @@.holland;Mr. Holand@@ will need to act out many of the activities as if you are actually doing them. For example putting on your shoes will require actually putting on your shoes, while folding laundry will require you to fold a pile of laundry.
 * @@.observer;The Observer@@ will assign energy additions or substractions based on @@.holland;Mr. Holand's@@ actual physical performance of that task.
 * Once you connect to the multiplayer lobby the student playing the role of @@.holland;Mr. Holand@@ wil be controlling the pace of the game and moving from activity station to activity station. The game will tell you where to go next or it may give you options to chose from.
 *Meanwhile the @@.observer;The Observer@@ be provided specific scoring buttons for each task.
 
-!! To start the game 
+<h2>To start the game</h2>
 * Have one player click the "Connect to Multiplayer" button below. This will connect you to the game lobby.
 * Once in the game lobby click the <strong><u>Invite</u></strong> button. This will give you a QR code for your partner to pair up and form a team.. If you leave the lobby before your partner joins, the host can tap <strong><u>Show Invite QR Code</u></strong> on the role selection screen to display it again.
 * Once you've both joined the 1st player can then click the <strong><u>Launch</u></strong> button to enter the briefing area to learn the controls.
@@ -547,7 +1006,7 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 :: StoryCaption {"position":"300,400","size":"100,100"}
 <<if $devmode && State.variables.myRole == "patient">>
 	<<run UIBar.show()>>
-!!Dev Mode
+<h2>Dev Mode</h2>\
 
 <details>
     <summary><strong>Score & Status</strong></summary>
@@ -690,6 +1149,9 @@ setTimeout(function () {
 /* Visited Fallbacks */
 <<set $wildCarded to false>>
 <<set $wildRoll to 1>>
+<<set $groceryRoll to 1>>
+<<set $pharmacyRoll to 1>>
+<<set $toyStoreRoll to 1>>
 <<set $yourItem to "">>
 <<set $hisItem to "">>
 <<set $visitedHallway to false>>
@@ -706,7 +1168,7 @@ setTimeout(function () {
 
 
 :: Teeth_Brushing [simulation activity] {"position":"2000,650","size":"100,100"}
-!Teeth Brushing
+<h2>Teeth Brushing</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 Now that you are done showering it is time to brush your teeth. Go ahead and walk to the sink and brush your teeth.
@@ -727,7 +1189,7 @@ Now that @@.holland;Mr. Holland@@ is done showering he needs to brush his teeth.
 
 
 :: Tutorial_Jumping_Jacks [simulation briefing activity] {"position":"1400,450","size":"100,100"}
-! Practice: Jumping Jacks
+<h2>Practice: Jumping Jacks</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 You are breathing great right now — look at the top of the page. How about trying **5 jumping jacks**?
@@ -748,9 +1210,9 @@ Watch @@.holland;Mr. Holland@@ perform the practice activity. Once they finish, 
 
 
 :: Tutorial_Rest [simulation briefing activity] {"position":"1600,450","size":"100,100"}
-! Practice: Catch Your Breath
+<h2>Practice: Catch Your Breath</h2>\
 <hr>\
-<<if State.variables.mTutorial_RestyRole == "patient">>\
+<<if State.variables.myRole == "patient">>\
 That was a lot of work! How about you try ''sitting down and leaning over a table'' to do some pursed lip breathing and catch your breath?
 
 Once you are seated and breathing, tap the button below.
@@ -770,7 +1232,7 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will sta
 
 
 :: Waiting_Room {"position":"1050,600","size":"100,100"}
-! Waiting for Partner...
+<h2>Waiting for Partner...</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>
     You are the **Patient**. Please wait for your Observer to be ready.
@@ -824,7 +1286,7 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will sta
 
 
 :: Whistle_Stop_Out [simulation activity] {"position":"2500,1100","size":"100,100"}
-! Whistle Stop Park
+<h2>Whistle Stop Park</h2>\
 <hr>\
 <<if $myRole == "patient">>\
 You start walking toward Whistle Stop Park to begin your errands for the day.
@@ -958,7 +1420,7 @@ You start walking toward Whistle Stop Park to begin your errands for the day.
 
 
 :: Wildcard1 [simulation activity] {"position":"800,1000","size":"100,100"}
-! Forgotten Inhaler!
+<h2>Forgotten Inhaler!</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 You step outside and pat your pockets. Oh no... you realize you left your rescue inhaler sitting on the counter inside!
@@ -985,7 +1447,7 @@ What do you want to do?
 
 
 :: Wildcard2 [simulation activity] {"position":"800,1300","size":"100,100"}
-! Cigarette Craving
+<h2>Cigarette Craving</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 
@@ -1006,7 +1468,7 @@ As you step outside, a strong craving for a cigarette hits you out of nowhere.
 
 
 :: Wildcard3 [simulation activity] {"position":"1000,1500","size":"100,100"}
-! Wildfire smoke!
+<h2>Wildfire smoke!</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 You step outside and immediately start coughing. The sky is hazy with wildfire smoke, making the air thick and dangerous for your lungs.
@@ -1034,7 +1496,7 @@ What do you want to do?
 
 
 :: Wildcard4 [simulation activity] {"position":"1300,1500","size":"100,100"}
-! Polar Vortex!
+<h2>Polar Vortex!</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 You step outside and are hit with a blast of freezing cold air. You immediately feel like it is harder to breath.
@@ -1060,7 +1522,7 @@ What do you want to do?
 
 
 :: Wildcard5 [simulation activity] {"position":"1400,1300","size":"100,100"}
-! Beautiful day!
+<h2>Beautiful day!</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 You step outside and take a breath. It is a completely beautiful, mild, and sunny day. The weather is perfect and doesn't bother your breathing at all.
@@ -1082,7 +1544,7 @@ It's a beautiful day outside. The weather is perfect, and the skies are clear. @
 
 
 :: Wildcard6 [simulation activity] {"position":"1400,1000","size":"100,100"}
-! Pollen!
+<h2>Pollen!</h2>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
 You step outside and immediately start coughing. The flowers on the trees look beautiful, but the pollen is really hurting your lungs!
@@ -1337,7 +1799,8 @@ window.SimApp = {
         "visitedHallway", "visitedGrocery", "visitedPharmacy",
         "visitedToyStore", "visitedClinic", "errandsRun",
         "hasInhaler", "hasMedications", "hasToy",
-        "pendingGameOver", "gameOverDeadline"
+        "pendingGameOver", "gameOverDeadline","groceryRoll",
+        "pharmacyRoll","toyStoreRoll"
     ],
 
     /** True when an active simulation is already running in this room */
@@ -1370,6 +1833,9 @@ window.SimApp = {
         standing: 0,
         wildCarded: false,
         wildRoll: 1,
+        groceryRoll: 1,
+        pharmacyRoll: 1,
+        toyStoreRoll: 1,
         yourItem: "",
         hisItem: "",
         visitedHallway: false,
@@ -1406,6 +1872,58 @@ window.SimApp = {
         this.setVal("sharedTime", "00:00", true);
         $(".time-display").text("00:00");
         this.updateHud();
+    },
+
+    /** Sync Playroom stats into State.variables and set win for Final_Report */
+    prepareFinalReport: function (setWin) {
+        var debriefKeys = [
+            "Energy", "Points", "Inhaler", "win",
+            "satAndRested", "pursedLip", "rushed", "bentOver",
+            "stairs", "elevator", "standing", "errandsRun",
+            "wildCarded", "wildRoll"
+        ];
+        var self = this;
+        var energy;
+        var inhaler;
+
+        this.syncFromPlayroom();
+        debriefKeys.forEach(function (key) {
+            State.variables[key] = self.getVal(key);
+        });
+
+        energy = Number(this.getVal("Energy"));
+        if (isNaN(energy)) {
+            energy = 0;
+        }
+        inhaler = Number(this.getVal("Inhaler"));
+        if (isNaN(inhaler)) {
+            inhaler = 0;
+        }
+
+        State.variables.pursedLipTotal = State.variables.pursedLip * 1;
+        State.variables.restingTotal = State.variables.satAndRested * 2;
+        State.variables.totalRecovered =
+            State.variables.pursedLipTotal + State.variables.restingTotal;
+        State.variables.errandsDrain = State.variables.errandsRun * State.variables.errandsRun;
+
+        if (setWin === true) {
+            this.setVal("win", true, true);
+        } else if (setWin === false) {
+            this.setVal("win", false, true);
+        } else {
+            this.setVal("win", energy > 0 && inhaler < 7, true);
+        }
+        State.variables.win = this.getVal("win");
+    },
+
+    /** Full reset after debrief — returns team to Start */
+    restartFromDebrief: function () {
+        if (typeof Playroom !== "undefined" && !Playroom.isHost()) {
+            return;
+        }
+        this.resetSimulationForStart();
+        this.setVal("currentPassage", "Start", true);
+        this.goToSharedPassage("Start");
     },
 
     /** Count connected peers (including this device) */
@@ -2267,6 +2785,58 @@ window.SimApp = {
         return bits.join(" · ");
     },
 
+    /** Apply energy delta (Adjust_Energy widget logic) */
+    applyEnergyDelta: function (amount) {
+        var currentEnergy = Number(this.getVal("Energy"));
+        if (isNaN(currentEnergy)) {
+            currentEnergy = 10;
+        }
+        var newEnergy = currentEnergy + amount;
+        if (newEnergy > 15) {
+            newEnergy = 15;
+        }
+        if (newEnergy < 0) {
+            newEnergy = 0;
+        }
+        this.setVal("Energy", newEnergy);
+        if ($("#energy-display").length) {
+            $("#energy-display").text(newEnergy);
+        }
+        this.updateHud();
+        if (newEnergy <= 0 && !this.isBriefingPassage()) {
+            this.scheduleGameOver("Game_Over_Energy");
+        }
+        return newEnergy;
+    },
+
+    /** General footer observation buttons (PassageFooter — widgets lose _args inside <<button>>) */
+    applyGeneralObservation: function (behaviorName, energyDelta, wrapId) {
+        if (behaviorName) {
+            var currentVal = this.getVal(behaviorName) || 0;
+            this.setVal(behaviorName, currentVal + 1);
+        }
+        var newEnergy = this.applyEnergyDelta(energyDelta);
+        if (wrapId) {
+            $("#" + wrapId + " button").prop("disabled", true);
+        }
+        return newEnergy;
+    },
+
+    /** Rescue inhaler button (PassageFooter) */
+    applyInhalerUse: function () {
+        var currentInhaler = Number(this.getVal("Inhaler")) || 0;
+        var newInhaler = currentInhaler + 1;
+        this.setVal("Inhaler", newInhaler);
+        if ($("#inhaler-display").length) {
+            $("#inhaler-display").text(newInhaler);
+        }
+        this.applyEnergyDelta(2);
+        if (newInhaler >= 7 && !this.isBriefingPassage() && !this.isGameOverPending()) {
+            this.scheduleGameOver("Game_Over_Inhaler");
+        }
+        $("#wrap-inhaler button").prop("disabled", true);
+    },
+
     /** Apply one activity eval (same rules as Adjust_Energy / Adjust_Points / Track_Behavior) */
     applyObserverEval: function (opt) {
         var currentEnergy = this.getVal("Energy");
@@ -3014,13 +3584,14 @@ body, html {
     display: block;
     overflow-x: auto;
 }
-
-/* Strip the wasted spacing from the top of the passage titles */
 .passage h1:first-child {
     margin-top: 0;
     padding-top: 5px;
 }
-
+.passage h2:first-child {
+    margin-top: 0;
+    padding-top: 5px;
+}
 /* 2. Global styling for a clean, app-like feel */
 
 /* Touch-friendly Buttons */
@@ -3270,6 +3841,79 @@ button.host-invite-btn:hover {
     grid-column: 1 / -1;
     width: calc(50% - 4px);
     justify-self: center;
+}
+
+/* Errands hub — passage-body errand grid (Whistle Stop Park) */
+.errands-hub {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+.errands-hub .eval-grid {
+    margin-bottom: 10px;
+}
+
+.errands-hub .eval-wrap {
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
+.errands-hub .eval-wrap button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: clamp(55px, 9vh, 85px);
+    padding: 5px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: clamp(0.75em, 3vw, 1.1em);
+    line-height: 1.2;
+    box-sizing: border-box;
+    text-align: center;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.errands-hub .green-wrap button {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.errands-hub .green-wrap button:hover {
+    background-color: #218838;
+}
+
+.errands-hub__footer {
+    width: 90%;
+    max-width: 600px;
+    margin: 15px auto 0 auto;
+    border-top: 2px solid #ccc;
+    padding-top: 20px;
+    text-align: center;
+    box-sizing: border-box;
+}
+
+.errands-hub__footer .eval-wrap {
+    display: block;
+    width: 100%;
+}
+
+.errands-hub__footer .eval-wrap button {
+    min-height: clamp(50px, 8vh, 75px);
+    font-size: clamp(0.85em, 3.5vw, 1.2em);
+}
+
+.errands-hub__footer .blue-wrap button {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.errands-hub__footer .blue-wrap button:hover {
+    background-color: #0069d9;
 }
 
 /* Full-width footer controls aligned to the eval grid (inhaler, patient next) */

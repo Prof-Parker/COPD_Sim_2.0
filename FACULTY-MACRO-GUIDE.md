@@ -6,7 +6,28 @@ All shared stats (Energy, Points, `hasInhaler`, etc.) sync through **Playroom** 
 
 ---
 
-## Before You Begin
+## Quick navigation
+
+Click a link to jump to that section, then click the section header to expand or collapse it.
+
+<ul>
+<li><a href="#before-you-begin">Before You Begin</a> — setup & workflow</li>
+<li><a href="#patient-choices">patient-choices</a> — patient choice buttons</li>
+<li><a href="#dynamic-eval">dynamic-eval</a> — observer assessment buttons</li>
+<li><a href="#patient-next">patient-next</a> — patient Continue / Next</li>
+<li><a href="#multiplayer-navigation">Multiplayer navigation</a> — host routing & sync</li>
+<li><a href="#full-activity-templates">Full activity templates</a> — copy-paste passage skeletons</li>
+<li><a href="#quick-reference">Quick reference</a> — at-a-glance tables</li>
+<li><a href="#tips-troubleshooting">Tips & troubleshooting</a> — common pitfalls</li>
+</ul>
+
+**Tip:** Use **Markdown: Open Preview** (`Ctrl+Shift+V`) and click links normally (not Ctrl+click) to scroll within this page.
+
+---
+
+<span id="before-you-begin"></span>
+<details open>
+<summary><strong>Before You Begin</strong> — tags, role split, activity flow</summary>
 
 ### Required passage tags
 
@@ -60,9 +81,11 @@ The Patient cannot advance until the Observer has evaluated (`evalComplete` must
 
 **Important:** During multiplayer, use these macros and `SimApp.nextPassage` / `SimApp.goToSharedPassage` — do **not** use `<<goto>>` for shared navigation.
 
----
+</details>
 
-## `<<patient-choices>>`
+<span id="patient-choices"></span>
+<details>
+<summary><strong><code>&lt;&lt;patient-choices&gt;&gt;</code></strong> — Patient · footer choice buttons · requires <code>[simulation activity]</code></summary>
 
 **Who sees it:** Patient only  
 **Where it appears:** Footer — “Your choice” section above the Next button  
@@ -163,9 +186,11 @@ Patient decision only; Observer evaluates **movement** on the next passage (`Hal
 - Choice buttons use the same **two-column footer grid** as Observer controls.
 - If there is an **odd** number of choices, the last button is **centered** in the grid.
 
----
+</details>
 
-## `<<dynamic-eval>>`
+<span id="dynamic-eval"></span>
+<details>
+<summary><strong><code>&lt;&lt;dynamic-eval&gt;&gt;</code></strong> — Observer · footer assessment buttons · requires <code>[simulation activity]</code></summary>
 
 **Who sees it:** Observer only  
 **Where it appears:** Footer — “Activity Specific Observations” section  
@@ -238,9 +263,11 @@ Energy and points are shown automatically as a subtitle under the button label (
 - A **single** eval button (or any odd count) is **centered** in the grid.
 - Each Observer can only pick **one** option per activity; the footer then shows “Assessment Recorded.”
 
----
+</details>
 
-## `<<patient-next>>`
+<span id="patient-next"></span>
+<details>
+<summary><strong><code>&lt;&lt;patient-next&gt;&gt;</code></strong> — Patient · footer Continue / Next button · requires <code>[simulation]</code></summary>
 
 **Who sees it:** Patient only  
 **Where it appears:** Footer — below choices / feedback  
@@ -297,9 +324,11 @@ On passages **without** `<<patient-choices>>`, the Next button appears immediate
 <<patient-next "Start Simulation<br>Good Morning @@.holland;Mr. Holland@@" "Good_Morning_Mr._Holland" "reset">>
 ```
 
----
+</details>
 
-## Multiplayer navigation (faculty / routers)
+<span id="multiplayer-navigation"></span>
+<details>
+<summary><strong>Multiplayer navigation</strong> — faculty / routers · <code>SimApp</code> sync patterns</summary>
 
 | Situation | Use |
 |-----------|-----|
@@ -329,9 +358,11 @@ On passages **without** `<<patient-choices>>`, the Next button appears immediate
 
 `wildRoll` defaults to **1** in StoryInit as a safe fallback before the host rolls.
 
----
+</details>
 
-## Full activity templates
+<span id="full-activity-templates"></span>
+<details>
+<summary><strong>Full activity templates</strong> — copy-paste passage skeletons</summary>
 
 ### Standard — choices + Observer eval
 
@@ -404,9 +435,11 @@ Observe @@.holland;Mr. Holland@@. Use General Observations in the footer if need
 <</if>>
 ```
 
----
+</details>
 
-## Quick reference
+<span id="quick-reference"></span>
+<details>
+<summary><strong>Quick reference</strong> — macro summary tables</summary>
 
 | Macro | Role | Footer section |
 |-------|------|----------------|
@@ -425,9 +458,11 @@ Observe @@.holland;Mr. Holland@@. Use General Observations in the footer if need
 |----------------|----------------|
 | Override next passage for that branch | `key=value`, `key+=n`, or `key-=n` synced to Playroom |
 
----
+</details>
 
-## Tips & troubleshooting
+<span id="tips-troubleshooting"></span>
+<details>
+<summary><strong>Tips & troubleshooting</strong></summary>
 
 - **Passage names are case-sensitive** — `Showering` and `showering` are different. Use underscores for spaces in names (e.g. `Good_Morning_Mr._Holland`).
 - **Pipe character `|`** separates fields. If your message text needs a literal pipe, avoid it or rephrase — there is no escape character. When using fields 6–7, keep the message in field 5 only (do not use extra pipes in the message).
@@ -436,8 +471,11 @@ Observe @@.holland;Mr. Holland@@. Use General Observations in the footer if need
 - **`"no-eval"`** — use when the Patient choice *is* the activity (Breakfast, wildcard decisions). Put movement/technique eval on the **next** passage.
 - **Branching** — pair field 6 (next passage) with field 7 (state flags). Both players receive updates through Playroom.
 - **Do not use `<<goto>>`** for team navigation during multiplayer — use `<<patient-next>>`, `SimApp.nextPassage`, or `SimApp.goToSharedPassage`.
+- **Errands hub (`Errands_Hub`)** — Patient picks errands from a passage-body grid (`<<button>>` + `SimApp.nextPassage`). Hide completed errands with `visitedGrocery`, `visitedPharmacy`, `visitedClinic`, `visitedToyStore` (set `true` when leaving each errand, not at the hub). Styles live in StoryStylesheet under `.errands-hub`.
 - **Test both roles** — open two browsers/devices, connect via Playroom, assign Patient and Observer, and walk through the station.
 - **Republish** — after editing the `.twee` file, use Twine **Publish to File → index.html** before pushing to GitHub Pages.
+
+</details>
 
 ---
 
