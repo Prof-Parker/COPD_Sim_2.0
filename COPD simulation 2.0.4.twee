@@ -1,5 +1,5 @@
 :: StoryTitle
-COPD simulation 2.0.9
+COPD simulation 2.0.10
 
 
 :: StoryData
@@ -74,37 +74,45 @@ It's time for @@.holland;Mr Holland@@ to get dressed. Once they are done getting
 <<if $myRole == "patient">>\
 You've made it to Whistle Stop Park. Choose an errand below, or head home when you are done for the day.
 
+<<silently>>
+<<set _errandGroceryClass to "eval-wrap errands-cell green-wrap">>
+<<if $visitedGrocery>><<set _errandGroceryClass to "eval-wrap errands-cell errands-cell--visited">><</if>>
+<<set _errandPharmacyClass to "eval-wrap errands-cell green-wrap">>
+<<if $visitedPharmacy>><<set _errandPharmacyClass to "eval-wrap errands-cell errands-cell--visited">><</if>>
+<<set _errandClinicClass to "eval-wrap errands-cell green-wrap">>
+<<if $visitedClinic>><<set _errandClinicClass to "eval-wrap errands-cell errands-cell--visited">><</if>>
+<<set _errandToyClass to "eval-wrap errands-cell green-wrap">>
+<<if $visitedToyStore>><<set _errandToyClass to "eval-wrap errands-cell errands-cell--visited">><</if>>
+<</silently>>
+
 <div class="errands-hub">
-  <div class="errands-grid eval-grid">
-    <<if !$visitedGrocery>>
-      <span class="eval-wrap green-wrap">
-        <<button "🛒 Grocery Store">>
-          <<run SimApp.nextPassage("Grocery_Store_Router")>>
-        <</button>>
-      </span>
-    <</if>>
-    <<if !$visitedPharmacy>>
-      <span class="eval-wrap green-wrap">
-        <<button "💊 Pharmacy">>
-          <<run SimApp.nextPassage("Pharmacy_Router")>>
-        <</button>>
-      </span>
-    <</if>>
-    <<if !$visitedClinic>>
-      <span class="eval-wrap green-wrap">
-        <<button "🩺 Pulmonary Clinic">>
-          <<run SimApp.nextPassage("Pulmonary_Clinic")>>
-        <</button>>
-      </span>
-    <</if>>
-    <<if !$visitedToyStore>>
-      <span class="eval-wrap green-wrap">
-        <<button "🧸 Toy Store">>
-          <<run SimApp.nextPassage("Toy_Store_Router")>>
-        <</button>>
-      </span>
-    <</if>>
-  </div>
+<div class="errands-grid">\
+<span class="<<print _errandGroceryClass>>">\
+<<if $visitedGrocery>>\
+<button type="button" class="errands-btn" disabled>🛒 Grocery Store ✓</button>\
+<<else>>\
+<<button "🛒 Grocery Store">><<run SimApp.nextPassage("Grocery_Store_Router")>><</button>>\
+<</if>>\
+</span><span class="<<print _errandPharmacyClass>>">\
+<<if $visitedPharmacy>>\
+<button type="button" class="errands-btn" disabled>💊 Pharmacy ✓</button>\
+<<else>>\
+<<button "💊 Pharmacy">><<run SimApp.nextPassage("Pharmacy_Router")>><</button>>\
+<</if>>\
+</span><span class="<<print _errandClinicClass>>">\
+<<if $visitedClinic>>\
+<button type="button" class="errands-btn" disabled>🩺 Pulmonary Clinic ✓</button>\
+<<else>>\
+<<button "🩺 Pulmonary Clinic">><<run SimApp.nextPassage("Pulmonary_Clinic")>><</button>>\
+<</if>>\
+</span><span class="<<print _errandToyClass>>">\
+<<if $visitedToyStore>>\
+<button type="button" class="errands-btn" disabled>🧸 Toy Store ✓</button>\
+<<else>>\
+<<button "🧸 Toy Store">><<run SimApp.nextPassage("Toy_Store_Router")>><</button>>\
+<</if>>\
+</span>\
+</div>
   <div class="errands-hub__footer">
     <span class="eval-wrap blue-wrap errands-hub__done">
       <<button "🏠 Done for the day. Head back home">>
@@ -161,7 +169,7 @@ The parking lot is completely packed. You walk inside, but all of the motorized 
 <h2>Grocery Store</h2>\
 <hr>\
 <<if $myRole == "patient">>\
-@@.holland;Mr. Holland@@, You arrive at the grocery store to pick up a few essentials for the week.
+@@.holland;Mr. Holland@@, you arrive at the grocery store to pick up a few essentials for the week.
 
 The store is surprisingly quiet today. Right inside the door, there is a fully charged motorized shopping cart waiting for you! You sit down and comfortably glide through the aisles to gather your groceries.
 <<patient-choices "Time to shop" "no-eval"
@@ -200,7 +208,7 @@ The store is surprisingly quiet today. Right inside the door, there is a fully c
 @@.holland;Mr. Holland@@, you are at the pharmacy.
 
 <<patient-choices "Time to pick up prescriptions" "no-eval"
-  "You get in line and wait for your turn | -5 | blue | red | You waited in line for 45 minutes to speak with someone at the pharmacy counter. Turns out your new insurance company denied your prescription refill. | | hasMedications=false | errandsRun+=1"
+  "You get in line and wait for your turn | -5 | blue | red | You waited in line for 45 minutes to speak with someone at the pharmacy counter. Turns out your new insurance company denied your prescription refill! | | hasMedications=false | errandsRun+=1"
   >>
 
 <<patient-next "Head back to the park" "Errands_Hub">>\
@@ -310,6 +318,10 @@ Observe his pacing and breathing using your general observation controls.
 <<set _newEnergy to _currentEnergy - (_errandsRun * _errandsRun)>>
 <<if _newEnergy < 0>><<set _newEnergy to 0>><<elseif _newEnergy > 15>><<set _newEnergy to 15>><</if>>
 <<run SimApp.setVal("Energy", _newEnergy, true)>>
+<<run SimApp.updateHud()>>
+<<if _newEnergy <= 0>>
+<<run SimApp.scheduleGameOver("Game_Over_Energy")>>
+<</if>>
 <</if>>
 <</silently>>
 <h2>Heading back</h2>\
@@ -639,7 +651,7 @@ You have $yourItem and head back down stairs. Time to start those errands
 <<patient-next "Time to head outside" "Whistle_Stop_Out">>
 
 <<else>>\
-Now that @@holland;Mr. Holland@@ has $hisItem its time to head back downstairs again. Use the general observer controls to record if he ''sits in a chair to rest'' along the way or if he ''rushes''. 
+Now that @@.holland;Mr. Holland@@ has $hisItem its time to head back downstairs again. Use the general observer controls to record if he ''sits in a chair to rest'' along the way or if he ''rushes''. 
 
 <<dynamic-eval "Activity: Walking down stairs"
 " They took the elevator | -1 | 1 | elevator | green | You're glad your apartment has an elevator | green"
@@ -1457,7 +1469,7 @@ As you step outside, a strong craving for a cigarette hits you out of nowhere.
   "You know you shouldn't, but the urge is overpowering | -5 | red | red | You light up a cigarette and take a couple long slow drags. It doesn't take long for you to start coughing and wheezing. You know you should quit, but sometimes its really hard."
 >>\
 
-<<patient-next "Start walking to Whistle Stop Park""Whistle_Stop_Out">>
+<<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>
 
 <<else>>\
 @@.holland;Mr. Holland@@ suddenly gets an over powering craving for cigarette. He can't resist, and lights one up. Addiction can be hard to overcome even when you know it is hurting you.
@@ -2895,6 +2907,7 @@ window.SimApp = {
         }
 
         /* New activity station — Patient waits for a fresh Observer eval */
+        this._observerEvalMounted = true;
         this.setVal("evalComplete", false, true);
         this.setVal("patientFeedback", "", true);
         this.setVal("patientFeedbackColor", "", true);
@@ -2955,6 +2968,9 @@ window.SimApp = {
     _patientNextTimer: null,
     _patientNextConfig: null,
     _patientChoiceResolved: true,
+    _patientChoicesMounted: false,
+    _patientChoicesSkipEval: false,
+    _observerEvalMounted: false,
 
     clearPatientFooterTimers: function () {
         if (this._patientNextTimer) {
@@ -3153,6 +3169,8 @@ window.SimApp = {
             return;
         }
 
+        this._patientChoicesMounted = true;
+        this._patientChoicesSkipEval = skipObserverEval;
         this._patientChoiceResolved = false;
         this.setVal("evalComplete", false, true);
         this.setVal("patientFeedback", "", true);
@@ -3237,29 +3255,36 @@ window.SimApp = {
         }
 
         var self = this;
-        var hasChoiceUI = $("#patient-footer-choices").length > 0;
+        var choicesMounted = this._patientChoicesMounted;
+        var evalRequired =
+            this._observerEvalMounted ||
+            (choicesMounted && !this._patientChoicesSkipEval);
         var evalDone = this.getVal("evalComplete") === true;
         var feedback = this.getVal("patientFeedback") || "";
         var feedbackColor = this.getVal("patientFeedbackColor") || "red";
 
-        if (hasChoiceUI && !this._patientChoiceResolved) {
+        if (choicesMounted && !this._patientChoiceResolved) {
             $slot.html(
                 '<div class="gray-box patient-footer-hint">Make your selection above, then wait for your Observer.</div>'
             );
             return;
         }
 
-        if (hasChoiceUI && !evalDone) {
+        if (evalRequired && !evalDone) {
             $slot.html(
                 '<div class="gray-box patient-footer-hint">Waiting for Observer evaluation...</div>'
             );
             if (!this._patientNextTimer) {
                 this._patientNextTimer = setInterval(function () {
+                    var stillEvalRequired;
                     if (!self._patientNextConfig) {
                         self.clearPatientFooterTimers();
                         return;
                     }
-                    if (self._patientChoiceResolved && self.getVal("evalComplete") === true) {
+                    stillEvalRequired =
+                        self._observerEvalMounted ||
+                        (self._patientChoicesMounted && !self._patientChoicesSkipEval);
+                    if (!stillEvalRequired || self.getVal("evalComplete") === true) {
                         self.refreshPatientNextSlot();
                     }
                 }, 500);
@@ -3438,6 +3463,10 @@ window.SimApp = {
             SimApp.clearGameOverSequence();
             SimApp.clearPatientFooterTimers();
             SimApp._patientNextConfig = null;
+            SimApp._patientChoicesMounted = false;
+            SimApp._patientChoicesSkipEval = false;
+            SimApp._observerEvalMounted = false;
+            SimApp._patientChoiceResolved = true;
             $("#patient-footer-choices").empty();
             $("#patient-footer-next").empty();
             if (SimApp.isDevCaptionActive()) {
@@ -3851,23 +3880,32 @@ button.host-invite-btn:hover {
     box-sizing: border-box;
 }
 
-.errands-hub .eval-grid {
-    margin-bottom: 10px;
+.errands-hub .errands-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto 10px auto;
+    box-sizing: border-box;
 }
 
-.errands-hub .eval-wrap {
+.errands-hub .errands-grid > .eval-wrap {
     display: block;
     width: 100%;
     min-width: 0;
+    margin: 0;
 }
 
-.errands-hub .eval-wrap button {
+.errands-hub .errands-grid .eval-wrap button,
+.errands-hub .errands-grid .eval-wrap .errands-btn {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     min-height: clamp(55px, 9vh, 85px);
-    padding: 5px;
+    margin: 0;
+    padding: 8px 5px;
     border-radius: 8px;
     font-weight: bold;
     font-size: clamp(0.75em, 3vw, 1.1em);
@@ -3878,13 +3916,28 @@ button.host-invite-btn:hover {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.errands-hub .green-wrap button {
+.errands-hub .errands-grid .green-wrap button {
     background-color: #28a745;
     color: #fff;
 }
 
-.errands-hub .green-wrap button:hover {
+.errands-hub .errands-grid .green-wrap button:hover {
     background-color: #218838;
+}
+
+.errands-hub .errands-cell--visited button,
+.errands-hub .errands-cell--visited .errands-btn {
+    background-color: #6c757d;
+    color: #e9ecef;
+    cursor: not-allowed;
+    opacity: 0.92;
+    box-shadow: none;
+    pointer-events: none;
+}
+
+.errands-hub .errands-cell--visited button:hover,
+.errands-hub .errands-cell--visited .errands-btn:hover {
+    background-color: #6c757d;
 }
 
 .errands-hub__footer {
@@ -3904,6 +3957,7 @@ button.host-invite-btn:hover {
 
 .errands-hub__footer .eval-wrap button {
     min-height: clamp(50px, 8vh, 75px);
+    margin: 0;
     font-size: clamp(0.85em, 3.5vw, 1.2em);
 }
 

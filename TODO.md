@@ -1,8 +1,18 @@
 # COPD Simulation 2.0 — Project TODO
 
-**Version:** 2.0.9 (Beta)  
+**Version:** 2.0.10 (Beta)  
 **Repo:** [Prof-Parker/COPD_Sim_2.0](https://github.com/Prof-Parker/COPD_Sim_2.0)  
 **Last updated:** May 2026
+
+##Priority Items for next session
+- [ ] Test all scenes
+- [ ] Troubleshoot patient message displaying all the way from hallway_in_repeat
+- [ ] Reset random number generator for wildroll
+- [ ] Add sound effects
+- [ ] Add images
+- [ ] Check line breaks and formatting on debriefing screen (switch to html styling)
+- [ ] Debug try again button for observer.
+- [ ] Stop clock on game over and win screens
 
 ---
 
@@ -22,12 +32,12 @@
 ## Content — passages & narrative
 
 - [X] **Breakfast** — empty stub; Dressing links here but passage has no content
-- [ ] **Post-ADL hub** — after breakfast, patient picks first errand (uses `visited*` / `errandsRun` vars)
-- [ ] **Grocery store** activity
-- [ ] **Pharmacy** activity (prescription pickup)
-- [ ] **Pulmonary rehab clinic** activity
-- [ ] **Toy store** activity (granddaughter's gift)
-- [ ] **Debrief / end screen** — points, time, tie-breaker, “return to room 8220”
+- [X] **Post-ADL hub** — after breakfast, patient picks first errand (uses `visited*` / `errandsRun` vars)
+- [X] **Grocery store** activity
+- [X] **Pharmacy** activity (prescription pickup)
+- [X] **Pulmonary rehab clinic** activity
+- [X] **Toy store** activity (granddaughter's gift)
+- [X] **Debrief / end screen** — points, time, tie-breaker, “return to room 8220”
 - [ ] **Sound effects** - port sound effects over from harlowe version
 -    [ ] **Win / leaderboard** logic if teams compete across rooms
 -    [ ] **Money system** for certain choices such as ordering pizza or buying groceries
@@ -38,7 +48,7 @@
 - [X] Fix **Dev Mode**. page is completly blank
 - [ ] Tweek tutorial section for better user experience (max number of energy drop etc)
 - [X] Fix **Lotion** `<<dynamic-eval>>` pipe syntax (observer buttons likely broken)
-- [ ] Copyedit typos (`Holand`/`Holland`, `lavendar`, `@.holland` vs `@@.holland`, etc.)
+- [X] Copyedit typos (`Holand`/`Holland`, `lavendar`, `@.holland` vs `@@.holland`, etc.)
 - [ ] Wire **visited** flags (`visitedGrocery`, `visitedPharmacy`, etc.) as errands are completed
 - [ ] Remove or finish **legacy widgets** (`Patient_Next_Button`, `Dynamic_Eval_Button`)
 

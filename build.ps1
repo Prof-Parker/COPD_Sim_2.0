@@ -23,4 +23,14 @@ Write-Host "Output:    $Out"
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
+
+$FlowTest = Join-Path $Root "scripts\run-flow-test.ps1"
+if (Test-Path -LiteralPath $FlowTest) {
+    Write-Host "Running passage flow validation..."
+    & $FlowTest
+    if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+    }
+}
+
 Write-Host "Done."

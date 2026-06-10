@@ -1,0 +1,9 @@
+{
+  "name": "copd-simulation-2",
+  "private": true,
+  "description": "COPD Simulation 2.0 — Twine/SugarCube + Playroom",
+  "scripts": {
+    "test:flow": "node scripts/validate-flow.mjs",
+    "build": "powershell -NoProfile -ExecutionPolicy Bypass -File build.ps1"
+  }
+}

@@ -77,7 +77,12 @@ The Patient cannot advance until the Observer has evaluated (`evalComplete` must
 
 **Next-only station (no choices, no eval):**
 
-1. **Patient** taps `<<patient-next>>` immediately (e.g. tutorial hub, simple transitions).
+1. **Patient** taps `<<patient-next>>` immediately (e.g. tutorial hub, simple transitions like `Item_Pickup`).
+2. Use `[simulation activity]` + `<<patient-next>>` alone when there is **no** `<<dynamic-eval>>` on the Observer side for that passage. The footer unlocks immediately — it does not wait for an Observer eval that never comes.
+
+**Next-only station (Patient next, Observer eval on same passage):**
+
+1. **Patient** sees `<<patient-next>>` but cannot tap it until the **Observer** completes `<<dynamic-eval>>` (e.g. `Good_Morning_Mr._Holland`, hallway movement passages).
 
 **Important:** During multiplayer, use these macros and `SimApp.nextPassage` / `SimApp.goToSharedPassage` — do **not** use `<<goto>>` for shared navigation.
 
@@ -415,13 +420,34 @@ Watch @@.holland;Mr. Holland@@ decide. No activity-specific eval here — assess
 
 ### Next-only — no choices
 
+Use when the Patient only needs a Continue button and the Observer has **no** activity-specific eval on this passage (e.g. `Item_Pickup`). The Next button unlocks immediately.
+
 ```
 :: My_Transition [simulation activity]
-! Keep Moving
+<h2>Keep Moving</h2>
 <hr>
 
 <<if $myRole == "patient">>
 Walk to the next location, then tap Continue.
+
+<<patient-next "Continue" "Next_Passage">>
+
+<<else>>
+Observe @@.holland;Mr. Holland@@. Use General Observations in the footer if needed.
+<</if>>
+```
+
+### Next-only — Patient next, Observer eval on same passage
+
+Use when the Patient has no choices but the Observer must evaluate before the team advances (e.g. getting out of bed, walking stairs).
+
+```
+:: My_Activity [simulation activity]
+<h2>Keep Moving</h2>
+<hr>
+
+<<if $myRole == "patient">>
+Walk to the next location, then tap Continue when ready.
 
 <<patient-next "Continue" "Next_Passage">>
 
@@ -460,6 +486,41 @@ Observe @@.holland;Mr. Holland@@. Use General Observations in the footer if need
 
 </details>
 
+<span id="validation"></span>
+<details>
+<summary><strong>Validation</strong> — automated passage flow check</summary>
+
+Before publishing, run the static flow validator to catch dead-end passages, broken navigation targets, and eval deadlocks:
+
+```powershell
+npm run test:flow
+```
+
+Or after a build (validator runs automatically when Node.js is installed):
+
+```powershell
+.\build.ps1
+```
+
+**Requires:** Node.js 18+ ([nodejs.org](https://nodejs.org/)). If Node is not installed, `build.ps1` still compiles the story but skips validation with a warning.
+
+**What it checks**
+
+- Every `<<patient-next>>`, `<<patient-choices>>`, router, and `SimApp.nextPassage` target points to a real passage
+- Patient branches are not dead-ends (no way to leave the station)
+- `<<patient-choices>>` without `"no-eval"` are paired with Observer `<<dynamic-eval>>` on the same passage
+- All gameplay passages are reachable from lobby, tutorial, main sim, wildcard, and errand entry points
+
+**What it does not check**
+
+- Live Playroom multiplayer sync or tether timing
+- Energy / game-over thresholds
+- Runtime footer behavior in the browser
+
+**Exit codes:** `0` = passed (warnings may still print); `1` = failed dead-ends, broken targets, or unreachable passages.
+
+</details>
+
 <span id="tips-troubleshooting"></span>
 <details>
 <summary><strong>Tips & troubleshooting</strong></summary>
@@ -471,7 +532,7 @@ Observe @@.holland;Mr. Holland@@. Use General Observations in the footer if need
 - **`"no-eval"`** — use when the Patient choice *is* the activity (Breakfast, wildcard decisions). Put movement/technique eval on the **next** passage.
 - **Branching** — pair field 6 (next passage) with field 7 (state flags). Both players receive updates through Playroom.
 - **Do not use `<<goto>>`** for team navigation during multiplayer — use `<<patient-next>>`, `SimApp.nextPassage`, or `SimApp.goToSharedPassage`.
-- **Errands hub (`Errands_Hub`)** — Patient picks errands from a passage-body grid (`<<button>>` + `SimApp.nextPassage`). Hide completed errands with `visitedGrocery`, `visitedPharmacy`, `visitedClinic`, `visitedToyStore` (set `true` when leaving each errand, not at the hub). Styles live in StoryStylesheet under `.errands-hub`.
+- **Errands hub (`Errands_Hub`)** — Patient picks errands from a fixed 2×2 passage-body grid (`<<button>>` + `SimApp.nextPassage`). Completed errands stay visible but grey out with a ✓ (set `visitedGrocery`, `visitedPharmacy`, `visitedClinic`, `visitedToyStore` when entering each errand router). Styles live in StoryStylesheet under `.errands-hub`.
 - **Test both roles** — open two browsers/devices, connect via Playroom, assign Patient and Observer, and walk through the station.
 - **Republish** — after editing the `.twee` file, use Twine **Publish to File → index.html** before pushing to GitHub Pages.
 
