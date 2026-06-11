@@ -9,6 +9,8 @@
 - [ ] Test all scenes
 - [ ] Revamp tutorial
 - [ ] Revise devmode interface
+- [ ] RPG button feedback
+- [X] Animated loading text for multiplayer connect (Maybe waiting for eval?)
 
 
 ---

@@ -1,5 +1,5 @@
 :: StoryTitle
-COPD simulation 2.0.12
+COPD simulation 2.0.13
 
 
 :: StoryData
@@ -23,7 +23,7 @@ COPD simulation 2.0.12
 <hr>\
 <<if State.variables.myRole == "patient">>\
 It's time for breakfast. What would you like to have for breakfast today @@.holland;Mr. Holland@@? As you think about what to have you try figure out which option will give you the most energy for your errands today.
-
+<hr>
 <<patient-choices "Breakfast choices" "no-eval"
 	"A 24-once high protein smoothie and a 20-ounce cup of coffee | -2 | warm | red | Too much liquid all at once makes you feel really full and makes it harder to breathe | | Points+=1"
     "An 8-ounce cup of coffee, cottage cheese with fruit | 1 | warm | green | Just the right amount of food and liquid in one meal is easier for you to eat . You feel refreshed and plan to pack a protein bar as a snack for later | | Points+=1"
@@ -35,8 +35,13 @@ It's time for breakfast. What would you like to have for breakfast today @@.holl
 <<else>>\
 
 @@.holland;Mr. Holland@@ is going to pick what he wants for breakfast. Here are his options this morning. Which do you think he'll choose? What will give him the most energy for the busy day ahead?
-
-* A 24-once high protein smoothie and a 20-ounce cup of coffee
+<hr>
+<ul>
+<li>A 24-once high protein smoothie and a 20-ounce cup of coffee</li>
+<li>An 8-ouncel cup of coffee, cottage cheese with fruit</li>
+<li>An 8-ounce cup of coffee, a glass of orange juice, two slices of toast, two fried eggs, two turkey sausage links and an apple</li>
+</ul>
+//There are no activity specific evaluations for this station//
 * An 8-ouncel cup of coffee, cottage cheese with fruit
 * An 8-ounce cup of coffee, a glass of orange juice, two slices of toast, two fried eggs, two turkey sausage links and an apple
 //There are no activity specific evaluations for this station//
@@ -49,15 +54,15 @@ It's time for breakfast. What would you like to have for breakfast today @@.holl
 <h1>Getting Dressed</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-Time to get dressed for the day. ''Make sure to put on your socks and shoes'' so you can run your errands.
-
+Time to get dressed for the day. <strong>Make sure to put on your socks and shoes</strong> so you can run your errands.
+<hr>
 <<patient-next "Time for breakfast!" "Breakfast">>\
 
 <<else>>\
 
 It's time for @@.holland;Mr Holland@@ to get dressed. Once they are done getting dressed evaluate their performance below.
 //Don't forget that you can use your general controls as well to add or subtract additional energy such as if they bend over to put their shoes on//
-
+<hr>
 <<dynamic-eval "Activity: Getting Dressed"
 " They got dressed sitting down | -1 | 1 | satAndRested | green | You're dressed and ready for breakfast | green"
 "They got dressed standing up | -3 | 1 | standing | red | Even putting your clothes on for the day makes you feel winded, you wonder if you'll be able to do all your errands today | red"
@@ -525,27 +530,27 @@ You finally make it to your bedroom and sit on the edge of the mattress.
 <<if $wildCarded is true>>
 <h3>Wild Card Debrief:</h3>
 <<if $wildRoll is 1>>
-<h4>@@color:#007bff;Event: Forgot Inhaler@@</h4>
+<h4 class="wild-card-event">Event: Forgot Inhaler</h4>
 <br>
 Realizing you forgot your rescue inhaler could have had devastating consequences. You either had to expend more energy to go back upstairs to your apartment or risk going all day without it. Going without your inhaler leaves you reliant on pacing yourself and using good breathing techniques to manage your energy, but you are only one asthma trigger away from needing an ambulance!
 <<elseif $wildRoll is 2>>
-<h4>@@color:#007bff;Event: Caved to a Craving@@</h4>
+<h4 class="wild-card-event">Event: Caved to a Craving</h4>
 <br>
-Nicotine addiction is a powerful hurdle. Smoking that cigarette caused immediate airway irritation and dropped Mr. Holland's energy. Managing chronic illness isn't about being perfect; it's about handling setbacks and continuing to try.
+Nicotine addiction is a powerful hurdle. Smoking that cigarette caused immediate airway irritation and dropped Mr. Holland's energy. Managing chronic illness isn't about being perfect, it's about handling setbacks and continuing to try.
 <<elseif $wildRoll is 3>>
-<h4>@@color:#007bff;Event: Wildfire Smoke@@</h4>
+<h4 class="wild-card-event">Event: Wildfire Smoke</h4>
 <br>
 The heavy particulate matter from the wildfire smoke made every breath a struggle today. Navigating severe environmental hazards requires strict energy conservation and recognizing when it is too dangerous to push forward.
 <<elseif $wildRoll is 4>>
-<h4>@@color:#007bff;Event: Freezing Cold Air@@</h4>
+<h4 class="wild-card-event">Event: Freezing Cold Air</h4>
 <br>
 Cold, dry air is a major trigger for bronchospasms in COPD patients. Managing this sudden shock to the lungs meant pacing yourself carefully and taking extra time to recover after the exposure.
 <<elseif $wildRoll is 5>>
-<h4>@@color:#007bff;Event: Beautiful Day@@</h4>
+<h4 class="wild-card-event">Event: Beautiful Day</h4>
 <br>
 Living with a chronic illness is incredibly taxing on mental health. Having a beautiful, clear day provided a much-needed morale boost, reminding you of the little things in life that make the daily struggle worth it!
 <<elseif $wildRoll is 6>>
-<h4>@@color:#007bff;Event: Heavy Pollen@@</h4>
+<h4 class="wild-card-event">Event: Heavy Pollen</h4>
 <br>
 The blooming trees filled the air with allergens, triggering airway inflammation. You had to carefully manage this extra respiratory burden while just trying to get through a normal daily routine.
 <</if>>
@@ -600,6 +605,7 @@ Before you spend too much time thinking about the radio playlist you remember yo
 Once you are fully standing and ready to start your day, click below to head to the bathroom to get cleaned up.
 
 //Note that you will not be able to progress until your @@.observer;Observer@@ has evaluated your actions at this station//
+<hr>
     <<patient-next "Head to the Bathroom (Shower)" "Showering">>\
 <<else>>\
 @@.holland;Mr. Holland's@@ alarm goes off, its time for him to wake up. As he listens to the song playing over the radio he gets the strangest feeling of deja-vu...
@@ -607,6 +613,7 @@ Once you are fully standing and ready to start your day, click below to head to 
 Tell @@.holland;Mr. Holland@@ to physically get out of bed. Observe their actions carefully as they do this.
     
 Once he is fully standing, click the appropriate evaluation below.
+<hr>
 <<dynamic-eval "Activity: Getting Out of Bed"
   "He sat and rested on the edge before standing | -1 | 1 | satAndRested | green"
   "He got straight out of bed without resting | -2 | 1 | rushed | red"
@@ -621,14 +628,14 @@ Once he is fully standing, click the appropriate evaluation below.
 <h1>Walking back to get $yourItem</h1>\
 <hr>\
 @@.holland;Mr. Holland@@ Go ahead and walk back to your apartment to pick up $yourItem. 
-
+<hr>
 <<patient-next "Back in your apartment" "Item_Pickup">>\
 
 <<else>>\
 <h1>Walking back to get $hisItem</h1>\
 <hr>\
 @@.holland;Mr. Holland@@ needs to walk back inside to retrieve $hisItem. Evaluate how he moves through the building on the way back to his apartment.
-
+<hr>
 <<dynamic-eval "Activity: Walking up stairs"
 " They took the elevator | -1 | 1 | elevator | green | Taking the elevator make is a lot easier | green"
 "They took the stairs | -7 | 1 | stairs | red | You can't believe you made it up all those stairs. It felt like climbing a mountain! | red"
@@ -644,12 +651,12 @@ Once he is fully standing, click the appropriate evaluation below.
 <hr>\
 <<if State.variables.myRole == "patient">>\
 Now that you are done with breakfast it's time to start your day. Go ahead and start walking down stairs to the lobby.
-
+<hr>
 <<patient-next "Time to head outside" "Wildcard_Router">>
 
 <<else>>\
-Now that @@.holland;Mr. Holland@@ is done with his breakfast he is ready to start his day. His first step is to walk down to the lobby. As he navigates the hallway make sure to evaluate his actions. Use the general observer controls to record if he ''sits in a chair to rest'' along the way or if he ''rushes''. 
-
+Now that @@.holland;Mr. Holland@@ is done with his breakfast he is ready to start his day. His first step is to walk down to the lobby. As he navigates the hallway make sure to evaluate his actions. Use the general observer controls to record if he <strong>sits in a chair to rest</strong> along the way or if he <strong>rushes</strong>. 
+<hr>
 <<dynamic-eval "Activity: Walking down stairs"
 " They took the elevator | -1 | 1 | elevator | green | You're glad your apartment has an elevator | green"
 "They took the stairs | -3 | 1 | stairs | red | Even going down the stairs takes a lot of energy | red"
@@ -665,12 +672,12 @@ Now that @@.holland;Mr. Holland@@ is done with his breakfast he is ready to star
 <hr>\
 <<if State.variables.myRole == "patient">>\
 You have $yourItem and head back down stairs. Time to start those errands
-
+<hr>
 <<patient-next "Time to head outside" "Whistle_Stop_Out">>
 
 <<else>>\
-Now that @@.holland;Mr. Holland@@ has $hisItem its time to head back downstairs again. Use the general observer controls to record if he ''sits in a chair to rest'' along the way or if he ''rushes''. 
-
+Now that @@.holland;Mr. Holland@@ has $hisItem its time to head back downstairs again. Use the general observer controls to record if he <strong>sits in a chair to rest</strong> along the way or if he <strong>rushes</strong>. 
+<hr>
 <<dynamic-eval "Activity: Walking down stairs"
 " They took the elevator | -1 | 1 | elevator | green | You're glad your apartment has an elevator | green"
 "They took the stairs | -3 | 1 | stairs | red | Even going down the stairs takes a lot of energy | red"
@@ -702,7 +709,7 @@ You're back at your apartment and grab $yourItem. It's taxing having to retrace 
 <hr>\
 <<if State.variables.myRole == "patient">>\
 Your skin has been feeling dry lately. Perhaps some lotion would help your skin feel better. What would you like to do?
-
+<hr>
 <<patient-choices "Lotion choices"
 	"The lavendar scented lotion from your daughter | -2 | blue | red | It smells lovely, but strong, you immediately start coughing"
     "The generic unscented lotion | 0 | blue | green | It's nothing special, but it doesn't trigger your COPD symptoms"
@@ -713,7 +720,7 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
 
 <<else>>\
 @@.holland;Mr. Holland's@@ skin has been feeling dry. He's wondering about putting on some lotion, and if so which lotion to use, the scented or unscented.
-
+<hr>
 <<dynamic-eval "Activity: Applying lotion"
 "They applied lotion | -1 | 2 | none | green | Your skin feels better already | green"
 "They did not apply lotion | 0 | -1 | none | red | The itching is already irritating, hopefully once you start running errands you'll be distracted | red"
@@ -854,10 +861,10 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
 <</if>>
 
 
-:: Role_Selection {"position":"1050,300","size":"100,100"}
-<h2>Choose Your Role</h2>\
-<hr>\
-Please coordinate with your partner. One of you must be the Patient, and the other must be the Observer.
+:: Role_Selection [nobr]{"position":"1050,300","size":"100,100"}
+<h1>Choose Your Role</h1>
+<hr>
+Please coordinate with your partner. One of you must be the Mr. Holland, and the other must be the Observer.
 
 <div id="host-invite-slot"></div>
 
@@ -866,7 +873,7 @@ Please coordinate with your partner. One of you must be the Patient, and the oth
         <<run SimApp.setRole("patient")>>
     <</button>>
 </span>
-
+<br><br>
 <span id="wrap-observer">
     <<button "I will be <span class='observer'>the Observer</span>">>
         <<run SimApp.setRole("observer")>>
@@ -903,7 +910,7 @@ Please coordinate with your partner. One of you must be the Patient, and the oth
 First things first — you could use a shower. Walk over to the shower station.
 
 Once you are there, what temperature will you set the water to?
-
+<hr>
 <<patient-choices "Water temperature"
   "Hot Water | -4 | hot | red | All the steam from the hot water makes it hard to breathe! But at least you are clean."
   "Warm Water | -1 | warm | green | The warm water is soothing and doesn't stress your lungs."
@@ -913,10 +920,17 @@ Once you are there, what temperature will you set the water to?
 <<patient-next "Time to brush your teeth" "Teeth_Brushing">>\
 
 <<else>>\
-@@.holland;Mr. Holland@@ is at the shower. Observe how he sets the water temperature and how his breathing responds.
+@@.holland;Mr. Holland@@ is at the shower. He's going to set the water temperature. His options for water temperature are:
+<ul>
+<li>Hot Water</li>
+<li>Warm Water</li>
+<li>Cold Water</li>
+</ul>
+After that, you will need to assess how he performs the activity and how his breathing responds.
+<hr>
 
 <<dynamic-eval "Activity: Showering"
-  "He showered sitting down | 0 | 1 | satAndRested | green | You're glad your daughter convinced you to buy the shower chair, it certainely makes things easier in the morning | green"
+  "He showered sitting down | 0 | 1 | satAndRested | green | You're glad your daughter convinced you to buy the shower chair, it certainely makes things easier in the0 morning | green"
   "He showered standing up | -2 | 1 | standing | red | The day has barely begun and you're already starting to feel a little winded | red"
 >>\
 <</if>>
@@ -924,28 +938,36 @@ Once you are there, what temperature will you set the water to?
 <!--[[Teeth_Brushing]]-->
 
 
-:: Simulation_Hub [simulation briefing] {"position":"1200,450","size":"100,100"}
-<h1>Tutorial & Controls Practice</h1>\
-<hr>\
-<<if State.variables.myRole == "patient">>\
-<h2>Welcom to the game @@.holland;Mr. Holland@@</h2>\
-This is what your user interface will look like when you start the game. At the top of your screen you will see your heads up display (HUD) showing the time elapsed in the simulation, your current work of breathing, and whether you have your rescue inhaler with you.
+:: Simulation_Hub [simulation briefing nobr] {"position":"1200,450","size":"100,100"}
+<h1>Tutorial & Controls Practice</h1>
+<<if State.variables.myRole == "patient">>
+<h2>Welcome to the game @@.holland;Mr. Holland@@</h2>
+<hr>
+This is what your user interface will look like when you start the game. At the top of your screen you will see your heads up display <strong>HUD</strong>, showing:
+<ul>
+<li>The time elapsed in the simulation.</li>
+<li>Your current work of breathing.</li>
+<li>Whether you have your rescue inhaler with you.</li>
+</ul>
 
-The clock is running now so you can see the real HUD in action. It will reset to zero when you start the actual simulation.
+The clock is running now so you can see the real <strong>HUD</strong> in action. It will reset to zero when you start the actual simulation.
 
-If you have your rescue inhaler with you, during the simulation you may demonstrate correct inhaler technique to your @@.observer;Observer@@ and they will add some energy. Don't forget to keep track of how many times you have used it during the simulation. You can only use it 6 times per day according to the doctor.
+If you have your rescue inhaler with you, during the simulation you may demonstrate correct inhaler technique to your @@.observer;Observer@@ and they will add some energy. Don't forget to keep track of how many times you have used it during the simulation. You can only use it <strong>6 times per day</strong> according to the doctor.
 
 For now, use the <strong><u>Practice Activity</u></strong> button at the bottom of your screen to try a sample action and see how it impacts your work of breathing.
-<hr>\
+<hr>
     <<patient-next "Begin Practice Activity" "Tutorial_Jumping_Jacks" "reset">>
-<<else>>\
+<<else>>
 <h2>Welcome to the game @@.observer;Observer@@!</h2>
+<hr>
 You will be following along with @@.holland;Mr. Holland@@ and assessing how well he conserves his energy as he goes about his day. 
-This is what your user interface will look like when you start the game. At the top of your screen you will see your heads up display (HUD) showing:
-*The time elapsed in the simulation. //Don't worry about the clock ticking right now it will reset after these tutorial pages when we start the actual simulation//
-*@@.holland;Mr. Holland's@@ current energy
-*If @@.holland;Mr. Holland@@ has is inhaler
-*How many points he has earned
+This is what your user interface will look like when you start the game. At the top of your screen you will see your heads up display, <strong>HUD</strong> showing:
+<ul>
+<li>The time elapsed in the simulation. //Don't worry about the clock ticking right now it will reset after these tutorial pages when we start the actual simulation//</li>
+<li>@@.holland;Mr. Holland's@@ current energy</li>
+<li>If @@.holland;Mr. Holland@@ has is inhaler</li>
+<li>How many points he has earned</li>
+</ul>
 
 The clock is running now so you can see the real HUD in action. It will reset to zero when you start the actual simulation.
 
@@ -967,70 +989,73 @@ Once you feel comfortable with the controls and @@.holland;Mr. Holland@@ is comf
 <!--[[Tutorial_Jumping_Jacks]]-->
 
 
-:: Start {"position":"800,400","size":"200,200"}
-<div class="center-heading1">@@.holland;Mr Holland's@@ Grand Day Out</div>\
-<div class="center-heading3">Version <<print Story.title.replace(/^COPD simulation\s+/i, "")>></div>\
-<hr>\
-<div class="center-heading2">An interactive augmented reality simulation by Robin Parker, MSN, RN, PCCN</div>\
-<div class="center-heading3">Cursor AI was used to assist with coding and debugging</div>\
-<nobr>\
-<div id="loading-overlay">Loading multiplayer services...</div>\
-<div id="connect-container" class="hidden">\
-    <<button "Connect to Multiplayer">>\
-        <<run SimApp.connect()>>\
-    <</button>>\
-</div>\
-</nobr>\
-Welcome to this live nursing simulation. You will need a partner to complete this activity. 
+:: Start [nobr]{"position":"800,400","size":"200,200"}
+<div class="center-heading1">@@.holland;Mr Holland's@@ Grand Day Out</div>
+<div class="center-heading3">Version <<print Story.title.replace(/^COPD simulation\s+/i, "")>></div>
+<hr>
+<div class="center-heading2">An interactive augmented reality simulation by Robin Parker, MSN, RN, PCCN</div>
+<div class="center-heading3">Cursor AI was used to assist with coding and debugging</div>
+<div id="loading-overlay">Loading multiplayer services...</div>
+<div id="connect-container" class="hidden">
+    <<button "Connect to Multiplayer">>
+        <<run SimApp.connect()>>
+    <</button>>
+</div>
+Welcome to this live augmented reality nursing simulation. You will need a partner to complete this activity. 
 Before we begin please review the briefing below.
-<hr>\
-<h2>Briefing</h2>\
-Today you and your partner will be living a day in the life of @@.holland;Mr. Bernard Holland@@, a 75-year-old male with COPD. He is 60-pack-year smoker who is currently trying to quit. He does not wear home oxygen, though he does often have to stop to catch his breath after walking for more than a few minutes on level ground.
+<hr>
+<h2>Briefing</h2>
+<p>Today you and your partner will be living a day in the life of @@.holland;Mr. Bernard Holland@@, a 75-year-old retired carpet layer who is living with COPD. He is 60-pack-year smoker who is currently trying to quit. He does not wear home oxygen, though he does often have to stop to catch his breath after walking for more than a few minutes on level ground.</p>
 
 <h3>Home Medications</h3>
-* Albuterol sulfate rescue inhaler: 1-2 Puffs PRN for wheezing/shortness of breath every 4 hours *(Not to exceed 6 puffs per day!)*
-* Formoterol/budesonide maintenance inhaler: 1 puff, BID
-* Tiotropium maintenance inhaler: 1 puff, once daily
-* Theophylline ER: 400mg, PO once daily in the morning
-* Nicotine patch: 21mg, transdermal, once daily in the morning
-<br>
-<h3>Your goal</h3>
-Your goal  is to accomplish as many tasks during your day as possible. This is a ''timed simulation''. You and your partner will be competing against your classmates!
-
-Each activity your team completes will earn you points, with some activities being worth more points than others.
-
-At the end of the simulation the winning team will be determined by the amount of points earned during the simulation. In the event of a tie, the fastest time will be used to break the tie.
+Mr. Holland is prescribed multiple medications to help him manage his COPD including twice daily maintenance inhalers along with on oral maintenance bronchodilator. In addition to his maintenance medications has also been prescribed a <strong>rescue inhaler</strong> to use when he is experiencing a sudden increase in his symptoms.
+<h3>Simulation Goals</h3>   
+<ul>
+<li>Your goal  is to accomplish as many tasks during your day as possible. This is a <strong>timed simulation</strong>. You and your partner will be competing against your classmates!</li>
+<li>Each activity your team completes will earn you points, with some activities being worth more points than others.</li>
+<li>At the end of the simulation the winning team will be determined by the amount of points earned during the simulation. In the event of a tie, the fastest time will be used to break the tie.</li>
+</ul>
 
 <h3>Roles</h3>
-* @@.holland;Mr. Holand@@: In this role you will be making choices about what activities to complete and how to perform those activities to conserve your energy. 
-* @@.observer;The Observer@@:  In this role you will be evaluating  @@.holland;Mr. Holand's@@ performance throughout his daily routine. You will be adding and deducting energy based on his performance, along with providing cues on what to do next.
+<ul>
+<li>@@.holland;Mr. Holand@@: In this role you will be making choices about what activities to complete and how to perform those activities to conserve your energy. </li>
+<li>@@.observer;The Observer@@:  In this role you will be evaluating  @@.holland;Mr. Holand's@@ performance throughout his daily routine. You will be adding and deducting energy based on how your partner acts out the activities.</li>
+</ul>
+
+<h3>Augmented Reality Approach</h3>
+<ul>
+<li>To give you an understanding of what it is like to live with a chronic illness, the student playing the role of  @@.holland;Mr. Holand@@ will need to act out many of the activities as if you are actually doing them. For example putting on your shoes will require actually putting on your shoes, while folding laundry will require you to fold a pile of laundry.</li>
+<li>@@.observer;The Observer@@ will assign energy additions or substractions based on @@.holland;Mr. Holand's@@ actual physical performance of that task.</li>
+<li>Once you connect to the multiplayer lobby the student playing the role of @@.holland;Mr. Holand@@ wil be controlling the pace of the game and moving from activity station to activity station. The game will tell you where to go next or it may give you options to chose from.</li>
+<li>Meanwhile the @@.observer;The Observer@@ be provided specific scoring buttons for each task.</li>
+</ul>
 
 <h3>Energy Management</h3>
-* @@.holland;Mr. Holand@@ will start with @@color:green;10 energy@@. and can have a maximum of @@color:green;15 energy@@.
-* Each task you perform will cost energy, with certain tasks costing more than others. 
-* When you use energy conservation techniques or use your rescue inhaler @@.observer;The Observer@@ will be able to @@color:green; add energy@@. Conversly not using good breathing technique can result in @@color:red; subtracting energy@@
-* If @@.holland;Mr. Holand@@ reaches @@color:red; 0 energy@@, its game over and you will have to return to ''room 8220 for debriefing.''
+<ul>
+<li>@@.holland;Mr. Holand@@ will start with @@color:green;10 energy@@. and can have a maximum of @@color:green;15 energy@@.</li>
+<li>Each task you perform will cost energy, with certain tasksm or choices costing more than others. </li>
+<li>When you use energy conservation techniques or use your rescue inhaler @@.observer;The Observer@@ will be able to @@color:green; add energy@@. Conversly not using good breathing technique can result in @@color:red; subtracting energy@@</li>
+<li>If @@.holland;Mr. Holand@@ reaches @@color:red; 0 energy@@, its game over and you will have to return to <strong>room 8220 for debriefing.</strong></li>
+</ul>
 
 <h3>Today's Itinerary</h3>
 The game will start with  @@.holland;Mr. Holand@@ getting out of bed in the morning, which will start the clock for the simulation. After that, you’ll need to shower, brush your teeth, get dressed, along with other activities of daily living.
-
+<br>
 It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot of errands on his to-do list including:
-* Go to the grocery store.
-* Pick up his prescriptions ''(He is almost out of his maintenance medications, fortunately he still has an extra rescue inhaler!)''.
-* Visit the pulmonary rehab clinic.
-* Go to the toy store to buy a gift for his granddaughter's 7th birthday tomorrow.
-
-<h3>Augmented Reality Approach</h3>
-* To give you an understanding of what it is like to live with a chronic illness the student playing the role of  @@.holland;Mr. Holand@@ will need to act out many of the activities as if you are actually doing them. For example putting on your shoes will require actually putting on your shoes, while folding laundry will require you to fold a pile of laundry.
-* @@.observer;The Observer@@ will assign energy additions or substractions based on @@.holland;Mr. Holand's@@ actual physical performance of that task.
-* Once you connect to the multiplayer lobby the student playing the role of @@.holland;Mr. Holand@@ wil be controlling the pace of the game and moving from activity station to activity station. The game will tell you where to go next or it may give you options to chose from.
-*Meanwhile the @@.observer;The Observer@@ be provided specific scoring buttons for each task.
+<ul>
+<li>Go to the grocery store.</li>
+<li>Pick up his prescriptions <strong>(He is almost out of his maintenance medications, fortunately he still has an extra rescue inhaler!)</strong>.</li>
+<li>An appointment at the pulmonary rehab clinic.</li>
+<li>Go to the toy store to buy a gift for his granddaughter's 7th birthday tomorrow.</li>
+</ul>
 
 <h2>To start the game</h2>
-* Have one player click the "Connect to Multiplayer" button below. This will connect you to the game lobby.
-* Once in the game lobby click the <strong><u>Invite</u></strong> button. This will give you a QR code for your partner to pair up and form a team.. If you leave the lobby before your partner joins, the host can tap <strong><u>Show Invite QR Code</u></strong> on the role selection screen to display it again.
-* Once you've both joined the 1st player can then click the <strong><u>Launch</u></strong> button to enter the briefing area to learn the controls.
-//Don't bother spending time customizing your avatar or player names. These won't be used in the game//
+<ul>
+<li>Have one player click the <strong><u>Connect to Multiplayer</u></strong> button below. This will connect you to the game lobby.</li>
+<li>Once in the game lobby click the <strong><u>Invite</u></strong> button. This will give you a QR code for your partner to pair up and form a team.. If you leave the lobby before your partner joins, the host can tap <strong><u>Show Invite QR Code</u></strong> on the role selection screen to display it again.</li>
+<li>Once you've both joined the 1st player can then click the <strong><u>Launch</u></strong> button to enter the briefing area to learn the controls.</li>
+</ul>
+<i>Don't bother spending time customizing your avatar or player names. These won't be used in the game</i>
 
 <!--[[Role_Selection]]-->
 <!--[[Waiting_Room]]-->
@@ -1211,13 +1236,13 @@ setTimeout(function () {
 <hr>\
 <<if State.variables.myRole == "patient">>\
 Now that you are done showering it is time to brush your teeth. Go ahead and walk to the sink and brush your teeth.
-
+<hr>
 <<patient-next "Your skin has been feeling dry, how about some lotion?" "Lotion">>\
 
 <<else>>\
 
 Now that @@.holland;Mr. Holland@@ is done showering he needs to brush his teeth. Go ahead to assess what technique he uses as he brushes his teeth,
-
+<hr>
 <<dynamic-eval "Activity: Brushing Teeth" 
 "He brushed sitting down | -1 | +1 | satAndRested | green | sitting down for this task helped conserve your energy | green" 
 "He brushed standing up | -2 | +1 | standing | red | Even small activities of daily living take their toll on your energy | red" >>\
@@ -1231,7 +1256,7 @@ Now that @@.holland;Mr. Holland@@ is done showering he needs to brush his teeth.
 <h1>Practice: Jumping Jacks</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-You are breathing great right now — look at the top of the page. How about trying **5 jumping jacks**?
+You are breathing great right now — look at the top of the page. How about trying <strong>5 jumping jacks</strong>?
 
 Go ahead and do them now, then tap the button below when you are finished.
 <hr>\
@@ -1241,6 +1266,7 @@ Go ahead and do them now, then tap the button below when you are finished.
 <<patient-next "Continue" "Tutorial_Rest">>
 <<else>>\
 Watch @@.holland;Mr. Holland@@ perform the practice activity. Once they finish, record your assessment below.
+<hr>
 <<dynamic-eval "Practice: Jumping Jacks"
   "They did 5 jumping jacks | -9 | 0 | none | red | What were you thinking?! You have advanced COPD! You can't exercise like you used to in High School!"
 >>\
@@ -1262,6 +1288,7 @@ Once you are seated and breathing, tap the button below.
 <<patient-next "Start Simulation<br>Good Morning Mr. Holland" "Good_Morning_Mr._Holland" "reset">>\
 <<else>>\
 @@.holland;Mr. Holland@@ should sit and rest. Evaluate his recovery technique below.
+<hr>
 <<dynamic-eval "Practice: Rest & Recovery"
   "Sat and did pursed lip breathing | +4 | 0 | pursedLip | green |That feels a little better. You are still winded, but not as bad. | green| "
 >>\
@@ -1274,14 +1301,14 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will sta
 <h1>Waiting for Partner...</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>
-    You are the **Patient**. Please wait for your Observer to be ready.
+    You are the @@.holland;Mr. Holland@@. Please wait for your @@.observer;The Observer@@ to be ready.
 <<else>>
-    You are the **Observer**. Please wait for your Patient to be ready.
+    You are @@.observer;The Observer@@. Please wait for your @@.holland;Mr. Holland@@ to be ready.
 <</if>>
 
 <div id="host-invite-slot-wait"></div>
 
-<div id="status-message">Waiting for partner to select their role...</div>
+<div id="status-message" class="status-message">Waiting for partner to select their role<span class="loading-text"></span></div>
 
 <div id="conflict-container" class="hidden" style="margin-top: 20px; padding: 15px; border: 2px solid #dc3545; border-radius: 8px; background-color: #f8d7da; color: #721c24;">
     <strong>Role Conflict!</strong><br>
@@ -1329,14 +1356,14 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will sta
 <hr>\
 <<if $myRole == "patient">>\
 You start walking toward Whistle Stop Park to begin your errands for the day.
-
+<hr>
 <<patient-next "Continue your errands" "Errands_Hub">>\
 
 <<else>>\
 
 @@.holland;Mr. Holland@@ is walking out toward Whistle Stop Park. 
 //Evaluate his pace and technique as he heads out using your general observer controls.//
-
+<hr>
 <</if>>
 
 <!--[[Errands_Hub]]-->
@@ -1349,7 +1376,7 @@ You start walking toward Whistle Stop Park to begin your errands for the day.
 You step outside and pat your pockets. Oh no... you realize you left your rescue inhaler sitting on the counter inside!
 
 What do you want to do?
-
+<hr>
 <<patient-choices "What do you want to do?" "no-eval"
   "Turn around and go back inside to get it | 0 | green | white | Walk back upstairs to your apartment to get your inhaler. | Hallway_In_Repeat | hasInhaler=true"
   "Keep going to your errands without it | 0 | green | red | You hope that you don't regret your decision to leave your inhaler behind. Start walking to Whistle Stop Park. | Whistle_Stop_Out | hasInhaler=false"
@@ -1360,9 +1387,8 @@ What do you want to do?
 <<else>>\
 
 @@.holland;Mr. Holland@@ steps outside and pats his pockets — his rescue inhaler is still on the counter inside. Watch what he decides.
-
 //There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
-
+<hr>
 <</if>>
 
 <!--[[Hallway_In_Repeat]]-->
@@ -1375,7 +1401,7 @@ What do you want to do?
 <<if State.variables.myRole == "patient">>\
 
 As you step outside, a strong craving for a cigarette hits you out of nowhere.
-
+<hr>
 <<patient-choices "Cigarette craving?" "no-eval"
   "You know you shouldn't, but the urge is overpowering | -5 | red | red | You light up a cigarette and take a couple long slow drags. It doesn't take long for you to start coughing and wheezing. You know you should quit, but sometimes its really hard."
 >>\
@@ -1384,7 +1410,7 @@ As you step outside, a strong craving for a cigarette hits you out of nowhere.
 
 <<else>>\
 @@.holland;Mr. Holland@@ suddenly gets an over powering craving for cigarette. He can't resist, and lights one up. Addiction can be hard to overcome even when you know it is hurting you.
-
+<hr>
 <</if>>
 
 <!--[[Whistle_Stop_Out]]-->
@@ -1397,7 +1423,7 @@ As you step outside, a strong craving for a cigarette hits you out of nowhere.
 You step outside and immediately start coughing. The sky is hazy with wildfire smoke, making the air thick and dangerous for your lungs.
 
 What do you want to do?
-
+<hr>
 <<patient-choices "What do you want to do?" "no-eval"
   "Push through the smoke and keep going| -7 | blue | red | Your chest burns with every breath, but you force yourself to keep walking"
   "Go back inside and grab an N95 mask | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back up stairs to your apartment to grab a mask. | Hallway_In_Repeat"
@@ -1408,9 +1434,8 @@ What do you want to do?
 
 <<else>>\
 @@.holland;Mr. Holland@@ steps outside and immediately starts coughing. There is a wildfire somewhere and thick smoke has settled over the town. Watch what he decides.
-
 //There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
-
+<hr>
 <</if>>
 
 <!--[[Hallway_In_Repeat]]-->
@@ -1425,7 +1450,7 @@ What do you want to do?
 You step outside and are hit with a blast of freezing cold air. You immediately feel like it is harder to breath.
 
 What do you want to do?
-
+<hr>
 <<patient-choices "What do you want to do?" "no-eval"
   "Back in my day I used to walk 5 miles in the snow to go to school! I can deal with this!| -6 | blue | red | As you start walking you remember that when you were younger your lungs were also healthier. You sigh as you remember being able to sprint across the playground for what seemed like hours. Now you keep walking and feel your lungs freezing with every breath"
   "Go back inside and grab a scarf | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back up stairs to your apartment to grab a scarf. | Hallway_In_Repeat"
@@ -1437,7 +1462,7 @@ What do you want to do?
 <<else>>\
 @@.holland;Mr. Holland@@ steps outside and is hit with a blast of fridgid air. A polar vortex is causing record breaking low temperatures in the area.
 //There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
-
+<hr>
 <</if>>
 
 <!--[[Hallway_In_Repeat]]-->
@@ -1449,7 +1474,7 @@ What do you want to do?
 <hr>\
 <<if State.variables.myRole == "patient">>\
 You step outside and take a breath. It is a completely beautiful, mild, and sunny day. The weather is perfect and doesn't bother your breathing at all.
-
+<hr>
 <<patient-choices "It's a beautiful day and I can't stop myself from smilin'" "no-eval"
 	"You smile and enjoy the weather knowing that it is not always this nice | 0 | green | green | You're glad you get to run errands on a day like today. As you've gotten older you know how important it is to savor these beautiful days | | Points +=1"
 >>\
@@ -1458,9 +1483,8 @@ You step outside and take a breath. It is a completely beautiful, mild, and sunn
 
 <<else>>
 It's a beautiful day outside. The weather is perfect, and the skies are clear. @@.holland;Mr. Holland@@ takes a deep breath in and smiles before continuing on with his errands.
-
 //There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
-
+<hr>
 <</if>>
 
 <!--[[Whistle_Stop_Out]]-->
@@ -1473,7 +1497,7 @@ It's a beautiful day outside. The weather is perfect, and the skies are clear. @
 You step outside and immediately start coughing. The flowers on the trees look beautiful, but the pollen is really hurting your lungs!
 
 What do you want to do?
-
+<hr>
 <<patient-choices "What do you want to do?" "no-eval"
   "Keep going and try and ignore the pollen| -7 | blue | red | Your chest tightens and you find yourself gasping as you walk outside into the clouds of yellow pollen"
   "Go back inside and grab an N95 mask | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back up stairs to your apartment to grab a mask. | Hallway_In_Repeat"
@@ -1484,9 +1508,8 @@ What do you want to do?
 
 <<else>>\
 @@.holland;Mr. Holland@@ steps outside and immediately starts coughing. It seems like every tree, bush and flower is in bloom right now. A dusting of yellow pollen is visible on every surface and gusts of wind stir more pollen into the air.
-
 //There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
-
+<hr>
 <</if>>
 
 <!--[[Hallway_In_Repeat]]-->
@@ -1528,7 +1551,7 @@ What do you want to do?
 
 :: StoryScript [script]
 /* ============================================================
-   STORYSCRIPT — COPD Simulation runtime (v2.0.12)
+   STORYSCRIPT — COPD Simulation runtime (v2.0.13)
    ============================================================
    1. Playtime (Chapel macro + <<playtime>>)
    2. SimApp — multiplayer simulation framework
@@ -1938,8 +1961,8 @@ window.SimApp = {
             this.hideInviteModal();
             return;
         }
-        $("#sim-invite-status").text(
-            "Waiting for your partner (" + count + " of 2 connected). Have them scan this QR code."
+        $("#sim-invite-status").html(
+            "Waiting for your partner <span class='loading-text'>Loading</span> (" + count + " of 2 connected). Have them scan this QR code."
         );
     },
 
@@ -1987,9 +2010,16 @@ window.SimApp = {
     /** Connect to Playroom lobby, init room if new, resume if reconnecting */
     connect: async function () {
         if (typeof Playroom === "undefined") {
-            alert("Playroom is still loading. Please wait a second and try again.");
+            if (!$("#sim-playroom-loading-notice").length) {
+                $("body").append(
+                    '<div id="sim-playroom-loading-notice" class="sim-playroom-loading-notice" role="status">' +
+                    "Playroom is still loading. Please wait a second and try again<span class=\"loading-text\"></span></div>"
+                );
+            }
             return;
         }
+
+        $("#sim-playroom-loading-notice").remove();
 
         var self = this;
         self.registerPlayerHandlers();
@@ -2982,7 +3012,7 @@ window.SimApp = {
             energy: energy,
             btnColor: btnColor,
             msgColor: msgColor,
-            message: message || "You make your choice.",
+            message: message || "",
             nextPassage: nextPassage,
             stateOps: stateOps
         };
@@ -3162,11 +3192,10 @@ window.SimApp = {
                 '<div class="patient-footer-heading">' +
                 self._escapeHtml(sectionTitle) +
                 "</div>";
-            if (choice.message) {
-                choiceHtml += self._renderPatientConsequence(choice.message, choice.msgColor);
-            } else {
-                choiceHtml += '<div class="gray-box patient-footer-hint">Waiting for your Observer to evaluate...</div>';
-            }
+            choiceHtml += self._renderPatientConsequence(
+                choice.message || choice.label || "You make your choice",
+                choice.msgColor
+            );
             choiceHtml += "</div>";
             $target.html(choiceHtml);
             if (gameOver) {
@@ -3217,7 +3246,7 @@ window.SimApp = {
 
         if (evalRequired && !evalDone) {
             $slot.html(
-                '<div class="gray-box patient-footer-hint">Waiting for Observer evaluation...</div>'
+                '<div class="gray-box patient-footer-hint">Waiting for Observer evaluation<span class="loading-text"></span></div>'
             );
             if (!this._patientNextTimer) {
                 this._patientNextTimer = setInterval(function () {
@@ -3566,31 +3595,75 @@ body, html {
 .passage h1:{
     margin-top: 0;
     padding-top: 5px;
+    margin-bottom: 4px;
 }
 .passage h2:{
     margin-top: 0;
     padding-top: 5px;
     padding-bottom: 5px;
+    margin-bottom: 4px;
 }
 .passage h3:{
     margin-top: 0;
     padding-top: 5px;
     padding-bottom: 5px;
+    margin-bottom: 4px;
 }
 ,passage h4:{
     margin-top: 0;
     padding-top: 5px;
     padding-bottom: 5px;
+    margin-bottom: 4px;
 }
 ,passage h5:{
     margin-top: 0;
     padding-top: 5px;
     padding-bottom: 5px;
+    margin-bottom: 4px;
 }
 ,passage h6:{
     margin-top: 0;
     padding-top: 5px;
     padding-bottom: 5px;
+    margin-bottom: 4px;
+}
+.loading-text {
+  display: inline-block;
+  min-width: 3ch;
+  vertical-align: baseline;
+  font-size: inherit;
+  font-family: inherit;
+  font-weight: inherit;
+}
+
+/* Create the sequential dot effect */
+.loading-text::after {
+  content: '';
+  animation: typing-dots 2s infinite step-start;
+}
+
+@keyframes typing-dots {
+  0%   { content: ''; }
+  25%  { content: '.'; }
+  50%  { content: '..'; }
+  75%  { content: '...'; }
+}
+
+.sim-playroom-loading-notice {
+  position: fixed;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 1500;
+  max-width: min(90vw, 420px);
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: #1e272e;
+  color: #ffffff;
+  font-size: 0.95em;
+  line-height: 1.4;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 /* 2. Global styling for a clean, app-like feel */
 
@@ -3984,6 +4057,10 @@ button.host-invite-btn:hover {
   color: blue;
   font-weight: bold;
 }
+.wild-card-event {
+  color: #007bff;
+  margin: 0.5em 0;
+}
   /* Core Heading Base Class */
 
     .center-heading1 {
@@ -4145,6 +4222,10 @@ body.game-over-pending #patient-footer {
   	padding: 4px 4px;
  	width: 100% !important;
     font-size: 0.95em;
+}
+
+.gray-box.patient-footer-hint {
+    display: block;
 }
 
 #patient-footer .patient-choice-btn,
