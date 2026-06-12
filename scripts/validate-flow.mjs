@@ -198,12 +198,19 @@ function validatePassages(passages, passageNames) {
             observer.hasDynamicEval &&
             !isRouter
         ) {
-            warnings.push({
-                type: "early-advance",
-                passage: name,
-                message:
-                    "Patient has <<patient-next>> only; Observer has <<dynamic-eval>> — runtime may not block Patient until eval (Playroom sync only after choice stations)",
-            });
+            if (model.hasRoleSplit) {
+                /* Role-split activity station: Patient <<patient-next>> + Observer <<dynamic-eval>>.
+                   SimApp.mountPatientNext sets _observerEvalMounted when passageTextHasDynamicEval();
+                   refreshPatientNextSlot blocks the next button until evalComplete. */
+                passCount++;
+            } else {
+                warnings.push({
+                    type: "eval-gating-unclear",
+                    passage: name,
+                    message:
+                        "Passage has <<patient-next>> and <<dynamic-eval>> without a myRole patient/else split — verify eval gating at runtime",
+                });
+            }
         }
     }
 

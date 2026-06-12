@@ -1,5 +1,5 @@
 :: StoryTitle
-COPD simulation 2.0.13
+COPD simulation 2.0.14
 
 
 :: StoryData
@@ -747,24 +747,24 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
         <div class="eval-grid">
             <!-- Row 1 -->
             <span id="wrap-sat" class="eval-wrap green-wrap">
-                <<button '<div class="eval-title">Sat & Rested</div><div class="eval-sub">+2 Energy</div>'>>
+                <<button '<div class="eval-title">Sat & Rested</div>'>>
                     <<run SimApp.applyGeneralObservation("satAndRested", 2, "wrap-sat")>>
                 <</button>>
             </span>
             <span id="wrap-rushed" class="eval-wrap red-wrap">
-                <<button '<div class="eval-title">Rushed</div><div class="eval-sub">-2 Energy</div>'>>
+                <<button '<div class="eval-title">Rushed</div>'>>
                     <<run SimApp.applyGeneralObservation("rushed", -2, "wrap-rushed")>>
                 <</button>>
             </span>
             
             <!-- Row 2 -->
             <span id="wrap-pursed" class="eval-wrap green-wrap">
-                <<button '<div class="eval-title">Pursed Lip Breathing</div><div class="eval-sub">+1 Energy</div>'>>
+                <<button '<div class="eval-title">Pursed Lip Breathing</div>'>>
                     <<run SimApp.applyGeneralObservation("pursedLip", 1, "wrap-pursed")>>
                 <</button>>
             </span>
             <span id="wrap-bent" class="eval-wrap red-wrap">
-                <<button '<div class="eval-title">Bent Over</div><div class="eval-sub">-1 Energy</div>'>>
+                <<button '<div class="eval-title">Bent Over</div>'>>
                     <<run SimApp.applyGeneralObservation("bentOver", -1, "wrap-bent")>>
                 <</button>>
             </span>
@@ -774,7 +774,7 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
         <div class="footer-control-row inhaler-row">
             <<if $hasInhaler>>
                 <span id="wrap-inhaler" class="eval-wrap blue-wrap">
-                    <<button '<div class="eval-title">Use Rescue Inhaler</div><div class="eval-sub">+2 Energy</div>'>>
+                    <<button '<div class="eval-title">Use Rescue Inhaler</div>'>>
                         <<run SimApp.applyInhalerUse()>>
                     <</button>>
                 </span>
@@ -925,12 +925,12 @@ Once you are there, what temperature will you set the water to?
 <li>Hot Water</li>
 <li>Warm Water</li>
 <li>Cold Water</li>
-</ul>
+</ul>\
 After that, you will need to assess how he performs the activity and how his breathing responds.
 <hr>
 
 <<dynamic-eval "Activity: Showering"
-  "He showered sitting down | 0 | 1 | satAndRested | green | You're glad your daughter convinced you to buy the shower chair, it certainely makes things easier in the0 morning | green"
+  "He showered sitting down | 0 | 1 | satAndRested | green | You're glad your daughter convinced you to buy the shower chair, it certainely makes things easier in the morning | green"
   "He showered standing up | -2 | 1 | standing | red | The day has barely begun and you're already starting to feel a little winded | red"
 >>\
 <</if>>
@@ -1551,7 +1551,7 @@ What do you want to do?
 
 :: StoryScript [script]
 /* ============================================================
-   STORYSCRIPT — COPD Simulation runtime (v2.0.13)
+   STORYSCRIPT — COPD Simulation runtime (v2.0.14)
    ============================================================
    1. Playtime (Chapel macro + <<playtime>>)
    2. SimApp — multiplayer simulation framework
@@ -2761,6 +2761,66 @@ window.SimApp = {
         return bits.join(" · ");
     },
 
+    _formatStatPopupLabel: function (delta, unit) {
+        var n = Number(delta);
+        if (!n) {
+            return null;
+        }
+        return (n > 0 ? "+" : "") + n + " " + unit;
+    },
+
+    _spawnStatPopups: function ($anchor, energyDelta, pointsDelta, opts) {
+        opts = opts || {};
+        if (!$anchor || !$anchor.length) {
+            return;
+        }
+        var self = this;
+        var $container = $anchor.closest(".eval-wrap");
+        if (!$container.length) {
+            $container = $anchor;
+        }
+
+        var hasEnergy = Number(energyDelta);
+        var hasPoints = Number(pointsDelta);
+        var dual = hasEnergy && hasPoints;
+
+        var spawnOne = function (delta, unit, kind) {
+            var label = self._formatStatPopupLabel(delta, unit);
+            if (!label) {
+                return;
+            }
+            var n = Number(delta);
+            var signClass = n > 0 ? "stat-positive" : "stat-negative";
+            var posClass = dual ? "stat-" + kind : "stat-solo";
+            var $popup;
+            if (opts.detach && $anchor[0] && $anchor[0].getBoundingClientRect) {
+                var rect = $anchor[0].getBoundingClientRect();
+                var xRatio = dual ? (kind === "energy" ? 0.35 : 0.65) : 0.5;
+                $popup = $("<span></span>")
+                    .addClass("floating-stat-popup floating-stat-popup--detached " + signClass + " " + posClass)
+                    .css({
+                        position: "fixed",
+                        left: rect.left + rect.width * xRatio,
+                        top: rect.top - 4,
+                        transform: "translateX(-50%)"
+                    })
+                    .text(label)
+                    .appendTo(document.body);
+            } else {
+                $popup = $("<span></span>")
+                    .addClass("floating-stat-popup " + signClass + " " + posClass)
+                    .text(label)
+                    .appendTo($container);
+            }
+            setTimeout(function () {
+                $popup.remove();
+            }, 1200);
+        };
+
+        spawnOne(energyDelta, "Energy", "energy");
+        spawnOne(pointsDelta, "Pts", "points");
+    },
+
     /** Apply energy delta; clamps 0–15, updates HUD, may schedule game over */
     applyEnergyDelta: function (amount) {
         var currentEnergy = Number(this.getVal("Energy"));
@@ -2813,6 +2873,9 @@ window.SimApp = {
 
     /** General footer observation buttons (PassageFooter) */
     applyGeneralObservation: function (behaviorName, energyDelta, wrapId) {
+        if (wrapId) {
+            this._spawnStatPopups($("#" + wrapId + " button"), energyDelta, 0);
+        }
         if (behaviorName) {
             this.incrementBehavior(behaviorName);
         }
@@ -2825,6 +2888,7 @@ window.SimApp = {
 
     /** Rescue inhaler button (PassageFooter) */
     applyInhalerUse: function () {
+        this._spawnStatPopups($("#wrap-inhaler button"), 2, 0);
         var currentInhaler = Number(this.getVal("Inhaler")) || 0;
         var newInhaler = currentInhaler + 1;
         this.setVal("Inhaler", newInhaler);
@@ -2892,10 +2956,6 @@ window.SimApp = {
         html += '<div class="eval-grid dynamic-eval-grid">';
 
         options.forEach(function (opt, index) {
-            var sub = self._formatEvalSubtitle(opt.energy, opt.points);
-            var subHtml = sub
-                ? '<div class="eval-sub">' + self._escapeHtml(sub) + "</div>"
-                : "";
             html +=
                 '<span class="eval-wrap ' +
                 self._escapeHtml(opt.color) +
@@ -2906,7 +2966,6 @@ window.SimApp = {
                 '<div class="eval-title">' +
                 self._escapeHtml(opt.label) +
                 "</div>" +
-                subHtml +
                 "</button></span>";
         });
 
@@ -2919,6 +2978,7 @@ window.SimApp = {
             if (!choice) {
                 return;
             }
+            self._spawnStatPopups($(this), choice.energy, choice.points, { detach: true });
             self.applyObserverEval(choice);
             $target.html(
                 '<div id="dynamic-eval-root" class="dynamic-eval-root">' +
@@ -3774,6 +3834,7 @@ summary::-webkit-details-marker {
     justify-content: center;
     padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
     box-sizing: border-box;
+    background-color: rgba(0, 0, 0, 0.55);
 }
 
 .sim-invite-modal.hidden {
@@ -3788,7 +3849,7 @@ summary::-webkit-details-marker {
 
 .sim-invite-panel {
     position: relative;
-    background: #ffffff;
+    background:rgb(77, 77, 77);
     border-radius: 12px;
     padding: 24px 20px 20px;
     max-width: 320px;
@@ -3905,6 +3966,57 @@ button.host-invite-btn:hover {
     display: block;
     width: 100%;
     min-width: 0;
+    position: relative;
+}
+
+/* Floating stat popups on observer footer button clicks */
+.floating-stat-popup {
+    position: absolute;
+    top: -4px;
+    transform: translateX(-50%);
+    font-weight: bold;
+    font-size: clamp(0.75em, 2dvw, 0.95em);
+    text-shadow: 1px 1px 2px #000;
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+    z-index: 1100;
+    animation: floatUpAndOut 4.0s ease-out forwards;
+}
+
+.floating-stat-popup.stat-positive {
+    color: #28a745;
+}
+
+.floating-stat-popup.stat-negative {
+    color: #dc3545;
+}
+
+.floating-stat-popup.stat-energy {
+    left: 35%;
+}
+
+.floating-stat-popup.stat-points {
+    left: 65%;
+}
+
+.floating-stat-popup.stat-solo {
+    left: 50%;
+}
+
+.floating-stat-popup--detached {
+    z-index: 1200;
+}
+
+@keyframes floatUpAndOut {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50px);
+    }
 }
 
 /* Odd last button (1, 3, 5… options) — one column wide, centered in the grid */
@@ -4036,6 +4148,10 @@ button.host-invite-btn:hover {
 #observer-footer .inhaler-row .gray-box {
     display: block;
     width: 100%;
+}
+
+#observer-footer .inhaler-row .eval-wrap {
+    position: relative;
 }
 
 #observer-footer .inhaler-row .blue-wrap button {

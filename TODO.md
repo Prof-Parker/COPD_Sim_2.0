@@ -8,9 +8,7 @@
 
 - [ ] Test all scenes
 - [ ] Revamp tutorial
-- [ ] Revise devmode interface
-- [ ] RPG button feedback
-- [X] Animated loading text for multiplayer connect (Maybe waiting for eval?)
+
 
 
 ---
@@ -32,6 +30,9 @@
 - [X] Check line breaks and formatting on debriefing screen (switch to html styling)
 - [x] Debug try again button for observer.
 - [x] Stop clock on game over and win screens
+- [X] Revise devmode interface
+- [X] RPG button feedback
+- [X] Animated loading text for multiplayer connect (Maybe waiting for eval?)
 
 ---
 
