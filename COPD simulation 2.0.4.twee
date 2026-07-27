@@ -1,5 +1,5 @@
 :: StoryTitle
-COPD simulation 2.0.16
+COPD simulation 2.0.17
 
 
 :: StoryData
@@ -990,6 +990,7 @@ Once you feel comfortable with the controls and @@.holland;Mr. Holland@@ is comf
 
 
 :: Start [nobr]{"position":"800,400","size":"200,200"}
+<<run if (window.SimApp) { SimApp.revealConnectButton(); }>>
 <div class="center-heading1">@@.holland;Mr Holland's@@ Grand Day Out</div>
 <div class="center-heading3">Version <<print Story.title.replace(/^COPD simulation\s+/i, "")>></div>
 <hr>
@@ -1723,6 +1724,7 @@ window.SimApp = {
     _allowAdvanceWithoutPartner: false,
     _wakeHandlersRegistered: false,
     _hasJoinedRoom: false,
+    _connectInFlight: false,
     _syncBannerHideTimer: null,
     _partnerAbsent: false,
 
@@ -1780,9 +1782,80 @@ window.SimApp = {
         if (Playroom.getState("roomStarted") === true) {
             return true;
         }
-        /* Strengthen host-refresh guard: do not wipe a room mid-sim */
         var existing = Playroom.getState("currentPassage");
-        return !!(existing && existing !== "Role_Selection" && existing !== "Start");
+        if (existing && existing !== "Role_Selection" && existing !== "Start") {
+            return true;
+        }
+        var seq = Number(Playroom.getState("passageSeq"));
+        if (!isNaN(seq) && seq > 0) {
+            return true;
+        }
+        if (Playroom.getState("lobby_patient") === true || Playroom.getState("lobby_observer") === true) {
+            return true;
+        }
+        if (Playroom.getState("patientPlayerId") || Playroom.getState("observerPlayerId")) {
+            return true;
+        }
+        return false;
+    },
+
+    /**
+     * After insertCoin, shared state can lag briefly — wait before deciding to wipe.
+     */
+    waitForRoomSnapshot: function (timeoutMs) {
+        var self = this;
+        timeoutMs = timeoutMs || 2500;
+        return new Promise(function (resolve) {
+            var start = Date.now();
+            function tick() {
+                if (typeof Playroom === "undefined") {
+                    resolve({ ready: false, active: false, timedOut: true });
+                    return;
+                }
+                var passage = Playroom.getState("currentPassage");
+                var started = Playroom.getState("roomStarted");
+                var hasAny =
+                    started === true ||
+                    passage !== undefined ||
+                    Playroom.getState("passageSeq") !== undefined ||
+                    Playroom.getState("lobby_patient") !== undefined ||
+                    Playroom.getState("patientPlayerId") !== undefined;
+                var active = self.isRoomActive();
+                if (active || (hasAny && started === true)) {
+                    resolve({
+                        ready: true,
+                        active: active,
+                        timedOut: false,
+                        currentPassage: passage,
+                        roomStarted: started
+                    });
+                    return;
+                }
+                if (hasAny && Date.now() - start > 400) {
+                    /* State keys exist (even if room looks new) — stop waiting */
+                    resolve({
+                        ready: true,
+                        active: active,
+                        timedOut: false,
+                        currentPassage: passage,
+                        roomStarted: started
+                    });
+                    return;
+                }
+                if (Date.now() - start >= timeoutMs) {
+                    resolve({
+                        ready: false,
+                        active: self.isRoomActive(),
+                        timedOut: true,
+                        currentPassage: passage,
+                        roomStarted: started
+                    });
+                    return;
+                }
+                setTimeout(tick, 50);
+            }
+            tick();
+        });
     },
 
     getRole: function () {
@@ -2045,7 +2118,7 @@ window.SimApp = {
 
     /* --- 2b. Playroom connection, lobby, and role routing --- */
 
-    /** Join URL Playroom reads on load (#r=roomCode) */
+    /** Join URL Playroom reads on load (#r=R{roomCode}) */
     getInviteUrl: function () {
         var base = window.location.href.split("#")[0];
         if (typeof Playroom === "undefined") {
@@ -2055,7 +2128,142 @@ window.SimApp = {
         if (!code) {
             return base;
         }
-        return base + "#r=" + encodeURIComponent(code);
+        return base + this.roomCodeToHash(code);
+    },
+
+    /** Playroom join hash uses a leading R before the room code (e.g. #r=R8PVM). */
+    roomCodeToHash: function (code) {
+        var c = String(code || "").replace(/^#r=/i, "");
+        if (!c) {
+            return "";
+        }
+        if (c.charAt(0) !== "R") {
+            c = "R" + c;
+        }
+        return "#r=" + c;
+    },
+
+    parseStoredRoomCode: function (raw) {
+        if (!raw) {
+            return "";
+        }
+        var c = String(raw).trim();
+        if (c.indexOf("#r=") === 0) {
+            c = c.slice(3);
+        }
+        if (c.charAt(0) === "R" && c.length > 1) {
+            c = c.slice(1);
+        }
+        return c;
+    },
+
+    /** True when URL or storage indicates rejoining an existing room (not first host create). */
+    isRejoinAttempt: function () {
+        if (window.location.hash && /#r=/i.test(String(window.location.hash || ""))) {
+            return true;
+        }
+        try {
+            return !!localStorage.getItem("simRoomCode");
+        } catch (eRejoin) {
+            return false;
+        }
+    },
+
+    /**
+     * Host's URL often loses #r= after insertCoin; persist so refresh rejoins the same room.
+     */
+    persistRoomJoinHint: function (roomCode) {
+        var code = this.parseStoredRoomCode(roomCode);
+        if (!code) {
+            return;
+        }
+        try {
+            localStorage.setItem("simRoomCode", code);
+        } catch (eSave) { /* ignore */ }
+        var hash = this.roomCodeToHash(code);
+        if (window.location.hash !== hash) {
+            try {
+                history.replaceState(
+                    null,
+                    "",
+                    window.location.pathname + window.location.search + hash
+                );
+            } catch (eHash) { /* ignore */ }
+        }
+    },
+
+    persistRoleHint: function (roleName) {
+        var code = this.parseStoredRoomCode(
+            (typeof Playroom !== "undefined" && Playroom.getRoomCode && Playroom.getRoomCode()) ||
+                (function () {
+                    try { return localStorage.getItem("simRoomCode"); } catch (e) { return null; }
+                })()
+        );
+        if (!code || !roleName) {
+            return;
+        }
+        try {
+            localStorage.setItem("simRole_" + code, String(roleName));
+        } catch (eRole) { /* ignore */ }
+    },
+
+    readRoleHint: function (roomCode) {
+        var code = this.parseStoredRoomCode(
+            roomCode ||
+                (typeof Playroom !== "undefined" && Playroom.getRoomCode && Playroom.getRoomCode()) ||
+                (function () {
+                    try { return localStorage.getItem("simRoomCode"); } catch (e) { return null; }
+                })()
+        );
+        if (!code) {
+            return "";
+        }
+        try {
+            return localStorage.getItem("simRole_" + code) || "";
+        } catch (eRead) {
+            return "";
+        }
+    },
+
+    revealConnectButton: function () {
+        var loader = document.getElementById("loading-overlay");
+        var btnContainer = document.getElementById("connect-container");
+        if (loader) {
+            loader.classList.add("hidden");
+        }
+        if (btnContainer) {
+            btnContainer.classList.remove("hidden");
+        }
+    },
+
+    /**
+     * Before insertCoin: if hash was stripped (common for host), restore from localStorage.
+     */
+    restoreRoomHashBeforeConnect: function () {
+        if (window.location.hash && /#r=/i.test(window.location.hash)) {
+            return { restored: false, hash: String(window.location.hash) };
+        }
+        var stored = null;
+        try {
+            stored = localStorage.getItem("simRoomCode");
+        } catch (eRead) { /* ignore */ }
+        var code = this.parseStoredRoomCode(stored);
+        if (!code) {
+            return { restored: false, hash: "", storedRoom: null };
+        }
+        var hash = this.roomCodeToHash(code);
+        try {
+            history.replaceState(
+                null,
+                "",
+                window.location.pathname + window.location.search + hash
+            );
+        } catch (eSet) {
+            try {
+                window.location.hash = hash.replace(/^#/, "");
+            } catch (eSet2) { /* ignore */ }
+        }
+        return { restored: true, hash: hash, storedRoom: code };
     },
 
     ensureInviteModal: function () {
@@ -2167,14 +2375,28 @@ window.SimApp = {
         $("#sim-playroom-loading-notice").remove();
 
         var self = this;
+        if (self._connectInFlight) {
+            return;
+        }
+        if (self._hasJoinedRoom && Playroom.myPlayer()) {
+            await self.recoverSession({ reason: "connect" });
+            self._recovering = false;
+            self._passageCommitInFlight = false;
+            self.refreshPatientNextSlot();
+            return;
+        }
+
         self.registerPlayerHandlers();
         self.registerWakeHandlers();
+        self._connectInFlight = true;
 
         try {
+            self.restoreRoomHashBeforeConnect();
+            var rejoining = self.isRejoinAttempt();
             await Playroom.insertCoin(
                 {
                     maxPlayersPerRoom: 2,
-                    skipLobby: false,
+                    skipLobby: true,
                     reconnectGracePeriod: self.RECONNECT_GRACE_MS
                 },
                 undefined,
@@ -2192,7 +2414,14 @@ window.SimApp = {
 
             self._hasJoinedRoom = true;
 
-            if (Playroom.isHost() && !self.isRoomActive()) {
+            var roomCode = Playroom.getRoomCode && Playroom.getRoomCode();
+            self.persistRoomJoinHint(roomCode);
+
+            var snapshot = await self.waitForRoomSnapshot(2500);
+            var isHost = Playroom.isHost();
+            var active = snapshot.active || self.isRoomActive();
+
+            if (isHost && !active && !rejoining) {
                 self.initRoomState();
             }
 
@@ -2207,12 +2436,21 @@ window.SimApp = {
             setTimeout(function () {
                 self.wireDevCaptionControls();
             }, Engine.minDomActionDelay || 40);
+
+            self._recovering = false;
+            self._passageCommitInFlight = false;
+            self.refreshPatientNextSlot();
         } catch (e) {
             console.error("Failed to connect to Playroom:", e);
             self.showSyncBanner("Connection error. Please refresh and try again.", "error", {
                 sticky: true
             });
             alert("Connection error. Please refresh and try again.");
+        } finally {
+            self._connectInFlight = false;
+            self._recovering = false;
+            self._passageCommitInFlight = false;
+            self.refreshPatientNextSlot();
         }
     },
 
@@ -2276,6 +2514,9 @@ window.SimApp = {
             }
         }
         if (!savedRole) {
+            savedRole = this.readRoleHint(Playroom.getRoomCode && Playroom.getRoomCode()) || "";
+        }
+        if (!savedRole) {
             return "";
         }
 
@@ -2283,6 +2524,7 @@ window.SimApp = {
         this.myRole = savedRole;
         State.variables.myRole = savedRole;
         $("body").removeClass("role-patient role-observer").addClass("role-" + savedRole);
+        this.persistRoleHint(savedRole);
 
         var lobbyKey = "lobby_" + savedRole;
         var ownerKey = savedRole + "PlayerId";
@@ -2341,6 +2583,22 @@ window.SimApp = {
             return true;
         }
 
+        /*
+         * Partner picked a role first → room currentPassage becomes Waiting_Room.
+         * Focus/visibility must not yank this client off Role_Selection before they pick.
+         */
+        if (
+            options.reason !== "connect" &&
+            typeof Playroom !== "undefined" &&
+            Playroom.myPlayer() &&
+            !this.getRole() &&
+            !Playroom.myPlayer().getState("role") &&
+            Playroom.getState("currentPassage") === "Waiting_Room" &&
+            (passage() === "Role_Selection" || passage() === "Start")
+        ) {
+            return true;
+        }
+
         this._recovering = true;
         this._recoverDebounceUntil = now + this.RECOVER_DEBOUNCE_MS;
         this.showSyncBanner("Reconnecting…", "info", { sticky: true });
@@ -2353,12 +2611,22 @@ window.SimApp = {
 
             if (!Playroom.myPlayer()) {
                 try {
+                    this.restoreRoomHashBeforeConnect();
                     await Playroom.insertCoin({
                         maxPlayersPerRoom: 2,
-                        skipLobby: false,
+                        skipLobby: true,
                         reconnectGracePeriod: this.RECONNECT_GRACE_MS
                     });
                     this._hasJoinedRoom = true;
+                    this.persistRoomJoinHint(Playroom.getRoomCode && Playroom.getRoomCode());
+                    var snap = await this.waitForRoomSnapshot(2500);
+                    if (
+                        Playroom.isHost() &&
+                        !(snap.active || this.isRoomActive()) &&
+                        !this.isRejoinAttempt()
+                    ) {
+                        this.initRoomState();
+                    }
                 } catch (reErr) {
                     console.error("Playroom rejoin failed:", reErr);
                     this.showSyncBanner("Could not rejoin room — refresh the page", "error", {
@@ -2368,7 +2636,7 @@ window.SimApp = {
                 }
             }
 
-            if (Playroom.isHost() && !this.isRoomActive()) {
+            if (Playroom.isHost() && !this.isRoomActive() && !this.isRejoinAttempt()) {
                 this.initRoomState();
             }
 
@@ -2377,7 +2645,18 @@ window.SimApp = {
 
             var target = Playroom.getState("currentPassage");
             if (target && Story.has(target)) {
-                this.applyRoomPassage(true);
+                /*
+                 * Host sets currentPassage=Waiting_Room after picking a role.
+                 * Do NOT force the other player off Role_Selection before they pick —
+                 * that left lobby_observer unset and stuck both in Waiting_Room.
+                 */
+                if (target === "Waiting_Room" && !savedRole) {
+                    if (passage() !== "Role_Selection") {
+                        Engine.play("Role_Selection");
+                    }
+                } else {
+                    this.applyRoomPassage(true);
+                }
             } else if (savedRole) {
                 Engine.play(this.checkReadyState() ? "Simulation_Hub" : "Waiting_Room");
             } else {
@@ -2390,6 +2669,7 @@ window.SimApp = {
             return true;
         } finally {
             this._recovering = false;
+            this.refreshPatientNextSlot();
         }
     },
 
@@ -2729,6 +3009,7 @@ window.SimApp = {
         this.myRole = roleName;
         State.variables.myRole = roleName;
         $("body").removeClass("role-patient role-observer").addClass("role-" + roleName);
+        this.persistRoleHint(roleName);
 
         if (Playroom.isHost()) {
             this.syncLobbyRolesFromPlayers();
@@ -2917,7 +3198,7 @@ window.SimApp = {
         if (globalDest && globalDest !== "Role_Selection" && globalDest !== "Waiting_Room") {
             return;
         }
-        if (Playroom.isHost()) {
+        if (Playroom.isHost() && this.getRoomPassageSeq() === 0) {
             this.goToSharedPassage("Simulation_Hub");
         }
     },
@@ -3954,11 +4235,13 @@ importScripts("https://unpkg.com/playroomkit/multiplayer.full.umd.js")
     .then(function () {
         window.SimApp.isPlayroomLoaded = true;
         window.SimApp.registerPlayerHandlers();
-        var loader = document.getElementById("loading-overlay");
-        var btnContainer = document.getElementById("connect-container");
-        if (loader && btnContainer) {
-            loader.classList.add("hidden");
-            btnContainer.classList.remove("hidden");
+        window.SimApp.revealConnectButton();
+        /* Refresh keeps #r= — auto-rejoin so Connect is not required after reload */
+        var hasRoomHash = !!(window.location.hash && /#r=/i.test(String(window.location.hash || "")));
+        if (hasRoomHash && !window.SimApp._hasJoinedRoom && !window.SimApp._autoConnectStarted) {
+            window.SimApp._autoConnectStarted = true;
+            window.SimApp.showSyncBanner("Rejoining room…", "info", { sticky: true });
+            window.SimApp.connect();
         }
     })
     .catch(function (error) {

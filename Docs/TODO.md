@@ -58,6 +58,7 @@
 - [x] Copyedit typos (`Holand`/`Holland`, `lavendar`, `@.holland` vs `@@.holland`, etc.)
 - [X] Wire **visited** flags (`visitedGrocery`, `visitedPharmacy`, etc.) as errands are completed
 - [X] Remove or finish **legacy widgets** (`Patient_Next_Button`, `Dynamic_Eval_Button`)
+- [ ] Test moving HUD to bottom of the footer?
 
 ---
 
@@ -80,3 +81,10 @@
 ## Wishlist Items
 - [ ] **Win / leaderboard** logic if teams compete across rooms
 - [ ] **Money system** for certain choices such as ordering pizza or buying groceries
+- [ ] **Visual inventory** open inventory to view icons for inhaler, mask, toy etc. Would want to implement if also implementing money system.
+
+---
+
+## Refactor
+- [ ] Break into smaller chucks to compile with tweego
+- [ ] Migrate to firebase for better connectivity?

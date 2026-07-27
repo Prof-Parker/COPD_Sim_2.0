@@ -17,7 +17,8 @@
  *   players: Map<string, { state: Map<string, any>, quitHandlers: Function[] }>,
  *   hostId: string | null,
  *   createClientView: (opts: { id: string, isHost?: boolean }) => object,
- *   setHost: (id: string) => void
+ *   setHost: (id: string) => void,
+ *   setStateOpaque: (opaque: boolean) => void
  * }}
  */
 export function createRoom() {
@@ -25,6 +26,8 @@ export function createRoom() {
     /** @type {Map<string, { state: Map<string, any>, quitHandlers: Function[] }>} */
     const players = new Map();
     let hostId = null;
+    /** When true, getState returns undefined (simulates Playroom snapshot lag after rejoin). */
+    let stateOpaque = false;
 
     function ensurePlayer(id) {
         if (!players.has(id)) {
@@ -70,10 +73,12 @@ export function createRoom() {
 
         const view = {
             id,
+            lastInsertCoinOptions: null,
             get connected() {
                 return connected;
             },
-            insertCoin: async function () {
+            insertCoin: async function (options) {
+                view.lastInsertCoinOptions = options || {};
                 connected = true;
                 playerApi = createPlayerApi(id);
                 return undefined;
@@ -85,6 +90,9 @@ export function createRoom() {
                 return connected && hostId === id;
             },
             getState(key) {
+                if (stateOpaque) {
+                    return undefined;
+                }
                 return globalState.has(key) ? globalState.get(key) : undefined;
             },
             setState(key, val) {
@@ -149,6 +157,13 @@ export function createRoom() {
             return hostId;
         },
         setHost,
-        createClientView
+        createClientView,
+        /** Hide shared state reads (lag); writes still apply and become visible when cleared. */
+        setStateOpaque(opaque) {
+            stateOpaque = !!opaque;
+        },
+        get stateOpaque() {
+            return stateOpaque;
+        }
     };
 }

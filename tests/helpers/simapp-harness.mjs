@@ -90,9 +90,96 @@ function createJqueryStub() {
     return $;
 }
 
+/** In-memory localStorage for room/role hints across refresh simulations. */
+export function createMemoryStorage() {
+    /** @type {Map<string, string>} */
+    const map = new Map();
+    return {
+        getItem(key) {
+            return map.has(String(key)) ? map.get(String(key)) : null;
+        },
+        setItem(key, val) {
+            map.set(String(key), String(val));
+        },
+        removeItem(key) {
+            map.delete(String(key));
+        },
+        clear() {
+            map.clear();
+        }
+    };
+}
+
+/**
+ * Browser location + history stubs so hash restore / invite URL helpers work in Node.
+ * @param {{ hash?: string, hrefBase?: string }} [opts]
+ */
+export function createLocationStub(opts = {}) {
+    let hash = opts.hash || "";
+    if (hash && hash.charAt(0) !== "#") {
+        hash = "#" + hash;
+    }
+    const base = (opts.hrefBase || "http://localhost:5173/").split("#")[0];
+    const location = {
+        get hash() {
+            return hash;
+        },
+        set hash(v) {
+            const s = String(v || "");
+            hash = !s ? "" : s.charAt(0) === "#" ? s : "#" + s;
+        },
+        get pathname() {
+            return "/";
+        },
+        get search() {
+            return "";
+        },
+        get href() {
+            return base + hash;
+        }
+    };
+    const history = {
+        replaceState(_state, _title, url) {
+            const s = String(url || "");
+            const i = s.indexOf("#");
+            hash = i >= 0 ? s.slice(i) : "";
+        }
+    };
+    return {
+        location,
+        history,
+        getHash: () => hash,
+        setHash(h) {
+            hash = !h ? "" : String(h).charAt(0) === "#" ? String(h) : "#" + h;
+        }
+    };
+}
+
 /** Persistent stub — banner hide timers may fire after a test's `run()` ends */
 const GLOBAL_JQ = createJqueryStub();
 globalThis.$ = GLOBAL_JQ;
+const SHARED_STORAGE = createMemoryStorage();
+const SHARED_LOCATION = createLocationStub();
+globalThis.localStorage = SHARED_STORAGE;
+globalThis.window = Object.assign(globalThis.window || globalThis, {
+    location: SHARED_LOCATION.location,
+    history: SHARED_LOCATION.history,
+    addEventListener() {},
+    localStorage: SHARED_STORAGE
+});
+globalThis.history = SHARED_LOCATION.history;
+globalThis.location = SHARED_LOCATION.location;
+
+/** Reset shared browser stubs between tests that mutate hash/storage. */
+export function resetBrowserStubs(opts = {}) {
+    SHARED_STORAGE.clear();
+    SHARED_LOCATION.setHash(opts.hash || "");
+    if (opts.storage) {
+        Object.keys(opts.storage).forEach((k) => {
+            SHARED_STORAGE.setItem(k, opts.storage[k]);
+        });
+    }
+}
 
 let cachedSimAppTemplate = null;
 
@@ -158,6 +245,8 @@ function cloneSimApp(template) {
     clone._allowAdvanceWithoutPartner = false;
     clone._wakeHandlersRegistered = false;
     clone._hasJoinedRoom = false;
+    clone._connectInFlight = false;
+    clone._autoConnectStarted = false;
     clone._syncBannerHideTimer = null;
     clone._partnerAbsent = false;
     clone._playerHandlersRegistered = false;
@@ -243,10 +332,15 @@ function createClientContext(opts) {
                     return null;
                 }
             };
-            globalThis.window = globalThis.window || globalThis;
-            if (!globalThis.window.addEventListener) {
-                globalThis.window.addEventListener = () => {};
-            }
+            globalThis.window = Object.assign(globalThis.window || globalThis, {
+                location: SHARED_LOCATION.location,
+                history: SHARED_LOCATION.history,
+                localStorage: SHARED_STORAGE,
+                addEventListener: globalThis.window?.addEventListener || (() => {})
+            });
+            globalThis.localStorage = SHARED_STORAGE;
+            globalThis.location = SHARED_LOCATION.location;
+            globalThis.history = SHARED_LOCATION.history;
 
             try {
                 return await fn();
@@ -254,6 +348,14 @@ function createClientContext(opts) {
                 if (opts.sim._syncBannerHideTimer) {
                     clearTimeout(opts.sim._syncBannerHideTimer);
                     opts.sim._syncBannerHideTimer = null;
+                }
+                if (opts.sim._syncTimer) {
+                    clearInterval(opts.sim._syncTimer);
+                    opts.sim._syncTimer = null;
+                }
+                if (opts.sim._patientNextTimer) {
+                    clearInterval(opts.sim._patientNextTimer);
+                    opts.sim._patientNextTimer = null;
                 }
                 globalThis.Playroom = prev.Playroom;
                 globalThis.State = prev.State;
@@ -275,6 +377,8 @@ function createClientContext(opts) {
             opts.sim._passageCommitInFlight = false;
             opts.sim._allowAdvanceWithoutPartner = false;
             opts.sim._partnerAbsent = false;
+            opts.sim._connectInFlight = false;
+            opts.sim._hasJoinedRoom = false;
             currentPassage = "Start";
         }
     };

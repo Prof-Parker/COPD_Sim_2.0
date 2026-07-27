@@ -1,14 +1,15 @@
 /**
- * Resync unit tests — host/client × patient/observer matrix.
+ * Resync unit tests — host/client × patient/observer matrix + desync regressions.
  *
  * Run: npm run test:resync
  */
-import { describe, it, before } from "node:test";
+import { describe, it, before, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import {
     createSyncedPair,
     loadSimAppTemplate,
     readPreservedSnapshot,
+    resetBrowserStubs,
     MID_SIM_FIXTURE
 } from "./helpers/simapp-harness.mjs";
 
@@ -60,8 +61,9 @@ function assertLocalSynced(ctx, fixture = MID_SIM_FIXTURE) {
 }
 
 /**
+ * Soft-refresh one client: wipe local UI state, disconnect, reconnect, recover.
  * @param {Awaited<ReturnType<typeof createSyncedPair>>} pair
- * @param {ReturnType<typeof createSyncedPair> extends Promise<infer P> ? P["host"] : never} actor
+ * @param {*} actor
  * @param {string} expectedRole
  * @param {string} reason
  */
@@ -101,6 +103,8 @@ async function simulateReconnect(pair, actor, expectedRole, reason, options = {}
     assert.equal(actor.sim.getRole(), expectedRole);
     assert.equal(actor.currentPassage, before.room.currentPassage);
     assert.equal(actor.sim._lastAppliedPassageSeq, before.room.passageSeq);
+    assert.equal(actor.sim._recovering, false);
+    assert.equal(actor.sim._passageCommitInFlight, false);
 
     const after = readPreservedSnapshot(actor.playroom, actor.state);
     for (const key of PRESERVE_KEYS) {
@@ -128,6 +132,8 @@ describe("SimApp load", () => {
         assert.equal(typeof template.recoverSession, "function");
         assert.equal(typeof template.commitPassageChange, "function");
         assert.equal(typeof template.restoreRoleFromRoom, "function");
+        assert.equal(typeof template.isRejoinAttempt, "function");
+        assert.equal(typeof template.restoreRoomHashBeforeConnect, "function");
         assert.ok(Array.isArray(template.STATE_KEYS));
         assert.equal(template.RECONNECT_GRACE_MS, 600000);
     });
@@ -267,5 +273,242 @@ for (const layout of LAYOUTS) {
                 assert.equal(patient.sim.canPatientAdvance(), true);
             });
         });
+
+        it("repeated soft refresh on host still preserves mid-sim and clears sync locks", async () => {
+            pair = await createSyncedPair({
+                hostRole: layout.hostRole,
+                clientRole: layout.clientRole
+            });
+            await simulateReconnect(pair, pair.host, layout.hostRole, "connect", {
+                promoteOtherHost: false,
+                restoreHost: true
+            });
+            await simulateReconnect(pair, pair.host, layout.hostRole, "connect", {
+                promoteOtherHost: false,
+                restoreHost: true
+            });
+            assertRoomMatchesFixture(pair.host.playroom);
+            assert.equal(pair.host.sim._recovering, false);
+            assert.equal(pair.host.sim._passageCommitInFlight, false);
+        });
     });
 }
+
+describe("desync regressions", () => {
+    beforeEach(() => {
+        resetBrowserStubs();
+    });
+
+    it("roomCodeToHash uses Playroom R-prefix (#r=R…)", () => {
+        const sim = Object.assign({}, loadSimAppTemplate());
+        assert.equal(sim.roomCodeToHash("8PVM"), "#r=R8PVM");
+        assert.equal(sim.roomCodeToHash("R8PVM"), "#r=R8PVM");
+        assert.equal(sim.parseStoredRoomCode("R8PVM"), "8PVM");
+        assert.equal(sim.parseStoredRoomCode("#r=R8PVM"), "8PVM");
+    });
+
+    it("restoreRoomHashBeforeConnect rebuilds #r= from localStorage when hash was stripped", async () => {
+        resetBrowserStubs({ hash: "", storage: { simRoomCode: "8PVM" } });
+        const pair = await createSyncedPair({
+            hostRole: "patient",
+            clientRole: "observer"
+        });
+        await pair.host.run(() => {
+            assert.equal(pair.host.sim.isRejoinAttempt(), true);
+            const result = pair.host.sim.restoreRoomHashBeforeConnect();
+            assert.equal(result.restored, true);
+            assert.equal(result.hash, "#r=R8PVM");
+            assert.equal(globalThis.location.hash, "#r=R8PVM");
+        });
+    });
+
+    it("persistRoomJoinHint keeps hash on host after join so refresh can rejoin", async () => {
+        resetBrowserStubs({ hash: "" });
+        const pair = await createSyncedPair({
+            hostRole: "patient",
+            clientRole: "observer"
+        });
+        await pair.host.run(() => {
+            pair.host.sim.persistRoomJoinHint("TESTROOM");
+            assert.equal(globalThis.localStorage.getItem("simRoomCode"), "TESTROOM");
+            assert.equal(globalThis.location.hash, "#r=RTESTROOM");
+            assert.equal(pair.host.sim.getInviteUrl().includes("#r=RTESTROOM"), true);
+        });
+    });
+
+    it("host recover with snapshot lag does not wipe mid-sim when rejoining", async () => {
+        resetBrowserStubs({ hash: "#r=RTESTROOM", storage: { simRoomCode: "TESTROOM" } });
+        const pair = await createSyncedPair({
+            hostRole: "patient",
+            clientRole: "observer"
+        });
+        const before = readPreservedSnapshot(pair.host.playroom);
+        let initCalls = 0;
+        const origInit = pair.host.sim.initRoomState.bind(pair.host.sim);
+        pair.host.sim.initRoomState = function () {
+            initCalls += 1;
+            return origInit();
+        };
+
+        pair.host.wipeLocal();
+        pair.host.playroom.disconnect({ promoteOtherHost: false });
+        await pair.host.playroom.reconnect();
+        pair.host.playroom.becomeHost();
+        pair.host.sim.isPlayroomLoaded = true;
+        pair.host.sim._hasJoinedRoom = true;
+
+        /* Simulate Playroom returning empty state briefly after refresh */
+        pair.room.setStateOpaque(true);
+        assert.equal(pair.host.playroom.getState("currentPassage"), undefined);
+        assert.equal(pair.host.sim.isRoomActive(), false);
+
+        await pair.host.run(async () => {
+            assert.equal(pair.host.sim.isRejoinAttempt(), true);
+            const ok = await pair.host.sim.recoverSession({ reason: "connect" });
+            assert.equal(ok, true);
+        });
+
+        assert.equal(initCalls, 0, "initRoomState must not run on rejoin during snapshot lag");
+        pair.room.setStateOpaque(false);
+
+        const after = readPreservedSnapshot(pair.host.playroom);
+        for (const key of PRESERVE_KEYS) {
+            assert.equal(after.room[key], before.room[key], `room.${key} wiped on laggy rejoin`);
+        }
+        assert.notEqual(after.room.currentPassage, "Role_Selection");
+    });
+
+    it("fresh host without rejoin hint still initializes empty room", async () => {
+        resetBrowserStubs({ hash: "" });
+        const pair = await createSyncedPair({
+            hostRole: "patient",
+            clientRole: "observer"
+        });
+        await pair.host.run(() => {
+            pair.host.playroom.setState("roomStarted", false);
+            pair.host.playroom.setState("currentPassage", "Role_Selection");
+            pair.host.playroom.setState("passageSeq", 0);
+            pair.host.playroom.setState("lobby_patient", false);
+            pair.host.playroom.setState("lobby_observer", false);
+            pair.host.playroom.setState("patientPlayerId", "");
+            pair.host.playroom.setState("observerPlayerId", "");
+            assert.equal(pair.host.sim.isRejoinAttempt(), false);
+            assert.equal(pair.host.sim.isRoomActive(), false);
+            pair.host.sim.initRoomState();
+            assert.equal(pair.host.playroom.getState("roomStarted"), true);
+            assert.equal(pair.host.playroom.getState("currentPassage"), "Role_Selection");
+        });
+    });
+
+    it("broadcastLobbyAdvance does not re-commit Simulation_Hub mid-sim", async () => {
+        const pair = await createSyncedPair({
+            hostRole: "patient",
+            clientRole: "observer"
+        });
+        const seqBefore = pair.host.playroom.getState("passageSeq");
+        const passageBefore = pair.host.playroom.getState("currentPassage");
+
+        await pair.host.run(async () => {
+            assert.equal(pair.host.sim.checkReadyState(), true);
+            pair.host.sim.broadcastLobbyAdvance();
+            await new Promise((r) => setTimeout(r, 50));
+        });
+
+        assert.equal(pair.host.playroom.getState("passageSeq"), seqBefore);
+        assert.equal(pair.host.playroom.getState("currentPassage"), passageBefore);
+        assert.equal(pair.host.sim._passageCommitInFlight, false);
+        assert.equal(pair.host.sim._recovering, false);
+    });
+
+    it("restores role from localStorage hint when player role state is empty after refresh", async () => {
+        resetBrowserStubs({
+            hash: "#r=RTESTROOM",
+            storage: { simRoomCode: "TESTROOM", simRole_TESTROOM: "patient" }
+        });
+        const pair = await createSyncedPair({
+            hostRole: "patient",
+            clientRole: "observer"
+        });
+        const me = pair.host.playroom.myPlayer();
+        me.setState("role", "");
+        pair.host.wipeLocal();
+        pair.host.sim.isPlayroomLoaded = true;
+        pair.host.sim._hasJoinedRoom = true;
+
+        await pair.host.run(async () => {
+            const role = pair.host.sim.restoreRoleFromRoom();
+            assert.equal(role, "patient");
+            assert.equal(pair.host.sim.getRole(), "patient");
+            assert.equal(me.getState("role"), "patient");
+        });
+    });
+
+    it("connect uses skipLobby and skips init wipe when rejoining active room", async () => {
+        resetBrowserStubs({
+            hash: "#r=RTESTROOM",
+            storage: { simRoomCode: "TESTROOM", simRole_TESTROOM: "patient" }
+        });
+        const pair = await createSyncedPair({
+            hostRole: "patient",
+            clientRole: "observer"
+        });
+        let initCalls = 0;
+        pair.host.sim.initRoomState = function () {
+            initCalls += 1;
+        };
+
+        pair.host.wipeLocal();
+        pair.host.playroom.disconnect({ promoteOtherHost: false });
+        pair.host.sim.isPlayroomLoaded = true;
+        pair.host.sim._hasJoinedRoom = false;
+        pair.host.sim._connectInFlight = false;
+        pair.host.sim._playerHandlersRegistered = true;
+        pair.host.sim._wakeHandlersRegistered = true;
+        pair.host.sim.PASSAGE_COMMIT_TIMEOUT_MS = 50;
+        pair.host.sim.startSyncLoop = function () {};
+        pair.host.sim.showInviteModal = function () {};
+        pair.host.sim.wireDevCaptionControls = function () {};
+        pair.host.sim.waitForRoomSnapshot = async function () {
+            return {
+                ready: true,
+                active: true,
+                timedOut: false,
+                currentPassage: MID_SIM_FIXTURE.currentPassage,
+                roomStarted: true
+            };
+        };
+
+        await pair.host.run(async () => {
+            pair.host.playroom.becomeHost();
+            await pair.host.sim.connect();
+        });
+
+        assert.equal(pair.host.playroom.lastInsertCoinOptions.skipLobby, true);
+        assert.equal(initCalls, 0);
+        assert.equal(pair.host.sim._recovering, false);
+        assert.equal(pair.host.sim._passageCommitInFlight, false);
+        assert.equal(pair.host.sim._connectInFlight, false);
+        assertRoomMatchesFixture(pair.host.playroom);
+    });
+
+    it("second connect while in-flight is ignored (no overlapping recover)", async () => {
+        const pair = await createSyncedPair({
+            hostRole: "patient",
+            clientRole: "observer"
+        });
+        pair.host.sim._connectInFlight = true;
+        let recoverCalls = 0;
+        const origRecover = pair.host.sim.recoverSession.bind(pair.host.sim);
+        pair.host.sim.recoverSession = async function (opts) {
+            recoverCalls += 1;
+            return origRecover(opts);
+        };
+
+        await pair.host.run(async () => {
+            await pair.host.sim.connect();
+        });
+
+        assert.equal(recoverCalls, 0);
+        assert.equal(pair.host.sim._connectInFlight, true);
+    });
+});
