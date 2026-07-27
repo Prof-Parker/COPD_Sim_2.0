@@ -1,5 +1,5 @@
 :: StoryTitle
-COPD simulation 2.0.15
+COPD simulation 2.0.16
 
 
 :: StoryData
@@ -1551,7 +1551,7 @@ What do you want to do?
 
 :: StoryScript [script]
 /* ============================================================
-   STORYSCRIPT — COPD Simulation runtime (v2.0.14)
+   STORYSCRIPT — COPD Simulation runtime (v2.0.16)
    ============================================================
    1. Playtime (Chapel macro + <<playtime>>)
    2. SimApp — multiplayer simulation framework
@@ -1716,8 +1716,20 @@ window.SimApp = {
     _syncTimer: null,
     _gameOverInterval: null,
     _gameOverFinalizing: false,
+    _lastAppliedPassageSeq: -1,
+    _recovering: false,
+    _recoverDebounceUntil: 0,
+    _passageCommitInFlight: false,
+    _allowAdvanceWithoutPartner: false,
+    _wakeHandlersRegistered: false,
+    _hasJoinedRoom: false,
+    _syncBannerHideTimer: null,
+    _partnerAbsent: false,
 
     GAME_OVER_SECONDS: 8,
+    PASSAGE_COMMIT_TIMEOUT_MS: 2000,
+    RECOVER_DEBOUNCE_MS: 1000,
+    RECONNECT_GRACE_MS: 600000,
     GAME_OVER_MESSAGES: {
         Game_Over_Energy: "You have pushed your body too far...",
         Game_Over_Inhaler: "You have used your rescue inhaler too many times..."
@@ -1765,11 +1777,56 @@ window.SimApp = {
         if (typeof Playroom === "undefined") {
             return false;
         }
-        return Playroom.getState("roomStarted") === true;
+        if (Playroom.getState("roomStarted") === true) {
+            return true;
+        }
+        /* Strengthen host-refresh guard: do not wipe a room mid-sim */
+        var existing = Playroom.getState("currentPassage");
+        return !!(existing && existing !== "Role_Selection" && existing !== "Start");
     },
 
     getRole: function () {
         return this.myRole || State.variables.myRole || "";
+    },
+
+    getRoomPassageSeq: function () {
+        if (typeof Playroom !== "undefined") {
+            var seq = Number(Playroom.getState("passageSeq"));
+            if (!isNaN(seq)) {
+                return seq;
+            }
+        }
+        var local = Number(State.variables.passageSeq);
+        return isNaN(local) ? 0 : local;
+    },
+
+    getConnectedPlayerCount: function () {
+        return this.getPlayerCount();
+    },
+
+    /** After roles are chosen, expect two connected devices */
+    expectsPartner: function () {
+        return this.checkReadyState() || this.getRole() === "patient" || this.getRole() === "observer";
+    },
+
+    hasPartnerConnected: function () {
+        return this.getConnectedPlayerCount() >= 2;
+    },
+
+    canPatientAdvance: function () {
+        if (!this.isPlayroomLoaded || typeof Playroom === "undefined" || !Playroom.myPlayer()) {
+            return false;
+        }
+        if (this._recovering || this._passageCommitInFlight) {
+            return false;
+        }
+        if (this._allowAdvanceWithoutPartner) {
+            return true;
+        }
+        if (!this.expectsPartner()) {
+            return true;
+        }
+        return this.hasPartnerConnected();
     },
 
     /** Default simulation variables (room init + post-tutorial reset) */
@@ -1878,7 +1935,6 @@ window.SimApp = {
     /** Full reset after debrief — returns team to Start */
     restartFromDebrief: function () {
         this.resetSimulationForStart();
-        this.setVal("currentPassage", "Start", true);
         this.goToSharedPassage("Start");
     },
 
@@ -1896,6 +1952,95 @@ window.SimApp = {
 
     isPlayroomHost: function () {
         return typeof Playroom !== "undefined" && Playroom.isHost();
+    },
+
+    /* --- Sync status banner --- */
+
+    ensureSyncBanner: function () {
+        if ($("#sim-sync-banner").length) {
+            return;
+        }
+        var self = this;
+        var html =
+            '<div id="sim-sync-banner" class="sim-sync-banner hidden" role="status" aria-live="polite">' +
+            '<span id="sim-sync-banner-text"></span>' +
+            '<button type="button" id="sim-sync-banner-continue" class="sim-sync-banner-continue hidden">' +
+            "Continue anyway</button>" +
+            "</div>";
+        $("body").append(html);
+        $("#sim-sync-banner-continue").on("click", function () {
+            self._allowAdvanceWithoutPartner = true;
+            self.hideSyncBanner();
+            self.refreshPatientNextSlot();
+        });
+    },
+
+    showSyncBanner: function (message, kind, options) {
+        options = options || {};
+        this.ensureSyncBanner();
+        var $banner = $("#sim-sync-banner");
+        var $continue = $("#sim-sync-banner-continue");
+        $banner
+            .removeClass("hidden state-info state-ok state-warn state-error")
+            .addClass("state-" + (kind || "info"));
+        $("#sim-sync-banner-text").text(message || "");
+        if (options.showContinue) {
+            $continue.removeClass("hidden");
+        } else {
+            $continue.addClass("hidden");
+        }
+        if (this._syncBannerHideTimer) {
+            clearTimeout(this._syncBannerHideTimer);
+            this._syncBannerHideTimer = null;
+        }
+        if (options.sticky) {
+            return;
+        }
+        var hideMs = options.hideAfterMs != null ? options.hideAfterMs : 2500;
+        if (hideMs > 0) {
+            var self = this;
+            this._syncBannerHideTimer = setTimeout(function () {
+                self.hideSyncBanner();
+            }, hideMs);
+        }
+    },
+
+    hideSyncBanner: function () {
+        if (this._syncBannerHideTimer) {
+            clearTimeout(this._syncBannerHideTimer);
+            this._syncBannerHideTimer = null;
+        }
+        $("#sim-sync-banner").addClass("hidden");
+        $("#sim-sync-banner-continue").addClass("hidden");
+    },
+
+    refreshPartnerPresenceBanner: function () {
+        if (!this._hasJoinedRoom || this._recovering || this._passageCommitInFlight) {
+            return;
+        }
+        if (!this.expectsPartner()) {
+            if (this._partnerAbsent) {
+                this._partnerAbsent = false;
+                this.hideSyncBanner();
+            }
+            return;
+        }
+        if (this.hasPartnerConnected()) {
+            if (this._partnerAbsent) {
+                this._partnerAbsent = false;
+                this._allowAdvanceWithoutPartner = false;
+                this.showSyncBanner("Partner reconnected", "ok", { hideAfterMs: 2000 });
+                this.refreshPatientNextSlot();
+            }
+            return;
+        }
+        this._partnerAbsent = true;
+        this.showSyncBanner(
+            "Partner disconnected — waiting to rejoin…",
+            "warn",
+            { sticky: true, showContinue: true }
+        );
+        this.refreshPatientNextSlot();
     },
 
     /* --- 2b. Playroom connection, lobby, and role routing --- */
@@ -2023,20 +2168,36 @@ window.SimApp = {
 
         var self = this;
         self.registerPlayerHandlers();
+        self.registerWakeHandlers();
 
         try {
-            await Playroom.insertCoin({
-                maxPlayersPerRoom: 2,
-                skipLobby: false,
-                reconnectGracePeriod: 120000
-            });
+            await Playroom.insertCoin(
+                {
+                    maxPlayersPerRoom: 2,
+                    skipLobby: false,
+                    reconnectGracePeriod: self.RECONNECT_GRACE_MS
+                },
+                undefined,
+                function () {
+                    self.showSyncBanner("Reconnecting…", "info", { sticky: true });
+                }
+            );
+
+            if (typeof Playroom.onDisconnect === "function" && !self._disconnectHandlerRegistered) {
+                self._disconnectHandlerRegistered = true;
+                Playroom.onDisconnect(function () {
+                    self.showSyncBanner("Reconnecting…", "info", { sticky: true });
+                });
+            }
+
+            self._hasJoinedRoom = true;
 
             if (Playroom.isHost() && !self.isRoomActive()) {
                 self.initRoomState();
             }
 
             self.startSyncLoop();
-            self.resumeSession();
+            await self.recoverSession({ reason: "connect" });
 
             if (Playroom.isHost() && self.getPlayerCount() < 2) {
                 setTimeout(function () {
@@ -2048,8 +2209,34 @@ window.SimApp = {
             }, Engine.minDomActionDelay || 40);
         } catch (e) {
             console.error("Failed to connect to Playroom:", e);
+            self.showSyncBanner("Connection error. Please refresh and try again.", "error", {
+                sticky: true
+            });
             alert("Connection error. Please refresh and try again.");
         }
+    },
+
+    registerWakeHandlers: function () {
+        if (this._wakeHandlersRegistered) {
+            return;
+        }
+        this._wakeHandlersRegistered = true;
+        var self = this;
+        document.addEventListener("visibilitychange", function () {
+            if (document.visibilityState === "visible" && self._hasJoinedRoom) {
+                self.recoverSession({ reason: "visibility" });
+            }
+        });
+        window.addEventListener("pageshow", function (event) {
+            if (self._hasJoinedRoom) {
+                self.recoverSession({ reason: event.persisted ? "pageshow-bfcache" : "pageshow" });
+            }
+        });
+        window.addEventListener("focus", function () {
+            if (self._hasJoinedRoom) {
+                self.recoverSession({ reason: "focus" });
+            }
+        });
     },
 
     /** Host-only: initialize a brand-new room (skipped on reconnect) */
@@ -2061,6 +2248,7 @@ window.SimApp = {
         var r = true;
         Playroom.setState("roomStarted", true, r);
         Playroom.setState("currentPassage", "Role_Selection", r);
+        Playroom.setState("passageSeq", 0, r);
         Playroom.setState("sharedTime", "00:00", r);
         Playroom.setState("lobby_patient", false, r);
         Playroom.setState("lobby_observer", false, r);
@@ -2073,34 +2261,141 @@ window.SimApp = {
         });
     },
 
-    /** After connect/refresh: restore role and active passage without resetting room */
-    resumeSession: function () {
+    restoreRoleFromRoom: function () {
         var me = Playroom.myPlayer();
         if (!me) {
-            Engine.play("Role_Selection");
-            return;
+            return "";
+        }
+        var myId = me.id;
+        var savedRole = me.getState("role") || "";
+        if (!savedRole) {
+            if (Playroom.getState("patientPlayerId") === myId) {
+                savedRole = "patient";
+            } else if (Playroom.getState("observerPlayerId") === myId) {
+                savedRole = "observer";
+            }
+        }
+        if (!savedRole) {
+            return "";
         }
 
-        var savedRole = me.getState("role");
-        if (savedRole) {
-            this.myRole = savedRole;
-            State.variables.myRole = savedRole;
-            $("body").removeClass("role-patient role-observer").addClass("role-" + savedRole);
+        me.setState("role", savedRole, true);
+        this.myRole = savedRole;
+        State.variables.myRole = savedRole;
+        $("body").removeClass("role-patient role-observer").addClass("role-" + savedRole);
+
+        var lobbyKey = "lobby_" + savedRole;
+        var ownerKey = savedRole + "PlayerId";
+        if (this.getVal(lobbyKey) !== true) {
+            this.setVal(lobbyKey, true, true);
+        }
+        if (this.getVal(ownerKey) !== myId) {
+            this.setVal(ownerKey, myId, true);
+        }
+        return savedRole;
+    },
+
+    applyRoomPassage: function (force) {
+        if (typeof Playroom === "undefined") {
+            return false;
+        }
+        var dest = Playroom.getState("currentPassage");
+        var seq = this.getRoomPassageSeq();
+        if (!dest || !Story.has(dest)) {
+            return false;
+        }
+        if (!force && seq <= this._lastAppliedPassageSeq) {
+            return false;
+        }
+        if (passage() !== dest) {
+            Engine.play(dest);
+        }
+        this._lastAppliedPassageSeq = seq;
+        return true;
+    },
+
+    /**
+     * Rejoin room snapshot after connect, refresh, unlock, or focus.
+     * Room state is law: restore role, sync vars, hard-navigate to currentPassage.
+     */
+    recoverSession: async function (options) {
+        options = options || {};
+        var now = Date.now();
+        if (this._recovering) {
+            return false;
+        }
+        if (now < this._recoverDebounceUntil && options.reason !== "connect") {
+            return false;
         }
 
-        this.syncFromPlayroom();
-
-        var target = Playroom.getState("currentPassage");
-        if (target && Story.has(target)) {
-            Engine.play(target);
-            return;
+        /* Focus fires often — skip full recovery when already matched to room snapshot */
+        if (
+            options.reason === "focus" &&
+            typeof Playroom !== "undefined" &&
+            Playroom.myPlayer() &&
+            this.getRole() &&
+            Playroom.getState("currentPassage") === passage() &&
+            this.getRoomPassageSeq() <= this._lastAppliedPassageSeq
+        ) {
+            this.refreshPartnerPresenceBanner();
+            return true;
         }
 
-        if (savedRole) {
-            Engine.play(this.checkReadyState() ? "Simulation_Hub" : "Waiting_Room");
-        } else {
-            Engine.play("Role_Selection");
+        this._recovering = true;
+        this._recoverDebounceUntil = now + this.RECOVER_DEBOUNCE_MS;
+        this.showSyncBanner("Reconnecting…", "info", { sticky: true });
+
+        try {
+            if (typeof Playroom === "undefined") {
+                this.showSyncBanner("Playroom unavailable", "error", { sticky: true });
+                return false;
+            }
+
+            if (!Playroom.myPlayer()) {
+                try {
+                    await Playroom.insertCoin({
+                        maxPlayersPerRoom: 2,
+                        skipLobby: false,
+                        reconnectGracePeriod: this.RECONNECT_GRACE_MS
+                    });
+                    this._hasJoinedRoom = true;
+                } catch (reErr) {
+                    console.error("Playroom rejoin failed:", reErr);
+                    this.showSyncBanner("Could not rejoin room — refresh the page", "error", {
+                        sticky: true
+                    });
+                    return false;
+                }
+            }
+
+            if (Playroom.isHost() && !this.isRoomActive()) {
+                this.initRoomState();
+            }
+
+            var savedRole = this.restoreRoleFromRoom();
+            this.syncFromPlayroom();
+
+            var target = Playroom.getState("currentPassage");
+            if (target && Story.has(target)) {
+                this.applyRoomPassage(true);
+            } else if (savedRole) {
+                Engine.play(this.checkReadyState() ? "Simulation_Hub" : "Waiting_Room");
+            } else {
+                Engine.play("Role_Selection");
+            }
+
+            this.showSyncBanner("Back in sync", "ok", { hideAfterMs: 2000 });
+            this.refreshPartnerPresenceBanner();
+            this.refreshPatientNextSlot();
+            return true;
+        } finally {
+            this._recovering = false;
         }
+    },
+
+    /** @deprecated use recoverSession — kept for any external callers */
+    resumeSession: function () {
+        this.recoverSession({ reason: "resume" });
     },
 
     setVal: function (key, val, reliable) {
@@ -2122,21 +2417,107 @@ window.SimApp = {
 
     /* --- 2c. Shared navigation and passage tethering --- */
 
-    /** Patient-driven navigation: updates global passage + resets eval lock */
-    nextPassage: function (passageName) {
-        this.setVal("evalComplete", false, true);
-        this.setVal("currentPassage", passageName, true);
-        if (this.getRole() === "patient" && Story.has(passageName)) {
-            Engine.play(passageName);
+    waitForPassageCommit: function (passageName, seq, timeoutMs) {
+        var self = this;
+        timeoutMs = timeoutMs || this.PASSAGE_COMMIT_TIMEOUT_MS;
+        return new Promise(function (resolve) {
+            var start = Date.now();
+            function tick() {
+                if (typeof Playroom === "undefined") {
+                    resolve(false);
+                    return;
+                }
+                var cur = Playroom.getState("currentPassage");
+                var curSeq = Number(Playroom.getState("passageSeq"));
+                if (cur === passageName && curSeq === seq) {
+                    resolve(true);
+                    return;
+                }
+                if (Date.now() - start >= timeoutMs) {
+                    resolve(false);
+                    return;
+                }
+                setTimeout(tick, 50);
+            }
+            tick();
+        });
+    },
+
+    /**
+     * Write reliable room snapshot first, confirm readback, then render locally.
+     * options.resetEval — clear evalComplete (patient next)
+     * options.playLocal — Engine.play after confirm (default true)
+     */
+    commitPassageChange: async function (passageName, options) {
+        options = options || {};
+        if (!passageName || !Story.has(passageName)) {
+            return false;
+        }
+        if (this._passageCommitInFlight) {
+            return false;
+        }
+
+        /* Peer already committed this destination — apply locally without bumping seq */
+        if (typeof Playroom !== "undefined") {
+            var existing = Playroom.getState("currentPassage");
+            var existingSeq = this.getRoomPassageSeq();
+            if (existing === passageName && existingSeq > this._lastAppliedPassageSeq) {
+                this._lastAppliedPassageSeq = existingSeq;
+                if (options.playLocal !== false && passage() !== passageName) {
+                    Engine.play(passageName);
+                }
+                return true;
+            }
+        }
+
+        this._passageCommitInFlight = true;
+        this.refreshPatientNextSlot();
+        try {
+            if (options.resetEval) {
+                this.setVal("evalComplete", false, true);
+            }
+            var prevSeq = this.getRoomPassageSeq();
+            var nextSeq = prevSeq + 1;
+            this.setVal("currentPassage", passageName, true);
+            this.setVal("passageSeq", nextSeq, true);
+
+            var confirmed = true;
+            if (this.isPlayroomLoaded && typeof Playroom !== "undefined" && Playroom.myPlayer()) {
+                confirmed = await this.waitForPassageCommit(
+                    passageName,
+                    nextSeq,
+                    options.timeoutMs || this.PASSAGE_COMMIT_TIMEOUT_MS
+                );
+            }
+            if (!confirmed) {
+                this.showSyncBanner("Could not sync — check connection", "error", { sticky: true });
+                return false;
+            }
+            this._lastAppliedPassageSeq = nextSeq;
+            if (options.playLocal !== false && passage() !== passageName) {
+                Engine.play(passageName);
+            }
+            return true;
+        } finally {
+            this._passageCommitInFlight = false;
+            this.refreshPatientNextSlot();
+            this.refreshPartnerPresenceBanner();
         }
     },
 
-    /** Both players must see this passage (hub, game over, critical events) */
-    goToSharedPassage: function (passageName) {
-        this.setVal("currentPassage", passageName, true);
-        if (Story.has(passageName) && passage() !== passageName) {
-            Engine.play(passageName);
+    /** Patient-driven navigation: updates global passage + resets eval lock */
+    nextPassage: async function (passageName) {
+        if (!this.canPatientAdvance()) {
+            this.refreshPartnerPresenceBanner();
+            this.refreshPatientNextSlot();
+            return false;
         }
+        return this.commitPassageChange(passageName, { resetEval: true, playLocal: true });
+    },
+
+    /** Both players must see this passage (hub, game over, critical events) */
+    goToSharedPassage: async function (passageName) {
+        return this.commitPassageChange(passageName, { resetEval: false, playLocal: true });
     },
 
     /* --- 2d. Game-over scheduling and countdown --- */
@@ -2282,10 +2663,7 @@ window.SimApp = {
 
     /** After role pick, sync lobby passage so tether does not yank to Role_Selection */
     goToWaitingRoom: function () {
-        this.setVal("currentPassage", "Waiting_Room", true);
-        if (passage() !== "Waiting_Room") {
-            Engine.play("Waiting_Room");
-        }
+        this.commitPassageChange("Waiting_Room", { playLocal: true });
     },
 
     clearLobbyRole: function (roleName) {
@@ -2444,6 +2822,7 @@ window.SimApp = {
             self.syncLobbyRolesFromPlayers();
             self.broadcastLobbyAdvance();
             self.tetherToPassage();
+            self.refreshPartnerPresenceBanner();
             self.updateHud();
         }, 100);
     },
@@ -2460,12 +2839,16 @@ window.SimApp = {
             playerState.onQuit(function () {
                 delete self.players[playerState.id];
                 self.refreshInviteModal();
+                self.refreshPartnerPresenceBanner();
+                self.refreshPatientNextSlot();
             });
             if (Playroom.isHost()) {
                 self.syncLobbyRolesFromPlayers();
             }
             self.refreshRoleButtons();
             self.refreshInviteModal();
+            self.refreshPartnerPresenceBanner();
+            self.refreshPatientNextSlot();
         });
     },
 
@@ -2480,6 +2863,10 @@ window.SimApp = {
                 State.variables[key] = v;
             }
         });
+        var seq = Playroom.getState("passageSeq");
+        if (seq !== undefined) {
+            State.variables.passageSeq = seq;
+        }
         var me = Playroom.myPlayer();
         if (me) {
             var savedRole = me.getState("role");
@@ -2517,17 +2904,20 @@ window.SimApp = {
         }
         var globalDest = Playroom.getState("currentPassage");
         if (globalDest === "Simulation_Hub") {
+            var here = passage();
+            if (
+                (here === "Role_Selection" || here === "Waiting_Room") &&
+                !this._passageCommitInFlight &&
+                !this._recovering
+            ) {
+                this.applyRoomPassage(true);
+            }
             return;
         }
         if (globalDest && globalDest !== "Role_Selection" && globalDest !== "Waiting_Room") {
             return;
         }
         if (Playroom.isHost()) {
-            this.goToSharedPassage("Simulation_Hub");
-            return;
-        }
-        var here = passage();
-        if (here === "Role_Selection" || here === "Waiting_Room") {
             this.goToSharedPassage("Simulation_Hub");
         }
     },
@@ -2539,20 +2929,33 @@ window.SimApp = {
 
     /** Observer follows Patient on simulation passages only; Patient follows Game Over */
     tetherToPassage: function () {
-        if (typeof Playroom === "undefined") {
+        if (typeof Playroom === "undefined" || this._recovering || this._passageCommitInFlight) {
             return;
         }
         this.advanceLobbyIfReady();
 
         var dest = Playroom.getState("currentPassage");
-        if (!dest || dest === passage() || !Story.has(dest)) {
+        var seq = this.getRoomPassageSeq();
+        if (!dest || !Story.has(dest)) {
+            return;
+        }
+        if (seq <= this._lastAppliedPassageSeq) {
             return;
         }
         var role = this.getRole();
         if (role === "observer" && this.shouldObserverTether(dest)) {
             Engine.play(dest);
+            this._lastAppliedPassageSeq = seq;
         } else if (role === "patient" && dest.indexOf("Game_Over") === 0) {
             Engine.play(dest);
+            this._lastAppliedPassageSeq = seq;
+        } else if (
+            role === "patient" &&
+            dest === "Simulation_Hub" &&
+            (passage() === "Role_Selection" || passage() === "Waiting_Room")
+        ) {
+            Engine.play(dest);
+            this._lastAppliedPassageSeq = seq;
         }
     },
 
@@ -3236,6 +3639,10 @@ window.SimApp = {
             if (self.isGameOverPending()) {
                 return;
             }
+            if (!self.canPatientAdvance()) {
+                self.refreshPartnerPresenceBanner();
+                return;
+            }
             var gameOver = !self.applyPatientEnergy(choice.energy);
             if (choice.stateOps && choice.stateOps.length) {
                 self.applyPatientChoiceStateOps(choice.stateOps);
@@ -3297,6 +3704,13 @@ window.SimApp = {
         var feedback = this.getVal("patientFeedback") || "";
         var feedbackColor = this.getVal("patientFeedbackColor") || "red";
 
+        if (this._passageCommitInFlight || this._recovering) {
+            $slot.html(
+                '<div class="gray-box patient-footer-hint">Syncing with partner<span class="loading-text"></span></div>'
+            );
+            return;
+        }
+
         if (choicesMounted && !this._patientChoiceResolved) {
             $slot.html(
                 '<div class="gray-box patient-footer-hint">Make your selection above, then wait for your Observer.</div>'
@@ -3324,6 +3738,13 @@ window.SimApp = {
             return;
         }
 
+        if (!this.canPatientAdvance()) {
+            $slot.html(
+                '<div class="gray-box patient-footer-hint">Waiting for partner to reconnect<span class="loading-text"></span></div>'
+            );
+            return;
+        }
+
         var html = "";
         if (feedback) {
             html += this._renderPatientConsequence(feedback, feedbackColor);
@@ -3336,6 +3757,11 @@ window.SimApp = {
         $slot.html(html);
         $slot.find(".patient-next-btn").on("click", function () {
             if (self.isObserverEvalRequired() && self.getVal("evalComplete") !== true) {
+                return;
+            }
+            if (!self.canPatientAdvance()) {
+                self.refreshPartnerPresenceBanner();
+                self.refreshPatientNextSlot();
                 return;
             }
             if (cfg.resetBeforeStart) {
@@ -3724,6 +4150,57 @@ body, html {
   line-height: 1.4;
   text-align: center;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* Sync / reconnect status strip (refresh, unlock, partner drop) */
+.sim-sync-banner {
+  position: fixed;
+  left: 50%;
+  top: max(12px, env(safe-area-inset-top));
+  transform: translateX(-50%);
+  z-index: 1600;
+  max-width: min(94vw, 440px);
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #1e272e;
+  color: #ffffff;
+  font-size: 0.9em;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+.sim-sync-banner.hidden {
+  display: none !important;
+}
+.sim-sync-banner.state-ok {
+  background: #1e5c36;
+}
+.sim-sync-banner.state-warn {
+  background: #7a5b12;
+}
+.sim-sync-banner.state-error {
+  background: #7a1f1f;
+}
+.sim-sync-banner-continue {
+  display: inline-block;
+  width: auto;
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 0.9em;
+  background-color: #ffffff;
+  color: #1e272e;
+  box-shadow: none;
+}
+.sim-sync-banner-continue.hidden {
+  display: none !important;
+}
+.sim-sync-banner-continue:hover {
+  background-color: #e8e8e8;
 }
 /* 2. Global styling for a clean, app-like feel */
 
