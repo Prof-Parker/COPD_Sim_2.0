@@ -96,6 +96,18 @@ function validatePassages(passages, passageNames) {
     let passCount = 0;
 
     for (const [name, model] of passages) {
+        const isCode = model.tags.includes("script") || model.tags.includes("stylesheet");
+        if (!isCode) {
+            for (const word of findTwineScriptKeywordKeys(model.content || "")) {
+                failures.push({
+                    type: "twinescript-keyword-key",
+                    passage: name,
+                    message:
+                        `Object key "${word}:" inside a macro — SugarCube rewrites "${word}" as an operator ` +
+                        "(e.g. to → =), causing 'bad evaluation'. Use a different key name.",
+                });
+            }
+        }
         if (model.isSystem) {
             continue;
         }
@@ -215,6 +227,27 @@ function validatePassages(passages, passageNames) {
     }
 
     return { failures, warnings, passCount };
+}
+
+/** SugarCube TwineScript operator words: inside macros they are rewritten (to → =, is → ===, …). */
+const TWINESCRIPT_KEYWORDS = ["to", "is", "isnot", "eq", "neq", "gt", "gte", "lt", "lte", "and", "or", "not", "def", "ndef"];
+
+/**
+ * Finds object literal keys like `{ to: "X" }` inside <<macro>> markup, which SugarCube breaks.
+ * @param {string} content
+ * @returns {string[]}
+ */
+export function findTwineScriptKeywordKeys(content) {
+    const found = new Set();
+    const keyRe = new RegExp(`[{,]\\s*(${TWINESCRIPT_KEYWORDS.join("|")})\\s*:`, "g");
+    for (const macro of content.match(/<<[\s\S]*?>>/g) || []) {
+        /* Blank out string literals so "to: x" inside text doesn't count */
+        const code = macro.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""');
+        for (const m of code.matchAll(keyRe)) {
+            found.add(m[1]);
+        }
+    }
+    return [...found];
 }
 
 /**

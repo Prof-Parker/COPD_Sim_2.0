@@ -1483,10 +1483,10 @@ What do you want to do?
 :: Wildcard_Router [simulation] {"position":"1100,1100","size":"100,100"}
 /* One shared 6-sided roll (server-side on Cloudflare), then both players go to the same wild card */
 <<run SimApp.routeByRoll("wildRoll", [
-    { to: "Wildcard1", set: { yourItem: "your inhaler", hisItem: "his inhaler" } },
+    { go: "Wildcard1", set: { yourItem: "your inhaler", hisItem: "his inhaler" } },
     "Wildcard2",
-    { to: "Wildcard3", set: { yourItem: "a mask", hisItem: "a mask" } },
-    { to: "Wildcard4", set: { yourItem: "a scarf", hisItem: "a scarf" } },
+    { go: "Wildcard3", set: { yourItem: "a mask", hisItem: "a mask" } },
+    { go: "Wildcard4", set: { yourItem: "a scarf", hisItem: "a scarf" } },
     "Wildcard5",
     "Wildcard6"
 ], "wildCarded")>>
@@ -2786,7 +2786,8 @@ window.SimApp = {
 
     /**
      * Router passages: go to targets[roll - 1] using one shared dice roll.
-     * targets: passage names, or { to: passage, set: { key: value } } to also set variables.
+     * targets: passage names, or { go: passage, set: { key: value } } to also set variables.
+     * (Not "to": SugarCube rewrites the word "to" into "=" inside <<run>>, breaking the object.)
      * Cloudflare: the server rolls once per visit, so both devices land on the same passage.
      * Playroom: the host rolls (legacy behavior).
      */
@@ -2831,7 +2832,7 @@ window.SimApp = {
             this.setVal(visitedKey, true, true);
         }
         var target = targets[Math.min(Math.max(roll, 1), sides) - 1];
-        var dest = typeof target === "string" ? target : target.to;
+        var dest = typeof target === "string" ? target : target.go;
         if (target && typeof target === "object" && target.set) {
             var self = this;
             Object.keys(target.set).forEach(function (k) {
@@ -3140,8 +3141,10 @@ window.SimApp = {
             "src",
             "https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=" + encodeURIComponent(url)
         );
-        this.refreshInviteModal();
+        /* Show first, then refresh: refresh closes the modal if the partner is already here
+           (it skips hidden modals, so refreshing first left it open over the game). */
         $("#sim-invite-modal").removeClass("hidden");
+        this.refreshInviteModal();
     },
 
     hideInviteModal: function () {

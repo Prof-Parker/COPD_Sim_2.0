@@ -91,6 +91,7 @@ function buildPassageModel(name, tags, content) {
     return {
         name,
         tags,
+        content,
         patient,
         observer,
         autoTargets,

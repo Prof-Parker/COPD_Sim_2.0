@@ -43,7 +43,14 @@ const PASSAGE_TAGS = {
     Grocery_Store_1: ["simulation", "activity"],
     Grocery_Store_2: ["simulation", "activity"],
     Whistle_Stop_In: ["simulation", "activity"],
-    Bedtime: ["simulation", "activity", "pausetimer"]
+    Bedtime: ["simulation", "activity", "pausetimer"],
+    Wildcard_Router: ["simulation"],
+    Wildcard1: ["simulation"],
+    Wildcard2: ["simulation"],
+    Wildcard3: ["simulation"],
+    Wildcard4: ["simulation"],
+    Wildcard5: ["simulation"],
+    Wildcard6: ["simulation"]
 };
 
 /** Minimal jQuery-like stub so SimApp banner/footer helpers do not throw. */

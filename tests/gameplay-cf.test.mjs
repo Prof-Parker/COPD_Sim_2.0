@@ -51,6 +51,28 @@ describe("gameplay on Cloudflare", () => {
         assert.equal(observer.playroom.getState("visitedGrocery"), true);
     });
 
+    it("wild card router: object targets go to the passage and set their items", async () => {
+        const { patient, observer } = await cfPair({ random: () => 0.4 }); // 0.4 * 6 → roll 3
+        await patient.run(() => patient.sim.goToSharedPassage("Wildcard_Router"));
+        const seq = patient.playroom.getState("passageSeq");
+        const targets = [
+            { go: "Wildcard1", set: { yourItem: "your inhaler", hisItem: "his inhaler" } },
+            "Wildcard2",
+            { go: "Wildcard3", set: { yourItem: "a mask", hisItem: "a mask" } },
+            { go: "Wildcard4", set: { yourItem: "a scarf", hisItem: "a scarf" } },
+            "Wildcard5",
+            "Wildcard6",
+        ];
+        const dest = await patient.run(() =>
+            patient.sim._routeByRollNow("wildRoll", targets, "wildCarded", "Wildcard_Router", seq)
+        );
+        await observer.run(() => observer.sim.tetherToPassage());
+        assert.equal(dest, "Wildcard3");
+        assert.equal(observer.currentPassage, "Wildcard3");
+        assert.equal(observer.playroom.getState("yourItem"), "a mask");
+        assert.equal(observer.playroom.getState("wildCarded"), true);
+    });
+
     it("router: when both roll at the same visit they get the same number", async () => {
         const rolls = [0.1, 0.9];
         const { patient, observer } = await cfPair({ random: () => rolls.shift() });

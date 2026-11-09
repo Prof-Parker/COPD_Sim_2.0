@@ -2347,7 +2347,8 @@ window.SimApp = {
 
     /**
      * Router passages: go to targets[roll - 1] using one shared dice roll.
-     * targets: passage names, or { to: passage, set: { key: value } } to also set variables.
+     * targets: passage names, or { go: passage, set: { key: value } } to also set variables.
+     * (Not "to": SugarCube rewrites the word "to" into "=" inside <<run>>, breaking the object.)
      * Cloudflare: the server rolls once per visit, so both devices land on the same passage.
      * Playroom: the host rolls (legacy behavior).
      */
@@ -2392,7 +2393,7 @@ window.SimApp = {
             this.setVal(visitedKey, true, true);
         }
         var target = targets[Math.min(Math.max(roll, 1), sides) - 1];
-        var dest = typeof target === "string" ? target : target.to;
+        var dest = typeof target === "string" ? target : target.go;
         if (target && typeof target === "object" && target.set) {
             var self = this;
             Object.keys(target.set).forEach(function (k) {
@@ -2701,8 +2702,10 @@ window.SimApp = {
             "src",
             "https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=" + encodeURIComponent(url)
         );
-        this.refreshInviteModal();
+        /* Show first, then refresh: refresh closes the modal if the partner is already here
+           (it skips hidden modals, so refreshing first left it open over the game). */
         $("#sim-invite-modal").removeClass("hidden");
+        this.refreshInviteModal();
     },
 
     hideInviteModal: function () {
@@ -4758,7 +4761,7 @@ if (simChooseBackend() === "cf") {
                 loader.style.color = "red";
             }
         });
-}</script><tw-tag name="simulation" color="red"></tw-tag><tw-tag name="activity" color="green"></tw-tag><tw-tag name="briefing" color="orange"></tw-tag><tw-tag name="nobr" color="purple"></tw-tag><tw-passagedata pid="1" name="Breakfast" tags="simulation activity" position="1400,650" size="100,100">&lt;h1&gt;Breakfast Time&lt;/h1&gt;\
+}</script><tw-tag name="nobr" color="purple"></tw-tag><tw-tag name="simulation" color="red"></tw-tag><tw-tag name="activity" color="green"></tw-tag><tw-tag name="briefing" color="orange"></tw-tag><tw-passagedata pid="1" name="Breakfast" tags="simulation activity" position="1400,650" size="100,100">&lt;h1&gt;Breakfast Time&lt;/h1&gt;\
 &lt;hr&gt;\
 &lt;&lt;if State.variables.myRole == &quot;patient&quot;&gt;&gt;\
 It&#39;s time for breakfast. What would you like to have for breakfast today @@.holland;Mr. Holland@@? As you think about what to have you try figure out which option will give you the most energy for your errands today.
@@ -6049,10 +6052,10 @@ What do you want to do?
 &lt;!--[[Whistle_Stop_Out]]--&gt;
 &lt;!--[[Hallway_In]]--&gt;</tw-passagedata><tw-passagedata pid="49" name="Wildcard_Router" tags="simulation" position="1100,1100" size="100,100">/* One shared 6-sided roll (server-side on Cloudflare), then both players go to the same wild card */
 &lt;&lt;run SimApp.routeByRoll(&quot;wildRoll&quot;, [
-    { to: &quot;Wildcard1&quot;, set: { yourItem: &quot;your inhaler&quot;, hisItem: &quot;his inhaler&quot; } },
+    { go: &quot;Wildcard1&quot;, set: { yourItem: &quot;your inhaler&quot;, hisItem: &quot;his inhaler&quot; } },
     &quot;Wildcard2&quot;,
-    { to: &quot;Wildcard3&quot;, set: { yourItem: &quot;a mask&quot;, hisItem: &quot;a mask&quot; } },
-    { to: &quot;Wildcard4&quot;, set: { yourItem: &quot;a scarf&quot;, hisItem: &quot;a scarf&quot; } },
+    { go: &quot;Wildcard3&quot;, set: { yourItem: &quot;a mask&quot;, hisItem: &quot;a mask&quot; } },
+    { go: &quot;Wildcard4&quot;, set: { yourItem: &quot;a scarf&quot;, hisItem: &quot;a scarf&quot; } },
     &quot;Wildcard5&quot;,
     &quot;Wildcard6&quot;
 ], &quot;wildCarded&quot;)&gt;&gt;
