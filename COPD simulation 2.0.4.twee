@@ -367,22 +367,22 @@ You push through the fatigue and begin folding the clothes in the basket.
 >>
 <</if>>
 
-:: Bedtime [simulation activity pausetimer nobr] {"position":"2600,700","size":"100,100"}
+:: Bedtime [simulation activity pausetimer recap nobr] {"position":"2600,700","size":"100,100"}
 <h1>Bedtime</h1>
 <hr>
 <<if $myRole == "patient">>
 You finally make it to your bedroom and sit on the edge of the mattress.
     <<if $Energy <= 3>>
-    You're utterly exhausted and feel like you can barely breathe, but you made it
+    You're utterly exhausted and feel like you can barely breathe, but you made it.
     <<elseif $Energy <= 7>>
     You're a little winded, and glad to be done for the day.
     <<else>>
-    You're feeling good and looking forward to a good night's sleep
+    You're feeling good and looking forward to a good night's sleep.
     <</if>>
     <<if $hasMedications is true>>
-    You change into your pajamas and set your medications on the night stand for tomorrow morning
+    You change into your pajamas and set your medications on the night stand for tomorrow morning.
     <<else>>
-    As you change into your pajamas you worry about how you'll feel tomorrow without your maintenance medications
+    As you change into your pajamas you worry about how you'll feel tomorrow without your maintenance medications.
     <</if>>
     You crawl into bed and lay your head on the pillow and close your eyes. As you drift off to sleep you
     <<if $hasToy is true>>
@@ -394,16 +394,16 @@ You finally make it to your bedroom and sit on the edge of the mattress.
 <<else>>
     @@.holland;Mr. Holland@@ is back in his bedroom. As he gets ready for bed he reflects on how his breathing is feeling and what he was able to get done today.
     <<if $Energy <= 3>>
-    He is utterly exhausted and feels like he can barely breathe, but he made it
+    He is utterly exhausted and feels like he can barely breathe, but he made it.
     <<elseif $Energy <= 7>>
     He is a little winded, and glad to be done for the day.
     <<else>>
-    He is feeling good and looking forward to a good night's sleep
+    He is feeling good and looking forward to a good night's sleep.
     <</if>>
     <<if $hasMedications is true>>
-    He changes into his pajamas and sets his medications on the night stand for tomorrow morning
+    He changes into his pajamas and sets his medications on the night stand for tomorrow morning.
     <<else>>
-    As he changes into his pajamas he worries about how he'll feel tomorrow without his maintenance medications
+    As he changes into his pajamas he worries about how he'll feel tomorrow without his maintenance medications.
     <</if>>
     He crawls into bed and lays his head on the pillow and closes his eyes. As he drifts off to sleep he
     <<if $hasToy is true>>
@@ -683,7 +683,8 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
 
 :: PassageFooter {"position":"500,600","size":"100,100"}
 <<nobr>>
-<<if tags().includes("simulation") and State.variables.myRole == "observer">>
+/* "recap" passages (e.g. Bedtime) are end-of-day summaries: no observer buttons */
+<<if tags().includes("simulation") and State.variables.myRole == "observer" and not tags().includes("recap")>>
     <div id="observer-footer">
         
         <<if tags().includes("activity")>>

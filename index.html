@@ -5081,21 +5081,21 @@ You push through the fatigue and begin folding the clothes in the basket.
   &quot;They folded the clothes sitting down | -1 | 2 | satAndRested | green | You pushed through the fatigue to get the laundry folded. | green&quot;
   &quot;They folded the clothes standing up | -3 | 0 | standing | red | The constant bending over to pull clothes out of the basket takes a toll on your breath. | red&quot;
 &gt;&gt;
-&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="19" name="Bedtime" tags="simulation activity pausetimer nobr" position="2600,700" size="100,100">&lt;h1&gt;Bedtime&lt;/h1&gt;
+&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="19" name="Bedtime" tags="simulation activity pausetimer recap nobr" position="2600,700" size="100,100">&lt;h1&gt;Bedtime&lt;/h1&gt;
 &lt;hr&gt;
 &lt;&lt;if $myRole == &quot;patient&quot;&gt;&gt;
 You finally make it to your bedroom and sit on the edge of the mattress.
     &lt;&lt;if $Energy &lt;= 3&gt;&gt;
-    You&#39;re utterly exhausted and feel like you can barely breathe, but you made it
+    You&#39;re utterly exhausted and feel like you can barely breathe, but you made it.
     &lt;&lt;elseif $Energy &lt;= 7&gt;&gt;
     You&#39;re a little winded, and glad to be done for the day.
     &lt;&lt;else&gt;&gt;
-    You&#39;re feeling good and looking forward to a good night&#39;s sleep
+    You&#39;re feeling good and looking forward to a good night&#39;s sleep.
     &lt;&lt;/if&gt;&gt;
     &lt;&lt;if $hasMedications is true&gt;&gt;
-    You change into your pajamas and set your medications on the night stand for tomorrow morning
+    You change into your pajamas and set your medications on the night stand for tomorrow morning.
     &lt;&lt;else&gt;&gt;
-    As you change into your pajamas you worry about how you&#39;ll feel tomorrow without your maintenance medications
+    As you change into your pajamas you worry about how you&#39;ll feel tomorrow without your maintenance medications.
     &lt;&lt;/if&gt;&gt;
     You crawl into bed and lay your head on the pillow and close your eyes. As you drift off to sleep you
     &lt;&lt;if $hasToy is true&gt;&gt;
@@ -5107,16 +5107,16 @@ You finally make it to your bedroom and sit on the edge of the mattress.
 &lt;&lt;else&gt;&gt;
     @@.holland;Mr. Holland@@ is back in his bedroom. As he gets ready for bed he reflects on how his breathing is feeling and what he was able to get done today.
     &lt;&lt;if $Energy &lt;= 3&gt;&gt;
-    He is utterly exhausted and feels like he can barely breathe, but he made it
+    He is utterly exhausted and feels like he can barely breathe, but he made it.
     &lt;&lt;elseif $Energy &lt;= 7&gt;&gt;
     He is a little winded, and glad to be done for the day.
     &lt;&lt;else&gt;&gt;
-    He is feeling good and looking forward to a good night&#39;s sleep
+    He is feeling good and looking forward to a good night&#39;s sleep.
     &lt;&lt;/if&gt;&gt;
     &lt;&lt;if $hasMedications is true&gt;&gt;
-    He changes into his pajamas and sets his medications on the night stand for tomorrow morning
+    He changes into his pajamas and sets his medications on the night stand for tomorrow morning.
     &lt;&lt;else&gt;&gt;
-    As he changes into his pajamas he worries about how he&#39;ll feel tomorrow without his maintenance medications
+    As he changes into his pajamas he worries about how he&#39;ll feel tomorrow without his maintenance medications.
     &lt;&lt;/if&gt;&gt;
     He crawls into bed and lays his head on the pillow and closes his eyes. As he drifts off to sleep he
     &lt;&lt;if $hasToy is true&gt;&gt;
@@ -5358,7 +5358,8 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
 &lt;&lt;/if&gt;&gt;
 
 &lt;!--[[Dressing]]--&gt;</tw-passagedata><tw-passagedata pid="29" name="PassageFooter" tags="" position="500,600" size="100,100">&lt;&lt;nobr&gt;&gt;
-&lt;&lt;if tags().includes(&quot;simulation&quot;) and State.variables.myRole == &quot;observer&quot;&gt;&gt;
+/* &quot;recap&quot; passages (e.g. Bedtime) are end-of-day summaries: no observer buttons */
+&lt;&lt;if tags().includes(&quot;simulation&quot;) and State.variables.myRole == &quot;observer&quot; and not tags().includes(&quot;recap&quot;)&gt;&gt;
     &lt;div id=&quot;observer-footer&quot;&gt;
         
         &lt;&lt;if tags().includes(&quot;activity&quot;)&gt;&gt;

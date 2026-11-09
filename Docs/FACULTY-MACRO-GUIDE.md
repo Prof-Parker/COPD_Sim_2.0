@@ -40,6 +40,7 @@ Click a link to jump to that section, then click the section header to expand or
 | `briefing` | Tutorial or practice passages where game-over should **not** trigger (optional) |
 | `pausetimer` | Freezes the simulation clock while the player is on this passage (e.g. Bedtime, Game Over) |
 | `hidehud` | Hides the top HUD bar on debrief/endgame passages that still need `simulation` for sync/tether |
+| `recap` | End-of-day summary screens (e.g. Bedtime): hides the observer's footer buttons (General Observations, inhaler). The patient's next button still shows |
 
 **Example tag line in Twine:**
 
