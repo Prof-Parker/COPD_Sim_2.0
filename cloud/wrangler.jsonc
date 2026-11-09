@@ -1,41 +1,62 @@
 // Cloudflare config for the COPD Simulation multiplayer backend.
 // Docs: https://developers.cloudflare.com/workers/wrangler/configuration/
 {
-    "name": "copd-sim",
-    "main": "src/worker.js",
-    "compatibility_date": "2025-09-01",
-
-    // Copies ../index.html, ../Media and ./public into ./dist before every dev/deploy.
-    "build": { "command": "node scripts/stage-assets.mjs" },
-
-    // The game, test page and instructor page, served from the same *.workers.dev address.
-    "assets": { "directory": "./dist" },
-
-    "durable_objects": {
-        "bindings": [
-            { "name": "PAIR_ROOM", "class_name": "PairRoom" },
-            { "name": "CLASS_SESSION", "class_name": "ClassSession" }
-        ]
-    },
-    // SQLite-backed Durable Objects (the only kind on the free plan). Never edit an applied tag.
-    "migrations": [
-        { "tag": "v1", "new_sqlite_classes": ["PairRoom"] },
-        { "tag": "v2", "new_sqlite_classes": ["ClassSession"] }
-    ],
-
-    // Permanent results. No database_id yet: the first `npx wrangler deploy` creates the
-    // database and writes its id here (commit that change). Then create the tables with:
-    //   npx wrangler d1 migrations apply copd-sim-results --remote
-    "d1_databases": [
-        {
-            "binding": "DB",
-            "database_name": "copd-sim-results",
-            "migrations_dir": "migrations"
-        }
-    ],
-
-    // Daily retention cleanup (08:00 UTC): deletes results and sessions older than a year.
-    "triggers": { "crons": ["0 8 * * *"] },
-
-    "observability": { "enabled": true }
+	"name": "copd-sim",
+	"main": "src/worker.js",
+	"compatibility_date": "2025-09-01",
+	// Copies ../index.html, ../Media and ./public into ./dist before every dev/deploy.
+	"build": {
+		"command": "node scripts/stage-assets.mjs"
+	},
+	// The game, test page and instructor page, served from the same *.workers.dev address.
+	"assets": {
+		"directory": "./dist"
+	},
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "PAIR_ROOM",
+				"class_name": "PairRoom"
+			},
+			{
+				"name": "CLASS_SESSION",
+				"class_name": "ClassSession"
+			}
+		]
+	},
+	// SQLite-backed Durable Objects (the only kind on the free plan). Never edit an applied tag.
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": [
+				"PairRoom"
+			]
+		},
+		{
+			"tag": "v2",
+			"new_sqlite_classes": [
+				"ClassSession"
+			]
+		}
+	],
+	// Permanent results. database_id was filled in by the first `npx wrangler deploy`.
+	// After adding a file to migrations/, apply it with:
+	//   npx wrangler d1 migrations apply copd-sim-results --remote
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "copd-sim-results",
+			"migrations_dir": "migrations",
+			"database_id": "c104b1b1-160b-42ea-968c-ba5d7dd214f0"
+		}
+	],
+	// Daily retention cleanup (08:00 UTC): deletes results and sessions older than a year.
+	"triggers": {
+		"crons": [
+			"0 8 * * *"
+		]
+	},
+	"observability": {
+		"enabled": true
+	}
 }
