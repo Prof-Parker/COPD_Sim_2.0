@@ -133,11 +133,30 @@ describe("CloudNet client", () => {
         await assert.rejects(room.createClientView(), /room_full/);
     });
 
+    it("a student on a new device can take back their offline seat (and role)", async () => {
+        const room = createRoom();
+        const a = await room.createClientView();
+        const b = await room.createClientView();
+        a.myPlayer().setState("role", "patient");
+        await tick();
+        a.disconnect(); // old phone gone
+        await tick();
+        const newPhone = await room.createClientView().catch((e) => e);
+        assert.match(String(newPhone), /room_full/);
+        // Same room, fresh device: takeover
+        const c = await room.createClientView({ takeover: true });
+        assert.equal(c.myPlayer().getState("role"), "patient");
+        assert.equal(c.id, "p1");
+        assert.equal(b.isHost(), false);
+        await tick();
+        assert.equal(c.isHost(), true);
+    });
+
     it("invite link carries the session and pair codes", async () => {
         const room = createRoom({ session: "REGN-1109", pair: "07" });
         const a = await room.createClientView();
         assert.equal(a.getRoomCode(), "REGN-1109-07");
-        assert.equal(a.inviteUrl(), "http://test/?s=REGN-1109&p=07&net=cf");
+        assert.equal(a.inviteUrl(), "http://test/?s=REGN-1109&p=07");
         assert.equal(a.isRejoin(), true);
     });
 

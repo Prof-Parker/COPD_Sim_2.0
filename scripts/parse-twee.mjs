@@ -25,7 +25,8 @@ const TERMINAL_PASSAGES = new Set([
     "Game_Over_Inhaler",
 ]);
 
-const PASSAGE_HEADER = /^::\s+([^\n{]+?)(?:\s+\[([^\]]*)\])?(?:\s+\{[^}]*\})?\s*$/;
+/* Metadata may follow the tags with no space, e.g. ':: Start [nobr]{"position":...}' */
+const PASSAGE_HEADER = /^::\s+([^\n{[]+?)(?:\s*\[([^\]]*)\])?(?:\s*\{[^}]*\})?\s*$/;
 
 /**
  * @param {string} tweePath
@@ -316,7 +317,24 @@ function extractAutoTargets(source) {
         source,
         /SimApp\.deferGoToSharedPassage\s*\(\s*["']([^"']+)["']\s*\)/g
     );
-    return unique(defer);
+    return unique([...defer, ...extractRouteByRollTargets(source)]);
+}
+
+/**
+ * SimApp.routeByRoll("key", ["A", { to: "B", set: {...} }, ...], "flag") → ["A", "B", ...] in roll order.
+ * @param {string} source
+ */
+function extractRouteByRollTargets(source) {
+    const out = [];
+    const re = /SimApp\.routeByRoll\s*\(\s*["'][^"']+["']\s*,\s*\[([\s\S]*?)\]\s*,/g;
+    let m;
+    while ((m = re.exec(source))) {
+        const list = m[1].replace(/set\s*:\s*\{[^}]*\}/g, "");
+        for (const t of list.matchAll(/["']([^"']+)["']/g)) {
+            out.push(t[1]);
+        }
+    }
+    return out;
 }
 
 /**

@@ -5,7 +5,7 @@
  * and the Node tests drive it directly. Keep it pure: no I/O, no globals.
  *
  * Usage:
- *   const room = new RoomCore(savedStateOrNull, { sessionCode, pairCode, now, makeToken });
+ *   const room = new RoomCore(savedStateOrNull, { sessionCode, pairCode, now, makeToken, random });
  *   const { out, dirty } = room.handle(conn, message, connectedTokens);
  *     conn            — mutable per-socket object; room-core sets conn.token after "hello"
  *     message         — parsed JSON from the client
@@ -15,17 +15,28 @@
  *
  * Messages that change state may carry a client id `cid`. The sender's copy of the
  * resulting broadcast (or reject) includes `ack: cid`, so the client knows its own
- * optimistic writes up to that point have been applied (or refused).
+ * writes up to that point have been applied (or refused).
+ *
+ * Game variables (Energy, Points, currentPassage, passageSeq, …) live in state.game, the
+ * same keys SimApp uses. The server owns the rules that must not race between devices:
+ *   navigate  — compare-and-set on passageSeq (two devices can't both move the room)
+ *   roll      — one dice roll per key per passage, shared by both devices
+ *   op        — named calculations that must run once (errandsDrain)
+ *   inc       — atomic add (counters)
+ *   timer     — the room clock (start, pause on pausetimer passages, stop at Final_Report)
+ *   reset     — Try Again: new attempt, fresh stats, both devices back to the hub
  */
 
 export const ROLES = ["patient", "observer"];
 export const LOBBY_PASSAGE = "Role_Selection";
+export const TIMER_MODES = ["run", "pause", "stop", "none"];
 const MAX_PLAYERS = 2;
 const MAX_NAME_LEN = 20;
 const MAX_KEY_LEN = 40;
 const MAX_PATCH_KEYS = 80;
 const MAX_STRING_LEN = 500;
 const KEY_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const PASSAGE_RE = /^[A-Za-z0-9_][A-Za-z0-9_. -]{0,79}$/;
 
 export function createInitialState({ sessionCode, pairCode }) {
     return {
@@ -33,16 +44,25 @@ export function createInitialState({ sessionCode, pairCode }) {
         sessionCode: sessionCode || "",
         pairCode: pairCode || "",
         seq: 0, // increases on every accepted change
-        passage: LOBBY_PASSAGE,
-        passageSeq: 0,
         attempt: 1,
-        startedAt: null,
-        endedAt: null,
+        timer: newTimer(),
+        once: {}, // roll/op key -> passageSeq it last ran at
         nextPid: 1,
         players: {}, // token -> { pid, role, name }
         roles: { patient: null, observer: null }, // role -> token
-        game: {},
+        game: { currentPassage: LOBBY_PASSAGE, passageSeq: 0 },
     };
+}
+
+function newTimer() {
+    return { startedAt: null, pausedAt: null, pausedMs: 0, stoppedAt: null };
+}
+
+/** Milliseconds on the room clock at `now` (paused and stopped time excluded). */
+export function timerElapsed(timer, now) {
+    if (!timer || timer.startedAt === null || timer.startedAt === undefined) return 0;
+    const end = timer.stoppedAt ?? timer.pausedAt ?? now;
+    return Math.max(0, end - timer.startedAt - (timer.pausedMs || 0));
 }
 
 export function cleanName(name) {
@@ -59,8 +79,24 @@ function isPlainValue(v) {
     return false;
 }
 
+function validPatch(patch) {
+    if (!patch || typeof patch !== "object" || Array.isArray(patch)) return false;
+    const keys = Object.keys(patch);
+    if (keys.length === 0 || keys.length > MAX_PATCH_KEYS) return false;
+    return keys.every((k) => k.length <= MAX_KEY_LEN && KEY_RE.test(k) && isPlainValue(patch[k]));
+}
+
+function validKey(key) {
+    return typeof key === "string" && key.length <= MAX_KEY_LEN && KEY_RE.test(key);
+}
+
 function pidNumber(pid) {
     return Number(String(pid || "").replace(/^p/, "")) || 0;
+}
+
+function num(v, fallback) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
 }
 
 /**
@@ -89,6 +125,7 @@ export class RoomCore {
     constructor(saved, opts = {}) {
         this.now = opts.now || (() => Date.now());
         this.makeToken = opts.makeToken || defaultToken;
+        this.random = opts.random || Math.random;
         this.state = saved && saved.v === 1 ? saved : createInitialState(opts);
         this._upgrade();
     }
@@ -100,6 +137,28 @@ export class RoomCore {
         for (const tok of Object.keys(s.players)) {
             if (!s.players[tok].pid) s.players[tok].pid = `p${s.nextPid++}`;
         }
+        if (!s.game) s.game = {};
+        if ("passage" in s) {
+            if (s.game.currentPassage === undefined) s.game.currentPassage = s.passage;
+            delete s.passage;
+        }
+        if ("passageSeq" in s) {
+            if (s.game.passageSeq === undefined) s.game.passageSeq = s.passageSeq;
+            delete s.passageSeq;
+        }
+        if (s.game.currentPassage === undefined) s.game.currentPassage = LOBBY_PASSAGE;
+        if (s.game.passageSeq === undefined) s.game.passageSeq = 0;
+        if (!s.timer) {
+            s.timer = newTimer();
+            delete s.startedAt;
+            delete s.endedAt;
+        }
+        if (!s.once) s.once = {};
+        if (!s.attempt) s.attempt = 1;
+    }
+
+    get passageSeq() {
+        return num(this.state.game.passageSeq, 0);
     }
 
     /** What a client sees: everything except tokens. */
@@ -124,11 +183,10 @@ export class RoomCore {
             sessionCode: s.sessionCode,
             pairCode: s.pairCode,
             seq: s.seq,
-            passage: s.passage,
-            passageSeq: s.passageSeq,
+            passage: s.game.currentPassage,
+            passageSeq: this.passageSeq,
             attempt: s.attempt,
-            startedAt: s.startedAt,
-            endedAt: s.endedAt,
+            timer: { ...s.timer },
             roles,
             players,
             game: { ...s.game },
@@ -151,12 +209,22 @@ export class RoomCore {
                 return { out: [{ to: "self", msg: this._stateMsg(connectedTokens) }], dirty: false };
             case "claimRole":
                 return this._claimRole(conn, msg, connectedTokens);
+            case "name":
+                return this._name(conn, msg, connectedTokens);
             case "set":
                 return this._set(conn, msg, connectedTokens);
             case "inc":
                 return this._inc(conn, msg, connectedTokens);
             case "navigate":
                 return this._navigate(conn, msg, connectedTokens);
+            case "roll":
+                return this._roll(conn, msg, connectedTokens);
+            case "op":
+                return this._op(conn, msg, connectedTokens);
+            case "timer":
+                return this._timer(conn, msg, connectedTokens);
+            case "reset":
+                return this._reset(conn, msg, connectedTokens);
             default:
                 return this._reject(conn, "unknown_type", connectedTokens, msg);
         }
@@ -187,10 +255,28 @@ export class RoomCore {
         let token = typeof msg.token === "string" ? msg.token : null;
         if (!token || !s.players[token]) {
             if (Object.keys(s.players).length >= MAX_PLAYERS) {
-                return this._reject(conn, "room_full", connectedTokens, msg);
+                /*
+                 * Pair is full. A student who switched device/browser (or lost site data) can
+                 * take back a seat whose owner is offline: { takeover: true }. They inherit that
+                 * seat's id, role and nickname; the old device's token stops working.
+                 */
+                const offline = msg.takeover
+                    ? Object.keys(s.players).filter((t) => !connectedTokens.has(t))
+                    : [];
+                if (!offline.length) {
+                    return this._reject(conn, "room_full", connectedTokens, msg);
+                }
+                const old = offline.sort((a, b) => pidNumber(s.players[a].pid) - pidNumber(s.players[b].pid))[0];
+                token = this.makeToken();
+                s.players[token] = s.players[old];
+                delete s.players[old];
+                for (const r of ROLES) {
+                    if (s.roles[r] === old) s.roles[r] = token;
+                }
+            } else {
+                token = this.makeToken();
+                s.players[token] = { pid: `p${s.nextPid++}`, role: null, name: "" };
             }
-            token = this.makeToken();
-            s.players[token] = { pid: `p${s.nextPid++}`, role: null, name: "" };
         }
         conn.token = token;
         if (msg.name !== undefined) s.players[token].name = cleanName(msg.name);
@@ -235,21 +321,18 @@ export class RoomCore {
         return this._broadcastState(connectedTokens, conn, msg);
     }
 
+    /** { t:"name", name } — optional nickname shown on the instructor leaderboard. */
+    _name(conn, msg, connectedTokens) {
+        this.state.players[conn.token].name = cleanName(msg.name);
+        this.state.seq += 1;
+        return this._broadcastState(connectedTokens, conn, msg);
+    }
+
     _set(conn, msg, connectedTokens) {
-        const patch = msg.patch;
-        if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
+        if (!validPatch(msg.patch)) {
             return this._reject(conn, "bad_patch", connectedTokens, msg);
         }
-        const keys = Object.keys(patch);
-        if (keys.length === 0 || keys.length > MAX_PATCH_KEYS) {
-            return this._reject(conn, "bad_patch", connectedTokens, msg);
-        }
-        for (const k of keys) {
-            if (k.length > MAX_KEY_LEN || !KEY_RE.test(k) || !isPlainValue(patch[k])) {
-                return this._reject(conn, "bad_patch", connectedTokens, msg);
-            }
-        }
-        Object.assign(this.state.game, patch);
+        Object.assign(this.state.game, msg.patch);
         this.state.seq += 1;
         return this._broadcastState(connectedTokens, conn, msg);
     }
@@ -261,14 +344,10 @@ export class RoomCore {
      */
     _inc(conn, msg, connectedTokens) {
         const { key, by } = msg;
-        if (typeof key !== "string" || !KEY_RE.test(key) || key.length > MAX_KEY_LEN) {
+        if (!validKey(key) || typeof by !== "number" || !Number.isFinite(by)) {
             return this._reject(conn, "bad_patch", connectedTokens, msg);
         }
-        if (typeof by !== "number" || !Number.isFinite(by)) {
-            return this._reject(conn, "bad_patch", connectedTokens, msg);
-        }
-        const cur = Number(this.state.game[key]);
-        let next = (Number.isFinite(cur) ? cur : 0) + by;
+        let next = num(this.state.game[key], 0) + by;
         if (typeof msg.min === "number") next = Math.max(msg.min, next);
         if (typeof msg.max === "number") next = Math.min(msg.max, next);
         this.state.game[key] = next;
@@ -276,17 +355,128 @@ export class RoomCore {
         return this._broadcastState(connectedTokens, conn, msg);
     }
 
+    /**
+     * { t:"navigate", passage, expectSeq, timer?, patch? }
+     * Moves the room only if passageSeq still equals expectSeq, so two devices can't both
+     * advance it. A loser gets "stale_seq" plus the current snapshot and follows the room.
+     * `timer` ("run" | "pause" | "stop" | "none") updates the room clock for the new passage.
+     * `patch` (optional) is applied in the same step, e.g. { evalComplete: false }.
+     */
     _navigate(conn, msg, connectedTokens) {
         const s = this.state;
-        if (typeof msg.passage !== "string" || !msg.passage || msg.passage.length > 80) {
+        if (typeof msg.passage !== "string" || !PASSAGE_RE.test(msg.passage)) {
             return this._reject(conn, "bad_passage", connectedTokens, msg);
         }
-        if (msg.expectSeq !== s.passageSeq) {
+        if (msg.patch !== undefined && !validPatch(msg.patch)) {
+            return this._reject(conn, "bad_patch", connectedTokens, msg);
+        }
+        if (msg.timer !== undefined && !TIMER_MODES.includes(msg.timer)) {
+            return this._reject(conn, "bad_timer", connectedTokens, msg);
+        }
+        if (msg.expectSeq !== this.passageSeq) {
             // Someone else moved first (or this client is stale): send the truth back.
             return this._reject(conn, "stale_seq", connectedTokens, msg);
         }
-        s.passage = msg.passage;
-        s.passageSeq += 1;
+        if (msg.patch) Object.assign(s.game, msg.patch);
+        s.game.currentPassage = msg.passage;
+        s.game.passageSeq = this.passageSeq + 1;
+        this._applyTimerMode(msg.timer || "none");
+        s.seq += 1;
+        return this._broadcastState(connectedTokens, conn, msg);
+    }
+
+    _applyTimerMode(mode) {
+        const t = this.state.timer;
+        const now = this.now();
+        if (mode === "none") return;
+        if (mode === "stop") {
+            if (t.startedAt !== null && t.stoppedAt === null) t.stoppedAt = t.pausedAt ?? now;
+            return;
+        }
+        if (t.stoppedAt !== null) return; // stays stopped until reset
+        if (mode === "run") {
+            if (t.startedAt === null) t.startedAt = now;
+            if (t.pausedAt !== null) {
+                t.pausedMs += now - t.pausedAt;
+                t.pausedAt = null;
+            }
+        } else if (mode === "pause") {
+            if (t.startedAt !== null && t.pausedAt === null) t.pausedAt = now;
+        }
+    }
+
+    /**
+     * { t:"roll", key, sides } — one shared dice roll per key per passage.
+     * Both devices call this when a router passage renders; the first call rolls,
+     * the second gets the same number. game[key] = 1..sides.
+     */
+    _roll(conn, msg, connectedTokens) {
+        const { key, sides } = msg;
+        if (!validKey(key) || !Number.isInteger(sides) || sides < 2 || sides > 20) {
+            return this._reject(conn, "bad_roll", connectedTokens, msg);
+        }
+        const s = this.state;
+        if (s.once[`roll:${key}`] !== this.passageSeq || s.game[key] === undefined) {
+            s.game[key] = 1 + Math.floor(this.random() * sides);
+            s.once[`roll:${key}`] = this.passageSeq;
+        }
+        s.seq += 1;
+        return this._broadcastState(connectedTokens, conn, msg);
+    }
+
+    /**
+     * { t:"op", name } — named calculations that must happen once per passage even though
+     * both devices render it.
+     *   errandsDrain: Energy -= errandsRun², clamped to 0..15 (Whistle_Stop_In)
+     */
+    _op(conn, msg, connectedTokens) {
+        const s = this.state;
+        if (msg.name !== "errandsDrain") {
+            return this._reject(conn, "bad_op", connectedTokens, msg);
+        }
+        const guard = `op:${msg.name}`;
+        if (s.once[guard] !== this.passageSeq) {
+            const errands = num(s.game.errandsRun, 0);
+            const energy = num(s.game.Energy, 10) - errands * errands;
+            s.game.Energy = Math.min(15, Math.max(0, energy));
+            s.once[guard] = this.passageSeq;
+        }
+        s.seq += 1;
+        return this._broadcastState(connectedTokens, conn, msg);
+    }
+
+    /** { t:"timer", action:"reset" } — clock back to 0:00 and running (start of the real simulation). */
+    _timer(conn, msg, connectedTokens) {
+        if (msg.action !== "reset") {
+            return this._reject(conn, "bad_timer", connectedTokens, msg);
+        }
+        this.state.timer = newTimer();
+        this.state.timer.startedAt = this.now();
+        this.state.seq += 1;
+        return this._broadcastState(connectedTokens, conn, msg);
+    }
+
+    /**
+     * { t:"reset", fromAttempt, game, passage } — Try Again.
+     * Starts attempt fromAttempt+1 with the given default stats and sends the room to
+     * `passage`. If the partner already pressed Try Again (attempt moved on), this is
+     * refused with the current snapshot and the client simply follows.
+     */
+    _reset(conn, msg, connectedTokens) {
+        const s = this.state;
+        if (msg.fromAttempt !== s.attempt) {
+            return this._reject(conn, "stale_attempt", connectedTokens, msg);
+        }
+        if (!validPatch(msg.game) || typeof msg.passage !== "string" || !PASSAGE_RE.test(msg.passage)) {
+            return this._reject(conn, "bad_reset", connectedTokens, msg);
+        }
+        Object.assign(s.game, msg.game);
+        s.game.currentPassage = msg.passage;
+        s.game.passageSeq = this.passageSeq + 1;
+        s.attempt += 1;
+        s.once = {};
+        s.timer = newTimer();
+        s.timer.startedAt = this.now();
         s.seq += 1;
         return this._broadcastState(connectedTokens, conn, msg);
     }
@@ -309,7 +499,7 @@ export class RoomCore {
     _reject(conn, reason, connectedTokens, msg) {
         const tokens = new Set(connectedTokens);
         if (conn && conn.token) tokens.add(conn.token);
-        const out = { t: "reject", reason, seq: this.state.seq, snapshot: this.snapshot(tokens) };
+        const out = { t: "reject", reason, seq: this.state.seq, snapshot: this.snapshot(tokens), serverNow: this.now() };
         if (msg && msg.cid !== undefined && conn && conn.token) {
             out.ackToken = conn.token;
             out.ack = msg.cid;

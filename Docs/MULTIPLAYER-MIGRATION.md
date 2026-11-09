@@ -2,7 +2,8 @@
 
 **Status:** In progress.
 - **Milestone A** (backend skeleton in `cloud/`) is built and deployed.
-- **Milestone B** (Net adapter) is built. The game runs on either backend, and Playroom is still the default. Add `?net=cf&s=SESSION` to a link to play on Cloudflare.
+- **Milestone B** (Net adapter) is built. The game runs on either backend.
+- **Milestone C** (server-owned rules) is built and tested locally. **Cloudflare is now the default**; add `?net=playroom` for the old backend. Real-phone QA is still to do.
 **Author:** Robin Parker
 **Last updated:** November 2026
 **Target branch:** `net-cloudflare` (off `Beta`)
@@ -212,6 +213,38 @@ These differences from the tables above were made during implementation:
 - `tests/cloudnet.test.mjs` covers the client (13 tests).
 - `cloud/test/` covers the server rules (17 tests).
 - The Cloudflare test fake uses the real `room-core.js`.
+
+### 6.3 As built (Milestone C — server-owned rules)
+
+**What the server now decides** (each can no longer race between the two devices):
+
+| Game action | Before (Playroom) | Now (Cloudflare) |
+|---|---|---|
+| Passage change | Two separate writes plus polling | `navigate {passage, expectSeq, timer, patch}`: one compare-and-set. If the partner moved the room first, this device follows the room. |
+| Router rolls (grocery, pharmacy, toy store, wild card) | The host rolled; the other device could read an old roll | `roll {key, sides}`: one roll per key per visit, shared by both. A device whose router screen fires after the room has moved on follows the room instead of rolling again. Passages call `SimApp.routeByRoll(key, [targets], visitedKey)`. |
+| Whistle_Stop_In energy drain | Host only | `op {name:"errandsDrain"}`: runs once per visit |
+| Points, Energy, Inhaler, behavior counters | Read, add, write (simultaneous updates could be lost) | `inc`: atomic on the server; Energy clamped to 0–15 |
+| Clock | The host's own playtime, sent every second as `sharedTime` | A server clock: starts on the first passage that isn't a lobby screen, pauses on `pausetimer` passages, stops at Final_Report, and restarts with `timer {action:"reset"}`. HUD and debrief both read `SimApp.getElapsedParts()`. |
+| Try Again | Reset only the clicker's stats and sent them to Start. The partner didn't follow. | `reset {fromAttempt, game, passage}`: attempt + 1, default stats, new clock, both devices go to **Simulation_Hub** with roles kept. If both players press it, only one new attempt starts. |
+
+**Lobby changes**
+- **Session code:** without `?s=`, the Start screen shows a "Class session code" box instead of Connect.
+- **Nickname:** Role Selection has an optional nickname box (up to 20 characters). It's remembered on the device and sent to the server for the leaderboard.
+- **Taking back a seat:** if a pair is full, a student who switched device or browser can take back whichever seat is offline, keeping its role (`hello {takeover:true}`). They're asked to confirm first. An online seat can never be taken.
+
+**Where the game connects**
+- Cloudflare is the default backend.
+- When the game isn't served by the Worker (e.g. GitHub Pages or a local file), it connects to `setup.NET_ENDPOINT`, which is `wss://copd-sim.rparker-d61.workers.dev/ws/room`.
+
+**Deliberately kept for now**
+- **Playroom-only recovery code** (the `#r=` hash, room hints, snapshot wait) stays, so `?net=playroom` still works as a fallback. On Cloudflare it does nothing. It's removed in Milestone E.
+- **Remaining `isHost()` checks** are lobby-only: first-room setup and the invite button. On Cloudflare "host" means "first to join", and the server enforces every rule that matters.
+
+**Fixed along the way**
+- `scripts/parse-twee.mjs` didn't recognize headers like `:: Start [nobr]{…}`, which made 4 passages look unreachable. `npm test` now passes end to end.
+- Start's Connect/session controls now appear after the passage is displayed (`:passagedisplay`).
+
+**Tests:** 42 resync, 14 client, 7 gameplay (`tests/gameplay-cf.test.mjs`), 27 server, plus the flow validator.
 
 ## 7. Client changes
 

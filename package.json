@@ -1,13 +1,14 @@
 {
   "name": "copd-simulation-2",
   "private": true,
-  "description": "COPD Simulation 2.0 — Twine/SugarCube + Playroom",
+  "description": "COPD Simulation 2.0 — Twine/SugarCube + Cloudflare multiplayer (Playroom fallback)",
   "type": "module",
   "scripts": {
     "test:flow": "node scripts/validate-flow.mjs",
     "test:resync": "node --test tests/resync.test.mjs",
     "test:cloudnet": "node --test tests/cloudnet.test.mjs",
-    "test": "npm run test:flow && npm run test:resync && npm run test:cloudnet && npm --prefix cloud test",
+    "test:gameplay": "node --test tests/gameplay-cf.test.mjs",
+    "test": "npm run test:flow && npm run test:resync && npm run test:cloudnet && npm run test:gameplay && npm --prefix cloud test",
     "build": "powershell -NoProfile -ExecutionPolicy Bypass -File build.ps1"
   }
 }

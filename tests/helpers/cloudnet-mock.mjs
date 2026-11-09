@@ -39,10 +39,15 @@ export function createRoom(opts = {}) {
     const session = opts.session || "TEST";
     const pair = opts.pair || "1";
     let tokenN = 0;
+    /* One shared fake clock for server and clients (advance with room.advance(ms)). */
+    let clock = opts.startTime || 1_700_000_000_000;
+    const now = () => clock;
     const core = new RoomCore(null, {
         sessionCode: session,
         pairCode: pair,
         makeToken: () => `token-${++tokenN}`,
+        now,
+        random: opts.random,
     });
     /** Server-side ends of open sockets: { token, send, ws } */
     const serverEnds = new Set();
@@ -111,6 +116,7 @@ export function createRoom(opts = {}) {
             setTimeout: () => 0, // no auto-reconnect / keepalive timers in tests
             clearTimeout: () => {},
             listenVisibility: false,
+            now,
         });
         Object.defineProperty(net, "id", {
             get() {
@@ -134,13 +140,21 @@ export function createRoom(opts = {}) {
             view.lastInsertCoinOptions = options || {};
             return origInsert.apply(net, arguments);
         };
-        await view.insertCoin();
+        if (_viewOpts.takeover) {
+            await net.takeoverSeat();
+        } else {
+            await view.insertCoin();
+        }
         return view;
     }
 
     return {
         core,
         createClientView,
+        /** Move the shared fake clock forward. */
+        advance(ms) {
+            clock += ms;
+        },
         /** Flush batched setState messages (CloudNet sends them in a microtask). */
         async settle() {
             await new Promise((r) => setTimeout(r, 0));

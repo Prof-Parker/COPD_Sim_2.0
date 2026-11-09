@@ -37,7 +37,13 @@ const PASSAGE_TAGS = {
     Start: [],
     Final_Report: ["simulation", "briefing"],
     Game_Over_Energy: ["pausetimer"],
-    Game_Over_Inhaler: ["pausetimer"]
+    Game_Over_Inhaler: ["pausetimer"],
+    Errands_Hub: ["simulation", "activity"],
+    Grocery_Store_Router: ["simulation", "activity"],
+    Grocery_Store_1: ["simulation", "activity"],
+    Grocery_Store_2: ["simulation", "activity"],
+    Whistle_Stop_In: ["simulation", "activity"],
+    Bedtime: ["simulation", "activity", "pausetimer"]
 };
 
 /** Minimal jQuery-like stub so SimApp banner/footer helpers do not throw. */
@@ -261,6 +267,7 @@ function cloneSimApp(template) {
     clone._patientChoiceResolved = false;
     clone._patientChoicesSkipEval = false;
     clone._observerEvalMounted = false;
+    clone._lastAttempt = null;
     clone.RECOVER_DEBOUNCE_MS = 0;
     clone.PASSAGE_COMMIT_TIMEOUT_MS = 200;
     return clone;
@@ -435,7 +442,7 @@ export async function createSyncedPair(layout) {
         throw new Error("hostRole and clientRole must differ");
     }
 
-    const room = layout.backend === "cf" ? createCloudRoom() : createRoom();
+    const room = layout.backend === "cf" ? createCloudRoom(layout.roomOptions || {}) : createRoom();
     /* The host view is created (joins) first, so it is the host on both backends. */
     const hostPlayroom = await room.createClientView({ id: "player-host", isHost: true });
     const clientPlayroom = await room.createClientView({ id: "player-client", isHost: false });

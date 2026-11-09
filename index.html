@@ -1283,6 +1283,7 @@ window.createCloudNet = function (opts) {
 
     var ws = null;
     var wanted = false;
+    var takeoverNext = false; /* send { takeover: true } with the next hello */
     var retry = 0;
     var retryTimer = null;
     var keepaliveTimer = null;
@@ -1295,6 +1296,8 @@ window.createCloudNet = function (opts) {
     var joinHandlers = [];
     var disconnectHandlers = [];
     var known = {};          /* pid -> { api, connected, quit: [] } */
+    var requests = {};       /* cid -> { resolve, timer } for calls that wait for the server */
+    var REQUEST_TIMEOUT_MS = opts.requestTimeoutMs || 6000;
 
     function normalize(v) { return String(v || "").trim().toUpperCase(); }
 
@@ -1488,9 +1491,58 @@ window.createCloudNet = function (opts) {
             }
             if (m.snapshot) { net.snapshot = m.snapshot; }
             if (m.you) { net.you = m.you; }
-            if (m.ack !== undefined) { clearAcked(m.ack); }
+            if (m.ack !== undefined) {
+                clearAcked(m.ack);
+                settleRequests(m.ack, m.t === "reject" ? m.reason : null);
+            }
             updatePlayers();
         }
+    }
+
+    /** Resolves server calls up to `ack`; the one that was refused gets { ok:false, reason }. */
+    function settleRequests(ack, reason) {
+        Object.keys(requests).forEach(function (k) {
+            var c = Number(k);
+            if (c > ack) { return; }
+            var r = requests[k];
+            delete requests[k];
+            clearT(r.timer);
+            r.resolve(c === ack && reason ? { ok: false, reason: reason } : { ok: true });
+        });
+    }
+
+    function failAllRequests(reason) {
+        Object.keys(requests).forEach(function (k) {
+            var r = requests[k];
+            delete requests[k];
+            clearT(r.timer);
+            r.resolve({ ok: false, reason: reason });
+        });
+    }
+
+    /** Sends msg and resolves when the server has applied (ok) or refused it. Never rejects. */
+    function request(msg) {
+        if (!net.connected) {
+            return Promise.resolve({ ok: false, reason: "offline" });
+        }
+        cid += 1;
+        msg.cid = cid;
+        var myCid = cid;
+        return new Promise(function (resolve) {
+            var r = { resolve: resolve, timer: null };
+            r.timer = setT(function () {
+                if (requests[myCid]) {
+                    delete requests[myCid];
+                    resolve({ ok: false, reason: "timeout" });
+                }
+            }, REQUEST_TIMEOUT_MS);
+            requests[myCid] = r;
+            if (!sendInOrder(msg)) {
+                delete requests[myCid];
+                clearT(r.timer);
+                resolve({ ok: false, reason: "offline" });
+            }
+        });
     }
 
     function onClosed(sock) {
@@ -1499,6 +1551,7 @@ window.createCloudNet = function (opts) {
         clearT(keepaliveTimer);
         var wasConnected = net.connected;
         net.connected = false;
+        failAllRequests("offline");
         if (wasConnected) {
             disconnectHandlers.forEach(function (cb) {
                 try { cb({ code: 1006, reason: "socket closed" }); } catch (eCb) { console.error(eCb); }
@@ -1527,7 +1580,12 @@ window.createCloudNet = function (opts) {
         ws = sock;
         sock.onopen = function () {
             if (sock !== ws) { return; }
-            sock.send(JSON.stringify({ t: "hello", token: storedToken() }));
+            var hello = { t: "hello", token: storedToken() };
+            if (takeoverNext) {
+                hello.takeover = true;
+                takeoverNext = false;
+            }
+            sock.send(JSON.stringify(hello));
         };
         sock.onmessage = function (ev) { onMessage(sock, ev.data); };
         sock.onclose = function () { onClosed(sock); };
@@ -1628,7 +1686,7 @@ window.createCloudNet = function (opts) {
         if (!net.session || !net.pair) { return null; }
         var origin = loc.origin || (loc.protocol + "//" + loc.host);
         return origin + loc.pathname + "?s=" + encodeURIComponent(net.session) +
-            "&p=" + encodeURIComponent(net.pair) + "&net=cf";
+            "&p=" + encodeURIComponent(net.pair);
     };
 
     /** True when this browser already holds a player token for this session + pair. */
@@ -1647,6 +1705,85 @@ window.createCloudNet = function (opts) {
     };
 
     net.serverNow = function () { return nowFn() + net.clockOffset; };
+
+    /**
+     * Pair is full but this student is one of its two players on a new device/browser:
+     * take back whichever seat is offline (keeps its role). Resolves like insertCoin.
+     */
+    net.takeoverSeat = function () {
+        takeoverNext = true;
+        return net.insertCoin();
+    };
+
+    /* ---- server-owned rules (Milestone C) — each returns Promise<{ ok, reason? }> ---- */
+
+    /** Move the room to `passage` only if it is still at `expectSeq` (no double-advance). */
+    net.navigate = function (passage, expectSeq, timerMode, patch) {
+        var msg = { t: "navigate", passage: passage, expectSeq: expectSeq };
+        if (timerMode) { msg.timer = timerMode; }
+        if (patch) { msg.patch = patch; }
+        return request(msg);
+    };
+
+    /** One shared dice roll per key per passage; read the result with getState(key). */
+    net.roll = function (key, sides) {
+        return request({ t: "roll", key: key, sides: sides });
+    };
+
+    /** Named once-per-passage calculation on the server (e.g. "errandsDrain"). */
+    net.op = function (name) {
+        return request({ t: "op", name: name });
+    };
+
+    net.timerReset = function () {
+        return request({ t: "timer", action: "reset" });
+    };
+
+    /**
+     * Try Again: new attempt with `defaults`, both devices sent to `passage`.
+     * `fromAttempt` = the attempt this screen shows; if the partner already started a new one,
+     * the server refuses (stale_attempt) instead of starting another.
+     */
+    net.reset = function (defaults, passage, fromAttempt) {
+        return request({
+            t: "reset",
+            fromAttempt: typeof fromAttempt === "number" ? fromAttempt : net.attempt(),
+            game: defaults,
+            passage: passage
+        });
+    };
+
+    net.setName = function (name) {
+        return request({ t: "name", name: String(name || "") });
+    };
+
+    /** Atomic add with an optimistic local value; returns the value shown right away. */
+    net.incState = function (key, by, min, max) {
+        var cur = Number(net.getState(key));
+        var next = (isNaN(cur) ? 0 : cur) + by;
+        if (typeof min === "number") { next = Math.max(min, next); }
+        if (typeof max === "number") { next = Math.min(max, next); }
+        cid += 1;
+        pending[key] = { val: next, cid: cid };
+        var msg = { t: "inc", key: key, by: by, cid: cid };
+        if (typeof min === "number") { msg.min = min; }
+        if (typeof max === "number") { msg.max = max; }
+        sendInOrder(msg);
+        return next;
+    };
+
+    net.attempt = function () {
+        return (net.snapshot && net.snapshot.attempt) || 1;
+    };
+
+    /** Room clock in ms (server-owned: paused on pausetimer passages, stopped at Final_Report). */
+    net.elapsedMs = function () {
+        var t = net.snapshot && net.snapshot.timer;
+        if (!t || t.startedAt === null || t.startedAt === undefined) { return 0; }
+        var end = t.stoppedAt !== null && t.stoppedAt !== undefined ? t.stoppedAt
+            : (t.pausedAt !== null && t.pausedAt !== undefined ? t.pausedAt : net.serverNow());
+        return Math.max(0, end - t.startedAt - (t.pausedMs || 0));
+    };
 
     /** Reconnect right away (e.g. phone unlocked) instead of waiting for the backoff timer. */
     net.wake = function () {
@@ -1697,6 +1834,7 @@ window.SimApp = {
     _connectInFlight: false,
     _syncBannerHideTimer: null,
     _partnerAbsent: false,
+    _lastAttempt: null,
 
     GAME_OVER_SECONDS: 8,
     PASSAGE_COMMIT_TIMEOUT_MS: 2000,
@@ -1938,7 +2076,10 @@ window.SimApp = {
         });
         State.variables.playtime = Date.now();
         this.setVal("sharedTime", "00:00", true);
-        $(".time-display").text("00:00");
+        if (this.isCloudNet()) {
+            Net.timerReset();
+        }
+        $(".time-display").text("00:00:00");
         this.updateHud();
     },
 
@@ -1988,8 +2129,40 @@ window.SimApp = {
 
     /** Full reset after debrief — returns team to Start */
     restartFromDebrief: function () {
+        if (this.isCloudNet()) {
+            /* New attempt: fresh stats + clock, roles kept, both devices go to the hub. */
+            var self = this;
+            var defaults = Object.assign({}, this.DEFAULT_GAME_STATE);
+            this.clearGameOverSequence();
+            var shownAttempt = this._lastAttempt === null ? Net.attempt() : this._lastAttempt;
+            Net.reset(defaults, "Simulation_Hub", shownAttempt).then(function () {
+                self.followNewAttempt();
+            });
+            return;
+        }
         this.resetSimulationForStart();
         this.goToSharedPassage("Start");
+    },
+
+    /** Cloudflare: when either player starts a new attempt, both jump to the room passage. */
+    followNewAttempt: function () {
+        if (!this.isCloudNet()) {
+            return false;
+        }
+        var attempt = Net.attempt();
+        if (this._lastAttempt === null) {
+            this._lastAttempt = attempt;
+            return false;
+        }
+        if (attempt <= this._lastAttempt) {
+            return false;
+        }
+        this._lastAttempt = attempt;
+        this.clearGameOverSequence();
+        this.syncFromPlayroom();
+        this.applyRoomPassage(true);
+        this.updateHud();
+        return true;
     },
 
     /** Count connected peers (including this device) */
@@ -2102,6 +2275,162 @@ window.SimApp = {
     /** True when the Cloudflare backend (CloudNet) is active instead of Playroom. */
     isCloudNet: function () {
         return typeof Net !== "undefined" && Net.backend === "cf";
+    },
+
+    /** Room-clock instruction sent with each passage change (Cloudflare backend). */
+    timerModeFor: function (passageName) {
+        if (passageName === "Final_Report") {
+            return "stop";
+        }
+        if (this.LOBBY_PASSAGES.indexOf(passageName) !== -1) {
+            return "none";
+        }
+        var pd = Story.get(passageName);
+        if (pd && pd.tags && pd.tags.includes("pausetimer")) {
+            return "pause";
+        }
+        return "run";
+    },
+
+    /** Elapsed simulation time as { hours, minutes, seconds, totalMinutes }. */
+    getElapsedParts: function () {
+        var ms;
+        if (this.isCloudNet()) {
+            ms = Net.elapsedMs();
+        } else if (typeof setup !== "undefined" && setup.playTime) {
+            ms = Number(setup.playTime("ms")) || 0;
+        } else {
+            ms = 0;
+        }
+        var totalSeconds = Math.floor(ms / 1000);
+        return {
+            hours: Math.floor(totalSeconds / 3600),
+            minutes: Math.floor(totalSeconds / 60) % 60,
+            seconds: totalSeconds % 60,
+            totalMinutes: Math.floor(totalSeconds / 60)
+        };
+    },
+
+    /** HUD clock text (hh:mm:ss, same format as <<playtime>>). */
+    formatElapsed: function () {
+        var p = this.getElapsedParts();
+        function pad(n) {
+            return n < 10 ? "0" + n : "" + n;
+        }
+        return pad(p.hours) + ":" + pad(p.minutes) + ":" + pad(p.seconds);
+    },
+
+    /**
+     * Add to a numeric room variable. Cloudflare: atomic on the server, so the observer's
+     * and patient's clicks can't overwrite each other. Returns the value to show now.
+     */
+    _addVal: function (key, by, min, max) {
+        if (this.isCloudNet() && this.isPlayroomLoaded) {
+            var v = Net.incState(key, by, min, max);
+            State.variables[key] = v;
+            return v;
+        }
+        var cur = Number(this.getVal(key));
+        if (isNaN(cur)) {
+            cur = 0;
+        }
+        var next = cur + by;
+        if (typeof min === "number" && next < min) {
+            next = min;
+        }
+        if (typeof max === "number" && next > max) {
+            next = max;
+        }
+        this.setVal(key, next);
+        return next;
+    },
+
+    /**
+     * Router passages: go to targets[roll - 1] using one shared dice roll.
+     * targets: passage names, or { to: passage, set: { key: value } } to also set variables.
+     * Cloudflare: the server rolls once per visit, so both devices land on the same passage.
+     * Playroom: the host rolls (legacy behavior).
+     */
+    routeByRoll: function (rollKey, targets, visitedKey) {
+        var self = this;
+        /* Remember which visit this is, so a late device follows instead of re-rolling. */
+        var routerPassage = passage();
+        var routerSeq = this.getRoomPassageSeq();
+        setTimeout(function () {
+            self._routeByRollNow(rollKey, targets, visitedKey, routerPassage, routerSeq);
+        }, Engine.minDomActionDelay || 40);
+    },
+
+    /** Does the work for routeByRoll; resolves to the destination passage (or null). */
+    _routeByRollNow: async function (rollKey, targets, visitedKey, routerPassage, routerSeq) {
+        var sides = targets.length;
+        var roll;
+        if (this.isCloudNet()) {
+            /* The partner already rolled and moved the room on — follow it, don't roll again. */
+            if (
+                routerPassage &&
+                (Net.getState("currentPassage") !== routerPassage || this.getRoomPassageSeq() !== routerSeq)
+            ) {
+                this.applyRoomPassage(false);
+                return null;
+            }
+            var res = await Net.roll(rollKey, sides);
+            roll = Number(Net.getState(rollKey));
+            if (!res.ok || !(roll >= 1 && roll <= sides)) {
+                this.showSyncBanner("Could not sync — check connection", "error", { sticky: true });
+                return null;
+            }
+        } else if (typeof Net !== "undefined" && Net.isHost()) {
+            roll = 1 + Math.floor(Math.random() * sides);
+            this.setVal(rollKey, roll, true);
+        } else {
+            this.syncFromPlayroom();
+            roll = Number(this.getVal(rollKey)) || 1;
+        }
+        State.variables[rollKey] = roll;
+        if (visitedKey) {
+            this.setVal(visitedKey, true, true);
+        }
+        var target = targets[Math.min(Math.max(roll, 1), sides) - 1];
+        var dest = typeof target === "string" ? target : target.to;
+        if (target && typeof target === "object" && target.set) {
+            var self = this;
+            Object.keys(target.set).forEach(function (k) {
+                self.setVal(k, target.set[k], true);
+            });
+        }
+        await this.goToSharedPassage(dest);
+        return dest;
+    },
+
+    /** Whistle_Stop_In: Energy -= errandsRun², once per visit. */
+    applyErrandsDrain: function () {
+        var self = this;
+        function after(newEnergy) {
+            self.updateHud();
+            if (newEnergy <= 0) {
+                self.scheduleGameOver("Game_Over_Energy");
+            }
+        }
+        if (this.isCloudNet()) {
+            Net.op("errandsDrain").then(function (res) {
+                if (res.ok) {
+                    after(Number(Net.getState("Energy")));
+                }
+            });
+            return;
+        }
+        if (typeof Net === "undefined" || !Net.isHost()) {
+            return;
+        }
+        var errands = Number(this.getVal("errandsRun")) || 0;
+        var energy = Number(this.getVal("Energy"));
+        if (isNaN(energy)) {
+            energy = 10;
+        }
+        var next = Math.min(15, Math.max(0, energy - errands * errands));
+        this.setVal("Energy", next, true);
+        after(next);
     },
 
     /** Join URL Playroom reads on load (#r=R{roomCode}) */
@@ -2228,9 +2557,49 @@ window.SimApp = {
         if (loader) {
             loader.classList.add("hidden");
         }
+        if (this.isCloudNet() && !Net.session) {
+            this.mountSessionCodeForm();
+            return;
+        }
         if (btnContainer) {
             btnContainer.classList.remove("hidden");
         }
+    },
+
+    /**
+     * Cloudflare backend needs a class session code (?s=). Without one, ask for it
+     * instead of showing Connect. Submitting reloads with ?s=CODE.
+     */
+    mountSessionCodeForm: function () {
+        var $slot = $("#connect-container");
+        if (!$slot.length) {
+            return;
+        }
+        $slot.removeClass("hidden").html(
+            '<div class="session-code-form">' +
+            '<label for="sim-session-code"><strong>Class session code</strong> — from your instructor</label><br>' +
+            '<input type="text" id="sim-session-code" maxlength="24" autocapitalize="characters" autocomplete="off" placeholder="e.g. REGN-1109A"> ' +
+            '<button type="button" id="sim-session-go">Join Session</button>' +
+            '<p id="sim-session-error" class="session-code-error hidden">Codes are 3–24 letters, numbers or dashes.</p>' +
+            "</div>"
+        );
+        function go() {
+            var code = String($("#sim-session-code").val() || "").trim().toUpperCase();
+            if (!/^[A-Z0-9][A-Z0-9-]{2,23}$/.test(code)) {
+                $("#sim-session-error").removeClass("hidden");
+                return;
+            }
+            var q = new URLSearchParams(window.location.search);
+            q.set("s", code);
+            q.delete("p");
+            window.location.search = "?" + q.toString();
+        }
+        $("#sim-session-go").on("click", go);
+        $("#sim-session-code").on("keydown", function (ev) {
+            if (ev.key === "Enter") {
+                go();
+            }
+        });
     },
 
     /**
@@ -2450,8 +2819,17 @@ window.SimApp = {
                 return;
             }
             if (e && e.message === "room_full") {
-                self.showSyncBanner("This pair already has two players.", "error", { sticky: true });
-                alert("This pair already has two players. Ask your instructor for a new pair link.");
+                var mine = window.confirm(
+                    "This pair already has two players.\n\n" +
+                    "If you ARE one of them and changed phones or browsers, tap OK to take your seat back " +
+                    "(only works while your old device is offline).\n\n" +
+                    "Otherwise tap Cancel and ask your instructor for a new pair link."
+                );
+                if (mine) {
+                    self._pendingTakeover = true;
+                } else {
+                    self.showSyncBanner("This pair already has two players.", "error", { sticky: true });
+                }
                 return;
             }
             self.showSyncBanner("Connection error. Please refresh and try again.", "error", {
@@ -2464,6 +2842,27 @@ window.SimApp = {
             self._passageCommitInFlight = false;
             self.refreshPatientNextSlot();
         }
+        if (self._pendingTakeover) {
+            self._pendingTakeover = false;
+            await self.takeOverSeat();
+        }
+    },
+
+    /** Cloudflare: claim the offline seat in a full pair, then continue like a normal connect. */
+    takeOverSeat: async function () {
+        if (!this.isCloudNet()) {
+            return false;
+        }
+        try {
+            await Net.takeoverSeat();
+        } catch (eTake) {
+            this.showSyncBanner("Both players are still connected — ask your instructor for a new pair link.", "error", {
+                sticky: true
+            });
+            return false;
+        }
+        await this.connect();
+        return true;
     },
 
     registerWakeHandlers: function () {
@@ -2765,6 +3164,9 @@ window.SimApp = {
         this._passageCommitInFlight = true;
         this.refreshPatientNextSlot();
         try {
+            if (this.isCloudNet()) {
+                return await this._commitPassageCloud(passageName, options);
+            }
             if (options.resetEval) {
                 this.setVal("evalComplete", false, true);
             }
@@ -2795,6 +3197,32 @@ window.SimApp = {
             this.refreshPatientNextSlot();
             this.refreshPartnerPresenceBanner();
         }
+    },
+
+    /**
+     * Cloudflare: one atomic navigate (passage + seq + eval reset + room clock).
+     * If the partner moved the room first, follow the room instead.
+     */
+    _commitPassageCloud: async function (passageName, options) {
+        var expectSeq = this.getRoomPassageSeq();
+        var patch = options.resetEval ? { evalComplete: false } : null;
+        if (patch) {
+            State.variables.evalComplete = false;
+        }
+        var res = await Net.navigate(passageName, expectSeq, this.timerModeFor(passageName), patch);
+        if (res.ok || Net.getState("currentPassage") === passageName) {
+            this._lastAppliedPassageSeq = this.getRoomPassageSeq();
+            if (options.playLocal !== false && passage() !== passageName) {
+                Engine.play(passageName);
+            }
+            return true;
+        }
+        if (res.reason === "stale_seq") {
+            this.applyRoomPassage(true);
+            return false;
+        }
+        this.showSyncBanner("Could not sync — check connection", "error", { sticky: true });
+        return false;
     },
 
     /** Patient-driven navigation: updates global passage + resets eval lock */
@@ -3015,6 +3443,7 @@ window.SimApp = {
             return;
         }
 
+        this.saveNickname();
         Net.myPlayer().setState("role", roleName, true);
         this.setVal(lobbyKey, true, true);
         this.setVal(ownerKey, myId, true);
@@ -3028,6 +3457,35 @@ window.SimApp = {
         }
 
         this.goToWaitingRoom();
+    },
+
+    /** Optional nickname from Role_Selection → server (leaderboard) + remembered on this device. */
+    saveNickname: function () {
+        var $input = $("#sim-nickname");
+        if (!$input.length) {
+            return;
+        }
+        var name = String($input.val() || "").trim().slice(0, 20);
+        try {
+            localStorage.setItem("simNickname", name);
+        } catch (eNick) { /* private mode */ }
+        if (this.isCloudNet()) {
+            Net.setName(name);
+        }
+    },
+
+    prefillNickname: function () {
+        var $input = $("#sim-nickname");
+        if (!$input.length || $input.val()) {
+            return;
+        }
+        var saved = null;
+        try {
+            saved = localStorage.getItem("simNickname");
+        } catch (eRead) { /* ignore */ }
+        if (saved) {
+            $input.val(saved);
+        }
     },
 
     refreshRoleButtons: function () {
@@ -3160,6 +3618,10 @@ window.SimApp = {
         if (seq !== undefined) {
             State.variables.passageSeq = seq;
         }
+        /* Remember the attempt we joined, so a partner's Try Again is noticed (followNewAttempt) */
+        if (this.isCloudNet() && this._lastAttempt === null) {
+            this._lastAttempt = Net.attempt();
+        }
         var me = Net.myPlayer();
         if (me) {
             var savedRole = me.getState("role");
@@ -3223,6 +3685,9 @@ window.SimApp = {
     /** Observer follows Patient on simulation passages only; Patient follows Game Over */
     tetherToPassage: function () {
         if (typeof Net === "undefined" || this._recovering || this._passageCommitInFlight) {
+            return;
+        }
+        if (this.followNewAttempt()) {
             return;
         }
         this.advanceLobbyIfReady();
@@ -3519,18 +3984,10 @@ window.SimApp = {
 
     /** Apply energy delta; clamps 0–15, updates HUD, may schedule game over */
     applyEnergyDelta: function (amount) {
-        var currentEnergy = Number(this.getVal("Energy"));
-        if (isNaN(currentEnergy)) {
-            currentEnergy = 10;
+        if (isNaN(Number(this.getVal("Energy")))) {
+            this.setVal("Energy", 10);
         }
-        var newEnergy = currentEnergy + amount;
-        if (newEnergy > 15) {
-            newEnergy = 15;
-        }
-        if (newEnergy < 0) {
-            newEnergy = 0;
-        }
-        this.setVal("Energy", newEnergy);
+        var newEnergy = this._addVal("Energy", amount, 0, 15);
         if ($("#energy-display").length) {
             $("#energy-display").text(newEnergy);
         }
@@ -3543,12 +4000,7 @@ window.SimApp = {
 
     /** Apply points delta and refresh #points-display */
     applyPointsDelta: function (amount) {
-        var currentPoints = Number(this.getVal("Points"));
-        if (isNaN(currentPoints)) {
-            currentPoints = 0;
-        }
-        var newPoints = currentPoints + amount;
-        this.setVal("Points", newPoints);
+        var newPoints = this._addVal("Points", amount);
         if ($("#points-display").length) {
             $("#points-display").text(newPoints);
         }
@@ -3562,8 +4014,7 @@ window.SimApp = {
             if (!behaviorName) {
                 continue;
             }
-            var currentVal = this.getVal(behaviorName) || 0;
-            this.setVal(behaviorName, currentVal + 1);
+            this._addVal(behaviorName, 1);
         }
     },
 
@@ -3585,9 +4036,7 @@ window.SimApp = {
     /** Rescue inhaler button (PassageFooter) */
     applyInhalerUse: function () {
         this._spawnStatPopups($("#wrap-inhaler button"), 2, 0);
-        var currentInhaler = Number(this.getVal("Inhaler")) || 0;
-        var newInhaler = currentInhaler + 1;
-        this.setVal("Inhaler", newInhaler);
+        var newInhaler = this._addVal("Inhaler", 1);
         if ($("#inhaler-display").length) {
             $("#inhaler-display").text(newInhaler);
         }
@@ -3836,19 +4285,9 @@ window.SimApp = {
             var current;
             var next;
             if (item.op === "add") {
-                current = Number(self.getVal(item.key));
-                if (isNaN(current)) {
-                    current = 0;
-                }
-                next = current + item.value;
-                self.setVal(item.key, next, true);
+                self._addVal(item.key, Number(item.value) || 0);
             } else if (item.op === "subtract") {
-                current = Number(self.getVal(item.key));
-                if (isNaN(current)) {
-                    current = 0;
-                }
-                next = current - item.value;
-                self.setVal(item.key, next, true);
+                self._addVal(item.key, -(Number(item.value) || 0));
             } else {
                 self.setVal(item.key, item.value, true);
             }
@@ -4243,11 +4682,22 @@ window.SimApp = {
 }());
 
 /*
- * Multiplayer backend: "playroom" (default) or "cf" (Cloudflare pair rooms).
- * Override per link with ?net=cf or ?net=playroom; change the default with setup.NET_BACKEND.
- * The cf backend only works when the game is served by our Cloudflare Worker (it needs /ws/room).
+ * Multiplayer backend: "cf" (Cloudflare pair rooms, default) or "playroom" (Playroom Kit, fallback).
+ * Override per link with ?net=playroom or ?net=cf; change the default with setup.NET_BACKEND.
+ *
+ * setup.NET_ENDPOINT is the Cloudflare WebSocket address used when the game is opened from
+ * somewhere other than the Worker itself (GitHub Pages, a local file, Twine preview).
+ * When the page is served by the Worker (or wrangler dev on localhost), the same host is used.
  */
-setup.NET_BACKEND = setup.NET_BACKEND || "playroom";
+setup.NET_BACKEND = setup.NET_BACKEND || "cf";
+setup.NET_ENDPOINT = setup.NET_ENDPOINT || "wss://copd-sim.rparker-d61.workers.dev/ws/room";
+
+function simCloudEndpoint() {
+    var host = String(window.location.host || "");
+    var servedByWorker = /\.workers\.dev$/i.test(window.location.hostname || "") ||
+        /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
+    return servedByWorker ? null : setup.NET_ENDPOINT;
+}
 
 function simNetReady(net) {
     window.Net = net;
@@ -4259,14 +4709,27 @@ function simNetReady(net) {
 function simChooseBackend() {
     var q = null;
     try { q = new URLSearchParams(window.location.search).get("net"); } catch (eQ) { /* old browser */ }
-    var b = String(q || setup.NET_BACKEND || "playroom").toLowerCase();
-    return b === "cf" ? "cf" : "playroom";
+    var b = String(q || setup.NET_BACKEND || "cf").toLowerCase();
+    return b === "playroom" ? "playroom" : "cf";
 }
 
 if (simChooseBackend() === "cf") {
-    /* No SDK to download; wait until the first passage (with the Connect button) is on screen. */
+    /*
+     * No SDK to download. Start's Connect button / session-code box only exist once the passage
+     * is attached to the page, so reveal them on :passagedisplay (and once after :storyready).
+     */
+    $(document).on(":passagedisplay", function () {
+        if (window.Net && passage() === "Start") {
+            window.SimApp.revealConnectButton();
+        }
+    });
     $(document).one(":storyready", function () {
-        simNetReady(window.createCloudNet());
+        simNetReady(window.createCloudNet({ endpoint: simCloudEndpoint() }));
+        setTimeout(function () {
+            if (passage() === "Start") {
+                window.SimApp.revealConnectButton();
+            }
+        }, 0);
         /* An invite or refresh link carries ?s=&p= — rejoin automatically so Connect is not required */
         if (window.Net.session && window.Net.pair && !window.SimApp._hasJoinedRoom && !window.SimApp._autoConnectStarted) {
             window.SimApp._autoConnectStarted = true;
@@ -4397,20 +4860,8 @@ You&#39;ve made it to Whistle Stop Park. Choose an errand below, or head home wh
 
 &lt;&lt;else&gt;&gt;\
 @@.holland;Mr. Holland@@ is at Whistle Stop Park. He may visit the grocery store, pharmacy, pulmonary clinic, or toy store. Use your general observation controls in the footer as he moves and completes each errand.
-&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="Grocery_Store_Router" tags="simulation activity" position="2900,1000" size="100,100">&lt;&lt;silently&gt;&gt;
-&lt;&lt;if typeof Net !== &quot;undefined&quot; and Net.isHost()&gt;&gt;
-&lt;&lt;set _groceryRoll to random(1, 2)&gt;&gt;
-&lt;&lt;run SimApp.setVal(&quot;groceryRoll&quot;, _groceryRoll, true); SimApp.setVal(&quot;visitedGrocery&quot;, true, true)&gt;&gt;
-&lt;&lt;else&gt;&gt;
-&lt;&lt;run SimApp.syncFromPlayroom()&gt;&gt;
-&lt;&lt;set _groceryRoll to SimApp.getVal(&quot;groceryRoll&quot;)&gt;&gt;
-&lt;&lt;/if&gt;&gt;
-&lt;&lt;/silently&gt;&gt;
-&lt;&lt;if _groceryRoll is 1&gt;&gt;
-&lt;&lt;run SimApp.deferGoToSharedPassage(&quot;Grocery_Store_1&quot;)&gt;&gt;
-&lt;&lt;else&gt;&gt;
-&lt;&lt;run SimApp.deferGoToSharedPassage(&quot;Grocery_Store_2&quot;)&gt;&gt;
-&lt;&lt;/if&gt;&gt;
+&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="4" name="Grocery_Store_Router" tags="simulation activity" position="2900,1000" size="100,100">/* One shared roll (server-side on Cloudflare), then both players go to the same passage */
+&lt;&lt;run SimApp.routeByRoll(&quot;groceryRoll&quot;, [&quot;Grocery_Store_1&quot;, &quot;Grocery_Store_2&quot;], &quot;visitedGrocery&quot;)&gt;&gt;
 
 &lt;!--[[Grocery_Store_1]]--&gt;
 &lt;!--[[Grocery_Store_2]]--&gt;</tw-passagedata><tw-passagedata pid="5" name="Grocery_Store_1" tags="simulation activity" position="2900,1000" size="100,100">&lt;h1&gt;Grocery Store&lt;/h1&gt;\
@@ -4445,20 +4896,8 @@ The store is surprisingly quiet today. Right inside the door, there is a fully c
 &lt;&lt;else&gt;&gt;\
 @@.holland;Mr. Holland@@ is at the grocery store and the store is surprisingly quiet today. Heading inside he discovers that there is a fully charged motorized shopping cart waiting for him!
 
-&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="7" name="Pharmacy_Router" tags="simulation activity" position="3100,1000" size="100,100">&lt;&lt;silently&gt;&gt;
-&lt;&lt;if typeof Net !== &quot;undefined&quot; and Net.isHost()&gt;&gt;
-&lt;&lt;set _pharmacyRoll to random(1, 2)&gt;&gt;
-&lt;&lt;run SimApp.setVal(&quot;pharmacyRoll&quot;, _pharmacyRoll, true); SimApp.setVal(&quot;visitedPharmacy&quot;, true, true)&gt;&gt;
-&lt;&lt;else&gt;&gt;
-&lt;&lt;run SimApp.syncFromPlayroom()&gt;&gt;
-&lt;&lt;set _pharmacyRoll to SimApp.getVal(&quot;pharmacyRoll&quot;)&gt;&gt;
-&lt;&lt;/if&gt;&gt;
-&lt;&lt;/silently&gt;&gt;
-&lt;&lt;if _pharmacyRoll is 1&gt;&gt;
-&lt;&lt;run SimApp.deferGoToSharedPassage(&quot;Pharmacy_1&quot;)&gt;&gt;
-&lt;&lt;else&gt;&gt;
-&lt;&lt;run SimApp.deferGoToSharedPassage(&quot;Pharmacy_2&quot;)&gt;&gt;
-&lt;&lt;/if&gt;&gt;
+&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="7" name="Pharmacy_Router" tags="simulation activity" position="3100,1000" size="100,100">/* One shared roll (server-side on Cloudflare), then both players go to the same passage */
+&lt;&lt;run SimApp.routeByRoll(&quot;pharmacyRoll&quot;, [&quot;Pharmacy_1&quot;, &quot;Pharmacy_2&quot;], &quot;visitedPharmacy&quot;)&gt;&gt;
 
 &lt;!--[[Pharmacy_1]]--&gt;
 &lt;!--[[Pharmacy_2]]--&gt;</tw-passagedata><tw-passagedata pid="8" name="Pharmacy_1" tags="simulation activity" position="3100,1000" size="100,100">&lt;h1&gt;Pharmacy&lt;/h1&gt;\
@@ -4488,9 +4927,7 @@ The store is surprisingly quiet today. Right inside the door, there is a fully c
 &lt;&lt;else&gt;&gt;\
 @@.holland;Mr. Holland@@ is at the pharmacy. Observe his pacing and breathing using your general observation controls.
 &lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="10" name="Pulmonary_Clinic" tags="simulation activity" position="2900,1200" size="100,100">&lt;&lt;silently&gt;&gt;
-&lt;&lt;if typeof Net !== &quot;undefined&quot; and Net.isHost()&gt;&gt;
 &lt;&lt;run SimApp.setVal(&quot;visitedClinic&quot;, true, true)&gt;&gt;
-&lt;&lt;/if&gt;&gt;
 &lt;&lt;/silently&gt;&gt;
 &lt;h1&gt;Pulmonary Clinic&lt;/h1&gt;\
 &lt;hr&gt;\
@@ -4505,20 +4942,8 @@ The store is surprisingly quiet today. Right inside the door, there is a fully c
 
 &lt;&lt;else&gt;&gt;\
 @@.holland;Mr. Holland@@ is at the pulmonary clinic. Observe his pacing and breathing using your general observation controls.
-&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="11" name="Toy_Store_Router" tags="simulation activity" position="3100,1200" size="100,100">&lt;&lt;silently&gt;&gt;
-&lt;&lt;if typeof Net !== &quot;undefined&quot; and Net.isHost()&gt;&gt;
-&lt;&lt;set _toyStoreRoll to random(1, 2)&gt;&gt;
-&lt;&lt;run SimApp.setVal(&quot;toyStoreRoll&quot;, _toyStoreRoll, true); SimApp.setVal(&quot;visitedToyStore&quot;, true, true)&gt;&gt;
-&lt;&lt;else&gt;&gt;
-&lt;&lt;run SimApp.syncFromPlayroom()&gt;&gt;
-&lt;&lt;set _toyStoreRoll to SimApp.getVal(&quot;toyStoreRoll&quot;)&gt;&gt;
-&lt;&lt;/if&gt;&gt;
-&lt;&lt;/silently&gt;&gt;
-&lt;&lt;if _toyStoreRoll is 1&gt;&gt;
-&lt;&lt;run SimApp.deferGoToSharedPassage(&quot;Toy_Store_1&quot;)&gt;&gt;
-&lt;&lt;else&gt;&gt;
-&lt;&lt;run SimApp.deferGoToSharedPassage(&quot;Toy_Store_2&quot;)&gt;&gt;
-&lt;&lt;/if&gt;&gt;
+&lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="11" name="Toy_Store_Router" tags="simulation activity" position="3100,1200" size="100,100">/* One shared roll (server-side on Cloudflare), then both players go to the same passage */
+&lt;&lt;run SimApp.routeByRoll(&quot;toyStoreRoll&quot;, [&quot;Toy_Store_1&quot;, &quot;Toy_Store_2&quot;], &quot;visitedToyStore&quot;)&gt;&gt;
 
 &lt;!--[[Toy_Store_1]]--&gt;
 &lt;!--[[Toy_Store_2]]--&gt;</tw-passagedata><tw-passagedata pid="12" name="Toy_Store_1" tags="simulation activity" position="3100,1200" size="100,100">&lt;h1&gt;Toy Store&lt;/h1&gt;\
@@ -4553,17 +4978,8 @@ Observe his pacing and breathing using your general observation controls.
 @@.holland;Mr. Holland@@ is at the toy store to pick up a gift for his granddaughter. The store is in total chaos with a weekend sale! But a friendly clerk has offered to fetch the doll for @@.holland;Mr. Holland@@. while he waits comfortable in a chair up front.
 Observe his pacing and breathing using your general observation controls.
 &lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="14" name="Whistle_Stop_In" tags="simulation activity" position="2700,1100" size="100,100">&lt;&lt;silently&gt;&gt;
-&lt;&lt;if typeof Net !== &quot;undefined&quot; and Net.isHost()&gt;&gt;
-&lt;&lt;set _errandsRun to SimApp.getVal(&quot;errandsRun&quot;)&gt;&gt;
-&lt;&lt;set _currentEnergy to SimApp.getVal(&quot;Energy&quot;)&gt;&gt;
-&lt;&lt;set _newEnergy to _currentEnergy - (_errandsRun * _errandsRun)&gt;&gt;
-&lt;&lt;if _newEnergy &lt; 0&gt;&gt;&lt;&lt;set _newEnergy to 0&gt;&gt;&lt;&lt;elseif _newEnergy &gt; 15&gt;&gt;&lt;&lt;set _newEnergy to 15&gt;&gt;&lt;&lt;/if&gt;&gt;
-&lt;&lt;run SimApp.setVal(&quot;Energy&quot;, _newEnergy, true)&gt;&gt;
-&lt;&lt;run SimApp.updateHud()&gt;&gt;
-&lt;&lt;if _newEnergy &lt;= 0&gt;&gt;
-&lt;&lt;run SimApp.scheduleGameOver(&quot;Game_Over_Energy&quot;)&gt;&gt;
-&lt;&lt;/if&gt;&gt;
-&lt;&lt;/if&gt;&gt;
+/* Energy -= errandsRun², once per visit (server-side on Cloudflare) */
+&lt;&lt;run SimApp.applyErrandsDrain()&gt;&gt;
 &lt;&lt;/silently&gt;&gt;
 &lt;h1&gt;Heading back&lt;/h1&gt;\
 &lt;hr&gt;\
@@ -4684,8 +5100,9 @@ You finally make it to your bedroom and sit on the edge of the mattress.
 &lt;&lt;/if&gt;&gt;</tw-passagedata><tw-passagedata pid="20" name="Final_Report" tags="simulation briefing hidehud nobr" position="2600,800" size="100,100">&lt;&lt;silently&gt;&gt;
 &lt;&lt;audio &quot;:playing&quot; stop&gt;&gt;
 &lt;&lt;run SimApp.prepareFinalReport()&gt;&gt;
-&lt;&lt;set _minutes to setup.playTime(&quot;minutes&quot;)&gt;&gt;
-&lt;&lt;set _seconds to setup.playTime(&quot;seconds&quot;)&gt;&gt;
+&lt;&lt;set _elapsed to SimApp.getElapsedParts()&gt;&gt;
+&lt;&lt;set _minutes to _elapsed.totalMinutes&gt;&gt;
+&lt;&lt;set _seconds to _elapsed.seconds&gt;&gt;
 &lt;&lt;if _seconds &lt; 10&gt;&gt;
 &lt;&lt;set _secondsPad to &quot;0&quot; + _seconds&gt;&gt;
 &lt;&lt;else&gt;&gt;
@@ -5012,9 +5429,11 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
     &lt;&lt;/if&gt;&gt;
 
     &lt;&lt;silently&gt;&gt;
-        /* Host broadcasts elapsed time; SimApp sync loop handles state + tether */
+        /* Cloudflare: the room clock lives on the server. Playroom: host broadcasts elapsed time. */
         &lt;&lt;repeat 1s&gt;&gt;
-            &lt;&lt;if window.SimApp &amp;&amp; window.SimApp.isPlayroomLoaded&gt;&gt;
+            &lt;&lt;if window.SimApp &amp;&amp; SimApp.isCloudNet()&gt;&gt;
+                &lt;&lt;run $(&quot;.time-display&quot;).text(SimApp.formatElapsed())&gt;&gt;
+            &lt;&lt;elseif window.SimApp &amp;&amp; window.SimApp.isPlayroomLoaded&gt;&gt;
                 &lt;&lt;if Net.isHost()&gt;&gt;
                     &lt;&lt;replace &#39;#hidden-time&#39;&gt;&gt;&lt;&lt;playtime&gt;&gt;&lt;&lt;/replace&gt;&gt;
                     &lt;&lt;run Net.setState(&quot;sharedTime&quot;, $(&quot;#hidden-time&quot;).text(), true)&gt;&gt;
@@ -5038,6 +5457,11 @@ Please coordinate with your partner. One of you must be the Mr. Holland, and the
 
 &lt;div id=&quot;host-invite-slot&quot;&gt;&lt;/div&gt;
 
+&lt;div id=&quot;nickname-wrap&quot; class=&quot;nickname-wrap&quot;&gt;
+    &lt;label for=&quot;sim-nickname&quot;&gt;Your first name or nickname &lt;em&gt;(optional — shown to your instructor)&lt;/em&gt;&lt;/label&gt;&lt;br&gt;
+    &lt;input type=&quot;text&quot; id=&quot;sim-nickname&quot; maxlength=&quot;20&quot; autocomplete=&quot;given-name&quot;&gt;
+&lt;/div&gt;
+&lt;br&gt;
 &lt;span id=&quot;wrap-patient&quot;&gt;
     &lt;&lt;button &quot;I will be &lt;span class=&#39;holland&#39;&gt;Mr. Holland&lt;/span&gt;&quot;&gt;&gt;
         &lt;&lt;run SimApp.setRole(&quot;patient&quot;)&gt;&gt;
@@ -5053,6 +5477,7 @@ Please coordinate with your partner. One of you must be the Mr. Holland, and the
 &lt;&lt;script&gt;&gt;
     if (window.SimApp) {
         SimApp.mountHostInviteButton(&quot;host-invite-slot&quot;, &quot;Show Invite QR Code&quot;);
+        SimApp.prefillNickname();
         SimApp.refreshRoleButtons();
         if (window.roleRefreshInterval) {
             clearInterval(window.roleRefreshInterval);
@@ -5622,28 +6047,15 @@ What do you want to do?
 
 &lt;!--[[Hallway_In_Repeat]]--&gt;
 &lt;!--[[Whistle_Stop_Out]]--&gt;
-&lt;!--[[Hallway_In]]--&gt;</tw-passagedata><tw-passagedata pid="49" name="Wildcard_Router" tags="simulation" position="1100,1100" size="100,100">&lt;&lt;silently&gt;&gt;
-&lt;&lt;if typeof Net !== &quot;undefined&quot; and Net.isHost()&gt;&gt;
-&lt;&lt;set _wildRoll to random(1, 6)&gt;&gt;
-&lt;&lt;run SimApp.setVal(&quot;wildRoll&quot;, _wildRoll, true); SimApp.setVal(&quot;wildCarded&quot;, true, true)&gt;&gt;
-&lt;&lt;else&gt;&gt;
-&lt;&lt;run SimApp.syncFromPlayroom()&gt;&gt;
-&lt;&lt;set _wildRoll to SimApp.getVal(&quot;wildRoll&quot;)&gt;&gt;
-&lt;&lt;/if&gt;&gt;
-&lt;&lt;/silently&gt;&gt;
-&lt;&lt;if _wildRoll is 1&gt;&gt;
-&lt;&lt;run SimApp.setVal(&quot;yourItem&quot;, &quot;your inhaler&quot;, true); SimApp.setVal(&quot;hisItem&quot;, &quot;his inhaler&quot;, true); SimApp.deferGoToSharedPassage(&quot;Wildcard1&quot;)&gt;&gt;
-&lt;&lt;elseif _wildRoll is 2&gt;&gt;
-&lt;&lt;run SimApp.deferGoToSharedPassage(&quot;Wildcard2&quot;)&gt;&gt;
-&lt;&lt;elseif _wildRoll is 3&gt;&gt;
-&lt;&lt;run SimApp.setVal(&quot;yourItem&quot;, &quot;a mask&quot;, true); SimApp.setVal(&quot;hisItem&quot;, &quot;a mask&quot;, true); SimApp.deferGoToSharedPassage(&quot;Wildcard3&quot;)&gt;&gt;
-&lt;&lt;elseif _wildRoll is 4&gt;&gt;
-&lt;&lt;run SimApp.setVal(&quot;yourItem&quot;, &quot;a scarf&quot;, true); SimApp.setVal(&quot;hisItem&quot;, &quot;a scarf&quot;, true); SimApp.deferGoToSharedPassage(&quot;Wildcard4&quot;)&gt;&gt;
-&lt;&lt;elseif _wildRoll is 5&gt;&gt;
-&lt;&lt;run SimApp.deferGoToSharedPassage(&quot;Wildcard5&quot;)&gt;&gt;
-&lt;&lt;else&gt;&gt;
-&lt;&lt;run SimApp.deferGoToSharedPassage(&quot;Wildcard6&quot;)&gt;&gt;
-&lt;&lt;/if&gt;&gt;
+&lt;!--[[Hallway_In]]--&gt;</tw-passagedata><tw-passagedata pid="49" name="Wildcard_Router" tags="simulation" position="1100,1100" size="100,100">/* One shared 6-sided roll (server-side on Cloudflare), then both players go to the same wild card */
+&lt;&lt;run SimApp.routeByRoll(&quot;wildRoll&quot;, [
+    { to: &quot;Wildcard1&quot;, set: { yourItem: &quot;your inhaler&quot;, hisItem: &quot;his inhaler&quot; } },
+    &quot;Wildcard2&quot;,
+    { to: &quot;Wildcard3&quot;, set: { yourItem: &quot;a mask&quot;, hisItem: &quot;a mask&quot; } },
+    { to: &quot;Wildcard4&quot;, set: { yourItem: &quot;a scarf&quot;, hisItem: &quot;a scarf&quot; } },
+    &quot;Wildcard5&quot;,
+    &quot;Wildcard6&quot;
+], &quot;wildCarded&quot;)&gt;&gt;
 
 &lt;!--[[Wildcard1]]--&gt;
 &lt;!--[[Wildcard2]]--&gt;
