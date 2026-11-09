@@ -954,14 +954,8 @@ Once you feel comfortable with the controls and @@.holland;Mr. Holland@@ is comf
 <hr>
 <div class="center-heading2">An interactive augmented reality simulation by Robin Parker, MSN, RN, PCCN</div>
 <div class="center-heading3">Cursor AI was used to assist with coding and debugging</div>
-<div id="loading-overlay">Loading multiplayer services...</div>
-<div id="connect-container" class="hidden">
-    <<button "Connect to Multiplayer">>
-        <<run SimApp.connect()>>
-    <</button>>
-</div>
 Welcome to this live augmented reality nursing simulation. You will need a partner to complete this activity. 
-Before we begin please review the briefing below.
+Before we begin please review the briefing below, then follow the steps under <strong>To start the game</strong> at the bottom of this page.
 <hr>
 <h2>Briefing</h2>
 <p>Today you and your partner will be living a day in the life of @@.holland;Mr. Bernard Holland@@, a 75-year-old retired carpet layer who is living with COPD. He is a 60-pack-year smoker who is currently trying to quit. He does not wear home oxygen, though he does often have to stop to catch his breath after walking for more than a few minutes on level ground.</p>
@@ -1009,11 +1003,18 @@ It’s coming up on the end of the month and @@.holland;Mr. Holland@@ has a lot 
 </ul>
 
 <h2>To start the game</h2>
-<ul>
-<li>Have one player click the <strong><u>Connect to Multiplayer</u></strong> button below. This will connect you to the game lobby.</li>
-<li>Once in the game lobby click the <strong><u>Invite</u></strong> button. This will give you a QR code for your partner to pair up and form a team. If you leave the lobby before your partner joins, the host can tap <strong><u>Show Invite QR Code</u></strong> on the role selection screen to display it again.</li>
-<li>Once you've both joined the 1st player can then click the <strong><u>Launch</u></strong> button to enter the briefing area to learn the controls.</li>
-</ul>
+<ol>
+<li>One member from each team scans the QR code below. This will create your team.</li>
+<li>Invite your partner to join. Have your partner scan the new QR code on your device.</li>
+<li>Choose your roles. One of you will play the role of @@.holland;Mr. Holland@@ while the other will be @@.observer;the Observer@@.</li>
+<li>After you have chosen your roles, follow the instructions on the screen.</li>
+</ol>
+<div id="loading-overlay">Loading multiplayer services...</div>
+<div id="connect-container" class="hidden">
+    <<button "Connect to Multiplayer">>
+        <<run SimApp.connect()>>
+    <</button>>
+</div>
 
 <!--[[Role_Selection]]-->
 <!--[[Waiting_Room]]-->
@@ -1140,7 +1141,7 @@ setTimeout(function () {
 })();
 <</script>>
 <<run UIBar.hide()>>
-<<set $devmode to true>>
+<<set $devmode to false>>
 /* Multiplayer / role fallbacks (offline testing) */
 <<set $myRole to "">>
 <<set $evalComplete to false>>
@@ -2996,6 +2997,11 @@ window.SimApp = {
         if (loader) {
             loader.classList.add("hidden");
         }
+        var presenting = this.presenterCode();
+        if (presenting) {
+            this.mountPresenterQr(presenting);
+            return;
+        }
         if (this.isCloudNet() && !Net.session) {
             this.mountSessionCodeForm();
             return;
@@ -3003,6 +3009,46 @@ window.SimApp = {
         if (btnContainer) {
             btnContainer.classList.remove("hidden");
         }
+    },
+
+    /**
+     * Presenter view for the projector: /?present=SESSION-CODE (opened from class.html).
+     * Shows the normal welcome page, but never connects or takes a seat, and puts a large
+     * session QR code at the bottom for students to scan once the instructor has gone over it.
+     */
+    presenterCode: function () {
+        var code = "";
+        try {
+            code = String(new URLSearchParams(window.location.search).get("present") || "").trim().toUpperCase();
+        } catch (eParam) { /* old browser */ }
+        return /^[A-Z0-9][A-Z0-9-]{2,23}$/.test(code) ? code : "";
+    },
+
+    mountPresenterQr: function (code) {
+        var $slot = $("#connect-container");
+        if (!$slot.length) {
+            return;
+        }
+        var link = window.location.origin + window.location.pathname + "?s=" + encodeURIComponent(code);
+        $("body").addClass("presenter-view");
+        $slot.removeClass("hidden").empty().append(
+            $("<div>", { class: "presenter-join" }).append(
+                $("<h2>").text("Ready? Pair up and scan to start"),
+                $("<img>", {
+                    class: "presenter-qr",
+                    alt: "QR code to join class session " + code,
+                    src: "https://api.qrserver.com/v1/create-qr-code/?size=480x480&data=" + encodeURIComponent(link)
+                }),
+                $("<p>", { class: "presenter-code" }).append(
+                    $("<span>").text("Class session code: "),
+                    $("<strong>").text(code)
+                ),
+                $("<p>", { class: "presenter-steps" }).text(
+                    "One partner per team scans this code. Then your partner scans the invite QR code on that phone."
+                ),
+                $("<p>", { class: "presenter-link" }).text(link)
+            )
+        );
     },
 
     /**
@@ -5226,6 +5272,27 @@ if (simChooseBackend() === "cf") {
 }
 
 :: StoryStylesheet [stylesheet]
+/* Presenter view (/?present=CODE): large session QR at the bottom of the welcome page */
+.presenter-join {
+    margin: 1.5em auto 2em;
+    padding: 1.25em;
+    max-width: 560px;
+    text-align: center;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+}
+.presenter-join h2 { margin-top: 0; }
+.presenter-qr {
+    width: min(80vw, 420px);
+    height: auto;
+    aspect-ratio: 1 / 1;
+    background: #fff;
+    padding: 12px;
+    border-radius: 10px;
+}
+.presenter-code { font-size: 1.6em; margin: 0.5em 0 0.25em; letter-spacing: 0.04em; }
+.presenter-steps { font-size: 1.15em; }
+.presenter-link { font-size: 0.85em; opacity: 0.75; word-break: break-all; }
 /* Team name (generated by the class session) shown in the lobby */
 .team-name-banner:empty { display: none; }
 .team-name-banner {
