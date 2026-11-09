@@ -1,6 +1,8 @@
 # Multiplayer Migration: Playroom → Cloudflare Durable Objects
 
-**Status:** In progress. Milestone A (backend skeleton in `cloud/`) is built and tested locally; it is not deployed yet
+**Status:** In progress.
+- **Milestone A** (backend skeleton in `cloud/`) is built and deployed.
+- **Milestone B** (Net adapter) is built. The game runs on either backend, and Playroom is still the default. Add `?net=cf&s=SESSION` to a link to play on Cloudflare.
 **Author:** Robin Parker
 **Last updated:** November 2026
 **Target branch:** `net-cloudflare` (off `Beta`)
@@ -172,6 +174,44 @@ These differences from the tables above were made during implementation:
 - **`sync {}`** asks for a fresh snapshot.
 - **Room size:** the first two tokens to join own the room. A third device is rejected with `room_full`; a known token can always reconnect.
 - **Test page:** `/ws-test.html?s=TEST1&p=1`. Open it on two devices to check sync, roles, presence and reconnect.
+
+### 6.2 As built (Milestone B — Net adapter)
+
+**How the game reaches multiplayer**
+- SimApp and the passages call `window.Net`, never `Playroom` directly.
+- `Net` keeps the Playroom-style calls the game already used, so the game logic is unchanged.
+- `createPlayroomNet()` passes those calls straight through to Playroom Kit.
+- `createCloudNet()` is the WebSocket client, kept in the .twee between `CLOUDNET:BEGIN`/`END` markers so the tests can load it.
+
+**Choosing a backend**
+- Playroom is the default (`setup.NET_BACKEND = "playroom"`).
+- `?net=cf` in the link switches to Cloudflare.
+
+**CloudNet links and pair codes**
+- `?net=cf&s=DEMO1` with no pair code creates a new pair code and writes it into the URL.
+- The invite QR is `?s=DEMO1&p=KCP2&net=cf`.
+- A link without `s` is refused with a "needs a class session code" message.
+
+**Who is "host"**
+- Host is the lowest-numbered connected player: the first to join, like Playroom.
+- If that player drops, the partner becomes host until they return.
+- This is a temporary shim; Milestone C removes host-only logic.
+
+**Writes and players**
+- Writes show up locally at once and are sent to the server in one batch per tick.
+- The server's `ack` confirms them.
+- Writes made while offline are re-sent after reconnecting.
+- Players get public ids (`p1`, `p2`) from the server; tokens never leave the device that owns them.
+
+**Keepalive**
+- The client sends the text `ping` every 25 s.
+- Cloudflare answers `pong` itself (`setWebSocketAutoResponse`) without waking the room.
+
+**Tests**
+- The resync tests run against both backends (42 tests).
+- `tests/cloudnet.test.mjs` covers the client (13 tests).
+- `cloud/test/` covers the server rules (17 tests).
+- The Cloudflare test fake uses the real `room-core.js`.
 
 ## 7. Client changes
 

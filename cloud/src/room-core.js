@@ -10,8 +10,12 @@
  *     conn            — mutable per-socket object; room-core sets conn.token after "hello"
  *     message         — parsed JSON from the client
  *     connectedTokens — Set of tokens with an open socket (for presence)
- *     out             — [{ to: "self" | "all" | "others", msg }]
+ *     out             — [{ to: "self" | "all" | "others", msg }]; send with routeMessages()
  *     dirty           — true when room.state changed and must be saved
+ *
+ * Messages that change state may carry a client id `cid`. The sender's copy of the
+ * resulting broadcast (or reject) includes `ack: cid`, so the client knows its own
+ * optimistic writes up to that point have been applied (or refused).
  */
 
 export const ROLES = ["patient", "observer"];
@@ -19,8 +23,9 @@ export const LOBBY_PASSAGE = "Role_Selection";
 const MAX_PLAYERS = 2;
 const MAX_NAME_LEN = 20;
 const MAX_KEY_LEN = 40;
-const MAX_PATCH_KEYS = 50;
+const MAX_PATCH_KEYS = 80;
 const MAX_STRING_LEN = 500;
+const KEY_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 export function createInitialState({ sessionCode, pairCode }) {
     return {
@@ -33,7 +38,8 @@ export function createInitialState({ sessionCode, pairCode }) {
         attempt: 1,
         startedAt: null,
         endedAt: null,
-        players: {}, // token -> { role, name }
+        nextPid: 1,
+        players: {}, // token -> { pid, role, name }
         roles: { patient: null, observer: null }, // role -> token
         game: {},
     };
@@ -53,14 +59,50 @@ function isPlainValue(v) {
     return false;
 }
 
+function pidNumber(pid) {
+    return Number(String(pid || "").replace(/^p/, "")) || 0;
+}
+
+/**
+ * Sends `out` to the right sockets. Shared by the Durable Object and the test fake.
+ * @param {RoomCore} room
+ * @param {{to: string, msg: object}[]} out
+ * @param {{token: string|null, send: (text: string) => void}[]} targets  open sockets
+ * @param {object|null} self  the target that sent the triggering message
+ */
+export function routeMessages(room, out, targets, self) {
+    for (const { to, msg } of out) {
+        for (const t of targets) {
+            if (to === "self" && t !== self) continue;
+            if (to === "others" && t === self) continue;
+            if (to !== "self" && !t.token) continue; // not joined yet
+            try {
+                t.send(JSON.stringify(room.personalize(msg, t.token)));
+            } catch {
+                /* socket went away mid-send */
+            }
+        }
+    }
+}
+
 export class RoomCore {
     constructor(saved, opts = {}) {
         this.now = opts.now || (() => Date.now());
         this.makeToken = opts.makeToken || defaultToken;
         this.state = saved && saved.v === 1 ? saved : createInitialState(opts);
+        this._upgrade();
     }
 
-    /** What a client sees: everything except other players' tokens. */
+    /** Fills fields added after Milestone A, so rooms saved by older code keep working. */
+    _upgrade() {
+        const s = this.state;
+        if (!s.nextPid) s.nextPid = 1;
+        for (const tok of Object.keys(s.players)) {
+            if (!s.players[tok].pid) s.players[tok].pid = `p${s.nextPid++}`;
+        }
+    }
+
+    /** What a client sees: everything except tokens. */
     snapshot(connectedTokens = new Set()) {
         const s = this.state;
         const roles = {};
@@ -70,6 +112,14 @@ export class RoomCore {
                 ? { name: (s.players[tok] && s.players[tok].name) || "", connected: connectedTokens.has(tok) }
                 : null;
         }
+        const players = Object.keys(s.players)
+            .map((tok) => ({
+                pid: s.players[tok].pid,
+                role: s.players[tok].role,
+                name: s.players[tok].name,
+                connected: connectedTokens.has(tok),
+            }))
+            .sort((a, b) => pidNumber(a.pid) - pidNumber(b.pid));
         return {
             sessionCode: s.sessionCode,
             pairCode: s.pairCode,
@@ -80,20 +130,21 @@ export class RoomCore {
             startedAt: s.startedAt,
             endedAt: s.endedAt,
             roles,
+            players,
             game: { ...s.game },
         };
     }
 
     handle(conn, msg, connectedTokens = new Set()) {
         if (!msg || typeof msg.t !== "string") {
-            return this._reject(conn, "bad_message", connectedTokens);
+            return this._reject(conn, "bad_message", connectedTokens, msg);
         }
         if (msg.t === "ping") {
             return { out: [{ to: "self", msg: { t: "pong", serverNow: this.now(), id: msg.id } }], dirty: false };
         }
         if (msg.t === "hello") return this._hello(conn, msg, connectedTokens);
         if (!conn.token || !this.state.players[conn.token]) {
-            return this._reject(conn, "not_joined", connectedTokens);
+            return this._reject(conn, "not_joined", connectedTokens, msg);
         }
         switch (msg.t) {
             case "sync":
@@ -107,20 +158,23 @@ export class RoomCore {
             case "navigate":
                 return this._navigate(conn, msg, connectedTokens);
             default:
-                return this._reject(conn, "unknown_type", connectedTokens);
+                return this._reject(conn, "unknown_type", connectedTokens, msg);
         }
     }
 
-    /** This player's own role and name, added to each outgoing message for that socket. */
+    /** This player's own id, role and name, added to each outgoing message for that socket. */
     you(token) {
         const p = token && this.state.players[token];
-        return p ? { role: p.role, name: p.name } : null;
+        return p ? { pid: p.pid, role: p.role, name: p.name } : null;
     }
 
-    /** Returns a copy of msg with `you` filled in for the socket that owns `token`. */
+    /** Returns a copy of msg with `you` (and `ack` for the sender) filled in for `token`. */
     personalize(msg, token) {
-        if (msg.t === "state" || msg.t === "reject") return { ...msg, you: this.you(token) };
-        return msg;
+        if (msg.t !== "state" && msg.t !== "reject") return msg;
+        const { ackToken, ack, ...rest } = msg;
+        const copy = { ...rest, you: this.you(token) };
+        if (ack !== undefined && ackToken === token) copy.ack = ack;
+        return copy;
     }
 
     /** Call when a socket closes, so the partner learns about it. */
@@ -133,10 +187,10 @@ export class RoomCore {
         let token = typeof msg.token === "string" ? msg.token : null;
         if (!token || !s.players[token]) {
             if (Object.keys(s.players).length >= MAX_PLAYERS) {
-                return this._reject(conn, "room_full", connectedTokens);
+                return this._reject(conn, "room_full", connectedTokens, msg);
             }
             token = this.makeToken();
-            s.players[token] = { role: null, name: "" };
+            s.players[token] = { pid: `p${s.nextPid++}`, role: null, name: "" };
         }
         conn.token = token;
         if (msg.name !== undefined) s.players[token].name = cleanName(msg.name);
@@ -150,7 +204,7 @@ export class RoomCore {
                     msg: {
                         t: "welcome",
                         token,
-                        you: { role: s.players[token].role, name: s.players[token].name },
+                        you: this.you(token),
                         snapshot: this.snapshot(tokens),
                         seq: s.seq,
                         serverNow: this.now(),
@@ -167,10 +221,10 @@ export class RoomCore {
         const role = msg.role;
         const token = conn.token;
         if (role !== null && !ROLES.includes(role)) {
-            return this._reject(conn, "bad_role", connectedTokens);
+            return this._reject(conn, "bad_role", connectedTokens, msg);
         }
         if (role && s.roles[role] && s.roles[role] !== token) {
-            return this._reject(conn, "role_taken", connectedTokens);
+            return this._reject(conn, "role_taken", connectedTokens, msg);
         }
         const prev = s.players[token].role;
         if (prev && s.roles[prev] === token) s.roles[prev] = null;
@@ -178,26 +232,26 @@ export class RoomCore {
         if (role) s.roles[role] = token;
         if (msg.name !== undefined) s.players[token].name = cleanName(msg.name);
         s.seq += 1;
-        return this._broadcastState(connectedTokens, conn);
+        return this._broadcastState(connectedTokens, conn, msg);
     }
 
     _set(conn, msg, connectedTokens) {
         const patch = msg.patch;
         if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
-            return this._reject(conn, "bad_patch", connectedTokens);
+            return this._reject(conn, "bad_patch", connectedTokens, msg);
         }
         const keys = Object.keys(patch);
         if (keys.length === 0 || keys.length > MAX_PATCH_KEYS) {
-            return this._reject(conn, "bad_patch", connectedTokens);
+            return this._reject(conn, "bad_patch", connectedTokens, msg);
         }
         for (const k of keys) {
-            if (k.length > MAX_KEY_LEN || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(k) || !isPlainValue(patch[k])) {
-                return this._reject(conn, "bad_patch", connectedTokens);
+            if (k.length > MAX_KEY_LEN || !KEY_RE.test(k) || !isPlainValue(patch[k])) {
+                return this._reject(conn, "bad_patch", connectedTokens, msg);
             }
         }
         Object.assign(this.state.game, patch);
         this.state.seq += 1;
-        return this._broadcastState(connectedTokens, conn);
+        return this._broadcastState(connectedTokens, conn, msg);
     }
 
     /**
@@ -207,11 +261,11 @@ export class RoomCore {
      */
     _inc(conn, msg, connectedTokens) {
         const { key, by } = msg;
-        if (typeof key !== "string" || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(key) || key.length > MAX_KEY_LEN) {
-            return this._reject(conn, "bad_patch", connectedTokens);
+        if (typeof key !== "string" || !KEY_RE.test(key) || key.length > MAX_KEY_LEN) {
+            return this._reject(conn, "bad_patch", connectedTokens, msg);
         }
         if (typeof by !== "number" || !Number.isFinite(by)) {
-            return this._reject(conn, "bad_patch", connectedTokens);
+            return this._reject(conn, "bad_patch", connectedTokens, msg);
         }
         const cur = Number(this.state.game[key]);
         let next = (Number.isFinite(cur) ? cur : 0) + by;
@@ -219,41 +273,48 @@ export class RoomCore {
         if (typeof msg.max === "number") next = Math.min(msg.max, next);
         this.state.game[key] = next;
         this.state.seq += 1;
-        return this._broadcastState(connectedTokens, conn);
+        return this._broadcastState(connectedTokens, conn, msg);
     }
 
     _navigate(conn, msg, connectedTokens) {
         const s = this.state;
         if (typeof msg.passage !== "string" || !msg.passage || msg.passage.length > 80) {
-            return this._reject(conn, "bad_passage", connectedTokens);
+            return this._reject(conn, "bad_passage", connectedTokens, msg);
         }
         if (msg.expectSeq !== s.passageSeq) {
             // Someone else moved first (or this client is stale): send the truth back.
-            return this._reject(conn, "stale_seq", connectedTokens);
+            return this._reject(conn, "stale_seq", connectedTokens, msg);
         }
         s.passage = msg.passage;
         s.passageSeq += 1;
         s.seq += 1;
-        return this._broadcastState(connectedTokens, conn);
+        return this._broadcastState(connectedTokens, conn, msg);
     }
 
     _stateMsg(connectedTokens) {
         return { t: "state", seq: this.state.seq, snapshot: this.snapshot(connectedTokens), serverNow: this.now() };
     }
 
-    _broadcastState(connectedTokens, conn) {
+    _broadcastState(connectedTokens, conn, msg) {
         const tokens = new Set(connectedTokens);
         if (conn && conn.token) tokens.add(conn.token);
-        return { out: [{ to: "all", msg: this._stateMsg(tokens) }], dirty: true };
+        const out = this._stateMsg(tokens);
+        if (msg && msg.cid !== undefined && conn && conn.token) {
+            out.ackToken = conn.token;
+            out.ack = msg.cid;
+        }
+        return { out: [{ to: "all", msg: out }], dirty: true };
     }
 
-    _reject(conn, reason, connectedTokens) {
+    _reject(conn, reason, connectedTokens, msg) {
         const tokens = new Set(connectedTokens);
         if (conn && conn.token) tokens.add(conn.token);
-        return {
-            out: [{ to: "self", msg: { t: "reject", reason, seq: this.state.seq, snapshot: this.snapshot(tokens) } }],
-            dirty: false,
-        };
+        const out = { t: "reject", reason, seq: this.state.seq, snapshot: this.snapshot(tokens) };
+        if (msg && msg.cid !== undefined && conn && conn.token) {
+            out.ackToken = conn.token;
+            out.ack = msg.cid;
+        }
+        return { out: [{ to: "self", msg: out }], dirty: false };
     }
 }
 

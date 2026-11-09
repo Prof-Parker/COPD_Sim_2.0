@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { RoomCore, cleanName } from "../src/room-core.js";
+import { RoomCore, cleanName, routeMessages } from "../src/room-core.js";
 
 function makeRoom(saved = null) {
     let n = 0;
@@ -28,7 +28,62 @@ test("hello issues a token and a full snapshot", () => {
     assert.equal(conn.token, "tok1");
     assert.equal(welcome.token, "tok1");
     assert.equal(welcome.snapshot.passage, "Role_Selection");
-    assert.deepEqual(welcome.you, { role: null, name: "" });
+    assert.deepEqual(welcome.you, { pid: "p1", role: null, name: "" });
+});
+
+test("players get stable public ids, listed in join order without tokens", () => {
+    const { room } = makeRoom();
+    const a = join(room);
+    join(room);
+    room.handle(a.conn, { t: "claimRole", role: "observer" });
+    const snap = room.snapshot(new Set(["tok2"]));
+    assert.deepEqual(snap.players, [
+        { pid: "p1", role: "observer", name: "", connected: false },
+        { pid: "p2", role: null, name: "", connected: true },
+    ]);
+    assert.equal(JSON.stringify(snap).includes("tok"), false);
+});
+
+test("rooms saved before player ids existed get ids on load", () => {
+    const saved = {
+        v: 1, sessionCode: "S", pairCode: "1", seq: 3, passage: "Role_Selection", passageSeq: 0,
+        attempt: 1, startedAt: null, endedAt: null,
+        players: { old1: { role: "patient", name: "" } }, roles: { patient: "old1", observer: null }, game: {},
+    };
+    const { room } = makeRoom(saved);
+    assert.equal(room.you("old1").pid, "p1");
+    assert.equal(room.state.nextPid, 2);
+});
+
+test("the sender's copy of a broadcast acknowledges its cid; the partner's does not", () => {
+    const { room } = makeRoom();
+    const a = join(room);
+    join(room);
+    const { out } = room.handle(a.conn, { t: "set", patch: { Points: 1 }, cid: 9 });
+    assert.equal(room.personalize(out[0].msg, "tok1").ack, 9);
+    assert.equal(room.personalize(out[0].msg, "tok2").ack, undefined);
+    assert.equal("ackToken" in room.personalize(out[0].msg, "tok1"), false);
+    const rej = room.handle(a.conn, { t: "set", patch: {}, cid: 10 });
+    assert.equal(room.personalize(rej.out[0].msg, "tok1").ack, 10);
+});
+
+test("routeMessages sends self/others/all to the right sockets", () => {
+    const { room } = makeRoom();
+    const sent = { a: [], b: [], c: [] };
+    const a = { token: "tok1", send: (t) => sent.a.push(JSON.parse(t)) };
+    const b = { token: "tok2", send: (t) => sent.b.push(JSON.parse(t)) };
+    const c = { token: null, send: (t) => sent.c.push(JSON.parse(t)) }; // not joined yet
+    join(room);
+    join(room);
+    routeMessages(room, [
+        { to: "self", msg: { t: "pong" } },
+        { to: "others", msg: { t: "state", seq: 1 } },
+        { to: "all", msg: { t: "state", seq: 2 } },
+    ], [a, b, c], a);
+    assert.deepEqual(sent.a.map((m) => m.t + (m.seq || "")), ["pong", "state2"]);
+    assert.deepEqual(sent.b.map((m) => m.t + (m.seq || "")), ["state1", "state2"]);
+    assert.equal(sent.c.length, 0);
+    assert.equal(sent.b[0].you.pid, "p2");
 });
 
 test("reconnecting with the same token keeps the role", () => {
@@ -130,7 +185,7 @@ test("state survives a save/load round trip (Durable Object eviction)", () => {
     room.handle(a.conn, { t: "set", patch: { Energy: 7 } });
     const saved = JSON.parse(JSON.stringify(room.state));
     const { room: reloaded } = makeRoom(saved);
-    assert.deepEqual(reloaded.you("tok1"), { role: "observer", name: "Sam" });
+    assert.deepEqual(reloaded.you("tok1"), { pid: "p1", role: "observer", name: "Sam" });
     assert.equal(reloaded.snapshot().game.Energy, 7);
 });
 

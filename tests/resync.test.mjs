@@ -6,6 +6,7 @@
 import { describe, it, before, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import {
+    BACKENDS,
     createSyncedPair,
     loadSimAppTemplate,
     readPreservedSnapshot,
@@ -139,13 +140,14 @@ describe("SimApp load", () => {
     });
 });
 
-for (const layout of LAYOUTS) {
-    describe(`resync: ${layout.name}`, () => {
+for (const backend of BACKENDS) for (const layout of LAYOUTS) {
+    describe(`resync [${backend}]: ${layout.name}`, () => {
         /** @type {Awaited<ReturnType<typeof createSyncedPair>>} */
         let pair;
 
         before(async () => {
             pair = await createSyncedPair({
+                backend,
                 hostRole: layout.hostRole,
                 clientRole: layout.clientRole
             });
@@ -163,6 +165,7 @@ for (const layout of LAYOUTS) {
 
         it("patient reconnects and preserves simulation state", async () => {
             pair = await createSyncedPair({
+                backend,
                 hostRole: layout.hostRole,
                 clientRole: layout.clientRole
             });
@@ -172,6 +175,7 @@ for (const layout of LAYOUTS) {
 
         it("observer reconnects after autolock (visibility) and preserves state", async () => {
             pair = await createSyncedPair({
+                backend,
                 hostRole: layout.hostRole,
                 clientRole: layout.clientRole
             });
@@ -181,6 +185,7 @@ for (const layout of LAYOUTS) {
 
         it("host reconnect does not wipe room mid-sim", async () => {
             pair = await createSyncedPair({
+                backend,
                 hostRole: layout.hostRole,
                 clientRole: layout.clientRole
             });
@@ -203,6 +208,7 @@ for (const layout of LAYOUTS) {
 
         it("client reconnect while host stays preserves room and host view", async () => {
             pair = await createSyncedPair({
+                backend,
                 hostRole: layout.hostRole,
                 clientRole: layout.clientRole
             });
@@ -222,6 +228,7 @@ for (const layout of LAYOUTS) {
 
         it("after both recover, patient advance bumps passageSeq and observer tethers", async () => {
             pair = await createSyncedPair({
+                backend,
                 hostRole: layout.hostRole,
                 clientRole: layout.clientRole
             });
@@ -256,6 +263,7 @@ for (const layout of LAYOUTS) {
 
         it("blocks patient advance when partner disconnected; Continue anyway overrides", async () => {
             pair = await createSyncedPair({
+                backend,
                 hostRole: layout.hostRole,
                 clientRole: layout.clientRole
             });
@@ -276,6 +284,7 @@ for (const layout of LAYOUTS) {
 
         it("repeated soft refresh on host still preserves mid-sim and clears sync locks", async () => {
             pair = await createSyncedPair({
+                backend,
                 hostRole: layout.hostRole,
                 clientRole: layout.clientRole
             });

@@ -5,6 +5,10 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createRoom } from "./playroom-mock.mjs";
+import { createRoom as createCloudRoom } from "./cloudnet-mock.mjs";
+
+/** Multiplayer backends the dual-client tests can run against. */
+export const BACKENDS = ["playroom", "cf"];
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../..");
@@ -302,14 +306,14 @@ function createClientContext(opts) {
             currentPassage = v;
         },
         /**
-         * Run fn with this client's globals bound (Playroom, State, Engine, etc.).
+         * Run fn with this client's globals bound (Net, State, Engine, etc.).
          * @template T
          * @param {() => T | Promise<T>} fn
          * @returns {Promise<T>}
          */
         async run(fn) {
             const prev = {
-                Playroom: globalThis.Playroom,
+                Net: globalThis.Net,
                 State: globalThis.State,
                 Story: globalThis.Story,
                 Engine: globalThis.Engine,
@@ -319,7 +323,7 @@ function createClientContext(opts) {
                 window: globalThis.window
             };
 
-            globalThis.Playroom = playroom;
+            globalThis.Net = playroom;
             globalThis.State = state;
             globalThis.Story = Story;
             globalThis.Engine = Engine;
@@ -357,7 +361,7 @@ function createClientContext(opts) {
                     clearInterval(opts.sim._patientNextTimer);
                     opts.sim._patientNextTimer = null;
                 }
-                globalThis.Playroom = prev.Playroom;
+                globalThis.Net = prev.Net;
                 globalThis.State = prev.State;
                 globalThis.Story = prev.Story;
                 globalThis.Engine = prev.Engine;
@@ -423,16 +427,18 @@ export function readPreservedSnapshot(playroom, localState) {
 }
 
 /**
- * @param {{ hostRole: "patient"|"observer", clientRole: "patient"|"observer" }} layout
+ * @param {{ hostRole: "patient"|"observer", clientRole: "patient"|"observer", backend?: "playroom"|"cf" }} layout
+ *   backend "cf" runs the real CloudNet client against the real room-core server rules.
  */
 export async function createSyncedPair(layout) {
     if (layout.hostRole === layout.clientRole) {
         throw new Error("hostRole and clientRole must differ");
     }
 
-    const room = createRoom();
-    const hostPlayroom = room.createClientView({ id: "player-host", isHost: true });
-    const clientPlayroom = room.createClientView({ id: "player-client", isHost: false });
+    const room = layout.backend === "cf" ? createCloudRoom() : createRoom();
+    /* The host view is created (joins) first, so it is the host on both backends. */
+    const hostPlayroom = await room.createClientView({ id: "player-host", isHost: true });
+    const clientPlayroom = await room.createClientView({ id: "player-client", isHost: false });
 
     const template = loadSimAppTemplate();
     const hostSim = cloneSimApp(template);
