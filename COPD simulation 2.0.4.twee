@@ -1,5 +1,5 @@
 :: StoryTitle
-COPD simulation 2.1
+COPD simulation 2.2
 
 
 :: StoryData
@@ -22,12 +22,12 @@ COPD simulation 2.1
 <h1>Breakfast Time</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-It's time for breakfast. What would you like to have for breakfast today @@.holland;Mr. Holland@@? As you think about what to have you try figure out which option will give you the most energy for your errands today.
+It's time for breakfast. What would you like to have for breakfast today @@.holland;Mr. Holland@@? As you think about what to have you try to figure out which option will give you the most energy for your errands today.
 <hr>
 <<patient-choices "Breakfast choices" "no-eval"
-	"A 24-once high protein smoothie and a 20-ounce cup of coffee | -2 | warm | red | Too much liquid all at once makes you feel really full and makes it harder to breathe | | Points+=1"
-    "An 8-ounce cup of coffee, cottage cheese with fruit | 1 | warm | green | Just the right amount of food and liquid in one meal is easier for you to eat . You feel refreshed and plan to pack a protein bar as a snack for later | | Points+=1"
-	"An 8-ounce cup of coffee, a glass of orange juice, two slices of toast, two fried eggs, two turkey sausage links and an apple | -2 | warm | red | It was delicious, but your body can't handle eating the way you did as a teenager anymore. All that food and liquid was filling and made it harder to breath | | Points+=1"
+	"A 24-ounce high protein smoothie and a 20-ounce cup of coffee | -2 | warm | red | Too much liquid all at once makes you feel really full and makes it harder to breathe | | Points+=1"
+    "An 8-ounce cup of coffee, cottage cheese with fruit | 1 | warm | green | Just the right amount of food and liquid in one meal is easier for you to eat. You feel refreshed and plan to pack a protein bar as a snack for later | | Points+=1"
+	"An 8-ounce cup of coffee, a glass of orange juice, two slices of toast, two fried eggs, two turkey sausage links and an apple | -2 | warm | red | It was delicious, but your body can't handle eating the way you did as a teenager anymore. All that food and liquid was filling and made it harder to breathe | | Points+=1"
 >>\
 
 <<patient-next "Time to run errands" "Hallway_Out">>\
@@ -37,13 +37,10 @@ It's time for breakfast. What would you like to have for breakfast today @@.holl
 @@.holland;Mr. Holland@@ is going to pick what he wants for breakfast. Here are his options this morning. Which do you think he'll choose? What will give him the most energy for the busy day ahead?
 <hr>
 <ul>
-<li>A 24-once high protein smoothie and a 20-ounce cup of coffee</li>
-<li>An 8-ouncel cup of coffee, cottage cheese with fruit</li>
+<li>A 24-ounce high protein smoothie and a 20-ounce cup of coffee</li>
+<li>An 8-ounce cup of coffee, cottage cheese with fruit</li>
 <li>An 8-ounce cup of coffee, a glass of orange juice, two slices of toast, two fried eggs, two turkey sausage links and an apple</li>
 </ul>
-//There are no activity specific evaluations for this station//
-* An 8-ouncel cup of coffee, cottage cheese with fruit
-* An 8-ounce cup of coffee, a glass of orange juice, two slices of toast, two fried eggs, two turkey sausage links and an apple
 //There are no activity specific evaluations for this station//
 <</if>>
 
@@ -60,7 +57,7 @@ Time to get dressed for the day. <strong>Make sure to put on your socks and shoe
 
 <<else>>\
 
-It's time for @@.holland;Mr Holland@@ to get dressed. Once they are done getting dressed evaluate their performance below.
+It's time for @@.holland;Mr. Holland@@ to get dressed. Once they are done getting dressed evaluate their performance below.
 //Don't forget that you can use your general controls as well to add or subtract additional energy such as if they bend over to put their shoes on//
 <hr>
 <<dynamic-eval "Activity: Getting Dressed"
@@ -77,7 +74,7 @@ It's time for @@.holland;Mr Holland@@ to get dressed. Once they are done getting
 <h1>Whistle Stop Park</h1>\
 <hr>\
 <<if $myRole == "patient">>\
-You've made it to Whistle Stop Park. Choose an errand below, or head home when you are done for the day.
+You're at Whistle Stop Park. Choose an errand below, or head home when you are done for the day.
 
 <<silently>>
 <<set _errandGroceryClass to "eval-wrap errands-cell green-wrap">>
@@ -133,20 +130,8 @@ You've made it to Whistle Stop Park. Choose an errand below, or head home when y
 
 
 :: Grocery_Store_Router [simulation activity] {"position":"2900,1000","size":"100,100"}
-<<silently>>
-<<if typeof Playroom !== "undefined" and Playroom.isHost()>>
-<<set _groceryRoll to random(1, 2)>>
-<<run SimApp.setVal("groceryRoll", _groceryRoll, true); SimApp.setVal("visitedGrocery", true, true)>>
-<<else>>
-<<run SimApp.syncFromPlayroom()>>
-<<set _groceryRoll to SimApp.getVal("groceryRoll")>>
-<</if>>
-<</silently>>
-<<if _groceryRoll is 1>>
-<<run SimApp.deferGoToSharedPassage("Grocery_Store_1")>>
-<<else>>
-<<run SimApp.deferGoToSharedPassage("Grocery_Store_2")>>
-<</if>>
+/* One shared roll (server-side on Cloudflare), then both players go to the same passage */
+<<run SimApp.routeByRoll("groceryRoll", ["Grocery_Store_1", "Grocery_Store_2"], "visitedGrocery")>>
 
 <!--[[Grocery_Store_1]]-->
 <!--[[Grocery_Store_2]]-->
@@ -154,13 +139,13 @@ You've made it to Whistle Stop Park. Choose an errand below, or head home when y
 <h1>Grocery Store</h1>\
 <hr>\
 <<if $myRole == "patient">>\
-@@.holland;Mr. Holland@@, You arrive at the grocery store to pick up a few essentials for the week.
+@@.holland;Mr. Holland@@, you arrive at the grocery store to pick up a few essentials for the week.
 
 The parking lot is completely packed. You walk inside, but all of the motorized shopping carts are already in use. You have no choice but to grab a standard cart and push it through the crowded aisles yourself.
 
 <<patient-choices "What do you want to do?" "no-eval"
-  "Grab a regular shopping cart | -4 | blue | red | Pushing the heavy cart and dodging crowds is exhausting. | | Points+=1 | errandsRun+=1"
-  "It's too much work without a motorized cart. You'll come back tomorrow | 0 | blue | red | Hopefully you'll be able to find a motorized cart tomorrow. | | standing+=1 | Points-=1 | errandsRun+=1"
+  "Grab a regular shopping cart | -4 | blue | red | Pushing the heavy cart and dodging crowds is exhausting. | | Points+=1 | standing+=1 | errandsRun+=1"
+  "It's too much work without a motorized cart. You'll come back tomorrow | 0 | blue | red | Hopefully you'll be able to find a motorized cart tomorrow. | | Points-=1"
 >>\
 
 <<patient-next "Head back to the park" "Errands_Hub">>\
@@ -189,20 +174,8 @@ The store is surprisingly quiet today. Right inside the door, there is a fully c
 <</if>>
 
 :: Pharmacy_Router [simulation activity] {"position":"3100,1000","size":"100,100"}
-<<silently>>
-<<if typeof Playroom !== "undefined" and Playroom.isHost()>>
-<<set _pharmacyRoll to random(1, 2)>>
-<<run SimApp.setVal("pharmacyRoll", _pharmacyRoll, true); SimApp.setVal("visitedPharmacy", true, true)>>
-<<else>>
-<<run SimApp.syncFromPlayroom()>>
-<<set _pharmacyRoll to SimApp.getVal("pharmacyRoll")>>
-<</if>>
-<</silently>>
-<<if _pharmacyRoll is 1>>
-<<run SimApp.deferGoToSharedPassage("Pharmacy_1")>>
-<<else>>
-<<run SimApp.deferGoToSharedPassage("Pharmacy_2")>>
-<</if>>
+/* One shared roll (server-side on Cloudflare), then both players go to the same passage */
+<<run SimApp.routeByRoll("pharmacyRoll", ["Pharmacy_1", "Pharmacy_2"], "visitedPharmacy")>>
 
 <!--[[Pharmacy_1]]-->
 <!--[[Pharmacy_2]]-->
@@ -229,7 +202,7 @@ The store is surprisingly quiet today. Right inside the door, there is a fully c
 @@.holland;Mr. Holland@@, you are at the pharmacy.
 
 <<patient-choices "Time to pick up prescriptions" "no-eval"
-  "You get in line and wait for your turn | -1 | blue | green | You are pleasantly surprised to find the express lane completely empty today! Because you called ahead using the automated system, your prescription is already bagged, paid for, and waiting for you.| | Points+=1 | hasMedications=true | errandsRun+=1"
+  "Head to the express pickup lane | -1 | blue | green | You are pleasantly surprised to find the express lane completely empty today! Because you called ahead using the automated system, your prescription is already bagged, paid for, and waiting for you.| | Points+=1 | hasMedications=true | errandsRun+=1"
 >>
 
 <<patient-next "Head back to the park" "Errands_Hub">>\
@@ -240,17 +213,15 @@ The store is surprisingly quiet today. Right inside the door, there is a fully c
 
 :: Pulmonary_Clinic [simulation activity] {"position":"2900,1200","size":"100,100"}
 <<silently>>
-<<if typeof Playroom !== "undefined" and Playroom.isHost()>>
 <<run SimApp.setVal("visitedClinic", true, true)>>
-<</if>>
 <</silently>>
 <h1>Pulmonary Clinic</h1>\
 <hr>\
 <<if $myRole == "patient">>\
-@@.holland;Mr. Holland@@, You arrive at the pulmonary rehab clinic
+@@.holland;Mr. Holland@@, you arrive at the pulmonary rehab clinic.
 
 <<patient-choices "Pulmonary Rehab Appointment" "no-eval"
-  "You get in line and wait for your turn | +2 | blue | green | The nurses at the pulmonary rehab clinic taught you some great energy conservation strategies. You already feel like your breathing easier | | Points+=2 | errandsRun+=1"
+  "Check in for your appointment | +2 | blue | green | The nurses at the pulmonary rehab clinic taught you some great energy conservation strategies. You already feel like you're breathing easier | | Points+=2 | errandsRun+=1"
 >>
 
 <<patient-next "Head back to the park" "Errands_Hub">>\
@@ -261,20 +232,8 @@ The store is surprisingly quiet today. Right inside the door, there is a fully c
 
 
 :: Toy_Store_Router [simulation activity] {"position":"3100,1200","size":"100,100"}
-<<silently>>
-<<if typeof Playroom !== "undefined" and Playroom.isHost()>>
-<<set _toyStoreRoll to random(1, 2)>>
-<<run SimApp.setVal("toyStoreRoll", _toyStoreRoll, true); SimApp.setVal("visitedToyStore", true, true)>>
-<<else>>
-<<run SimApp.syncFromPlayroom()>>
-<<set _toyStoreRoll to SimApp.getVal("toyStoreRoll")>>
-<</if>>
-<</silently>>
-<<if _toyStoreRoll is 1>>
-<<run SimApp.deferGoToSharedPassage("Toy_Store_1")>>
-<<else>>
-<<run SimApp.deferGoToSharedPassage("Toy_Store_2")>>
-<</if>>
+/* One shared roll (server-side on Cloudflare), then both players go to the same passage */
+<<run SimApp.routeByRoll("toyStoreRoll", ["Toy_Store_1", "Toy_Store_2"], "visitedToyStore")>>
 
 <!--[[Toy_Store_1]]-->
 <!--[[Toy_Store_2]]-->
@@ -284,7 +243,7 @@ The store is surprisingly quiet today. Right inside the door, there is a fully c
 <<if $myRole == "patient">>\
 @@.holland;Mr. Holland@@, you are at the toy store to pick up a gift for your granddaughter.
 
- The store is in total chaos with a weekend sale! To make matters worse, the specific doll she asked for is on the very bottom shelf at the back of the store.
+The store is in total chaos with a weekend sale! To make matters worse, the specific doll she asked for is on the very bottom shelf at the back of the store.
 
 <<patient-choices "Look for a doll" "no-eval"
   "Pick up the doll | -4 | blue | red | Bending down and navigating the chaotic store severely depletes your energy. But you're happy you got your granddaughter the doll she wanted. | | Points+=4 | bentOver+=1 | hasToy=true | errandsRun+=1"
@@ -311,40 +270,31 @@ Observe his pacing and breathing using your general observation controls.
 <<patient-next "Head back to the park" "Errands_Hub">>\
 
 <<else>>\
-@@.holland;Mr. Holland@@ is at the toy store to pick up a gift for his granddaughter. The store is in total chaos with a weekend sale! But a friendly clerk has offered to fetch the doll for @@.holland;Mr. Holland@@. while he waits comfortable in a chair up front.
+@@.holland;Mr. Holland@@ is at the toy store to pick up a gift for his granddaughter. The store is in total chaos with a weekend sale! But a friendly clerk has offered to fetch the doll for @@.holland;Mr. Holland@@ while he waits comfortably near the entrance.
 Observe his pacing and breathing using your general observation controls.
 <</if>>
 
 :: Whistle_Stop_In [simulation activity] {"position":"2700,1100","size":"100,100"}
 <<silently>>
-<<if typeof Playroom !== "undefined" and Playroom.isHost()>>
-<<set _errandsRun to SimApp.getVal("errandsRun")>>
-<<set _currentEnergy to SimApp.getVal("Energy")>>
-<<set _newEnergy to _currentEnergy - (_errandsRun * _errandsRun)>>
-<<if _newEnergy < 0>><<set _newEnergy to 0>><<elseif _newEnergy > 15>><<set _newEnergy to 15>><</if>>
-<<run SimApp.setVal("Energy", _newEnergy, true)>>
-<<run SimApp.updateHud()>>
-<<if _newEnergy <= 0>>
-<<run SimApp.scheduleGameOver("Game_Over_Energy")>>
-<</if>>
-<</if>>
+/* Energy -= errandsRun², once per visit (server-side on Cloudflare) */
+<<run SimApp.applyErrandsDrain()>>
 <</silently>>
 <h1>Heading back</h1>\
 <hr>\
 <<if $myRole == "patient">>\
 You wrap up your errands at Whistle Stop Park and prepare to head back to your apartment. 
 
-As you stand there, the cumulative physical toll of the day's activities suddenly hits you. Pushing through $errandsRun errands in one day has severely drained your reserves. 
+As you stand there, the cumulative physical toll of the day's activities suddenly hits you. <<if $errandsRun >= 2>>Pushing through $errandsRun errands in one day has severely drained your reserves.<</if>><<if $errandsRun == 1>>Even one errand has taken a toll on you.<</if>><<if $errandsRun < 1>>Even just the walk to the park has taken a toll on you.<</if>>
 
-<<patient-choices "Continue inside" "no-eval"
-  "You sit down to rest for a moment | +1 | blue | green | You're exhausted and need a break. You sit down and rest for a moment before continuing your journey. | | satAndRested+=1"
-  "You push through the exhaustion and continue on | -4 | blue | red | You're determined to finish your errands today. You push through the exhaustion and continue on. | | rushed+=1"
+<<patient-choices "Before you head home" "no-eval"
+  "You sit down to rest for a moment | +1 | blue | green | You're exhausted and need a break. You sit down and rest for a moment before heading home. | | satAndRested+=1"
+  "You push through the exhaustion and continue on | -4 | blue | red | You're determined to get home. You push through the exhaustion and keep walking. | | rushed+=1"
 >>
 
-<<patient-next "Continue inside" "Hallway_In">>
+<<patient-next "Walk back to your apartment" "Hallway_In">>
 
 <<else>>\
-@@.holland;Mr. Holland@@ is heading back from Whistle Stop Park after a full day of errands. Observe his pacing and breathing using your general observation controls as he prepares to continue inside.
+@@.holland;Mr. Holland@@ is heading home from Whistle Stop Park. Observe his pacing and breathing using your general observation controls as he heads home.
 <</if>>
 
 
@@ -352,16 +302,16 @@ As you stand there, the cumulative physical toll of the day's activities suddenl
 <h1>Walking back to your apartment</h1>\
 <hr>\
 <<if $myRole == "patient">>\
-@@.holland;Mr. Holland@@ Go ahead and walk back to your apartment for the evening.
+@@.holland;Mr. Holland@@, go ahead and walk back up to your apartment.
 
 <<patient-next "Time for Dinner" "Dinner">>\
 
 <<else>>\
-@@.holland;Mr. Holland@@ is back in his apartment building. Evaluate how he moves through the building on the way back to his apartment.
+@@.holland;Mr. Holland@@ is heading back up to his apartment. Evaluate how he moves through the building.
 
 <<dynamic-eval "Activity: Walking up stairs"
 "They took the elevator | -1 | 1 | elevator | green | Taking the elevator makes it a lot easier | green"
-"They took the stairs | -9 | 1 | stairs | red | You can't believe you made it up all those stairs, especially after a long day of running errands. It felt like climbing a mountain! | red"
+"They took the stairs | -9 | 1 | stairs | red | You can't believe you made it up all those stairs. It felt like climbing a mountain! | red"
 >>
 
 <</if>>
@@ -370,7 +320,7 @@ As you stand there, the cumulative physical toll of the day's activities suddenl
 <h1>Dinnertime</h1>\
 <hr>\
 <<if $myRole == "patient">>\
-You are back at your apartment for the evening. Now that you are home, your thoughts turn towards dinner. You could either order yourself a pizza or cook your own meal.
+Evening has come, and your thoughts turn towards dinner. You could either order yourself a pizza or cook your own meal.
 
 <<patient-choices "Dinner choices" "no-eval"
   "Order a pizza | -1 | blue | red | The food is a little greasy and heavy, and you feel a little guilty spending the extra money instead of cooking. But you feel tired after a long day. And you can't deny that pizza tastes great!| | Points-=3"
@@ -380,7 +330,7 @@ You are back at your apartment for the evening. Now that you are home, your thou
 <<patient-next "One last chore" "Laundry">>\
 
 <<else>>\
-@@.holland;Mr. Holland@@ is back in his apartment and it's time to eat dinner. He has to decide between ordering pizza or cooking his own meal.
+@@.holland;Mr. Holland@@ is in his apartment and it's time to eat dinner. He has to decide between ordering pizza or cooking his own meal.
 <</if>>
 
 :: Laundry [simulation activity] {"position":"2600,700","size":"100,100"}
@@ -390,7 +340,7 @@ You are back at your apartment for the evening. Now that you are home, your thou
 You make your way to the laundry area. The clothes are clean, but they are sitting in a heavy basket on the floor waiting to be folded. You are already feeling the exhaustion of the day settling deep into your chest.
 
 <<patient-choices "Laundry choices" "no-eval"
-  "Fold the clothes | -2 | green | red | You push through the fatigue to get the laundry folded. | Laundry_Fold"
+  "Fold the clothes | -2 | green | red | You decide to push through the fatigue and fold the laundry. | Laundry_Fold"
   "Leave the laundry for tomorrow | 0 | red | red | You decide to leave the laundry in the basket. It's frustrating to let chores pile up, but your body is begging for rest tonight. | Bedtime"
 >>
 
@@ -417,26 +367,26 @@ You push through the fatigue and begin folding the clothes in the basket.
 >>
 <</if>>
 
-:: Bedtime [simulation activity pausetimer nobr] {"position":"2600,700","size":"100,100"}
+:: Bedtime [simulation activity pausetimer recap nobr] {"position":"2600,700","size":"100,100"}
 <h1>Bedtime</h1>
 <hr>
 <<if $myRole == "patient">>
 You finally make it to your bedroom and sit on the edge of the mattress.
     <<if $Energy <= 3>>
-    You're utterly exhausted and feel like you can barely breath, but you made it
+    You're utterly exhausted and feel like you can barely breathe, but you made it.
     <<elseif $Energy <= 7>>
     You're a little winded, and glad to be done for the day.
     <<else>>
-    You're feeling good and looking forward to a good night's sleep
+    You're feeling good and looking forward to a good night's sleep.
     <</if>>
     <<if $hasMedications is true>>
-    You change into your pajamas and set your medications on the night stand for tomorrow morning
+    You change into your pajamas and set your medications on the night stand for tomorrow morning.
     <<else>>
-    As you change into your pajamas you worry about how you'll feel tomorrow without your maintenance medications
+    As you change into your pajamas you worry about how you'll feel tomorrow without your maintenance medications.
     <</if>>
     You crawl into bed and lay your head on the pillow and close your eyes. As you drift off to sleep you
     <<if $hasToy is true>>
-    think about how excited your grand daughter is going to be when you give her the doll you bought...
+    think about how excited your granddaughter is going to be when you give her the doll you bought...
     <<else>>
     feel guilty about not having a present for your granddaughter's birthday tomorrow...
     <</if>>
@@ -444,31 +394,32 @@ You finally make it to your bedroom and sit on the edge of the mattress.
 <<else>>
     @@.holland;Mr. Holland@@ is back in his bedroom. As he gets ready for bed he reflects on how his breathing is feeling and what he was able to get done today.
     <<if $Energy <= 3>>
-    He is utterly exhausted and feels like he can barely breath, but he made it
+    He is utterly exhausted and feels like he can barely breathe, but he made it.
     <<elseif $Energy <= 7>>
     He is a little winded, and glad to be done for the day.
     <<else>>
-    He is feeling good and looking forward to a good night's sleep
+    He is feeling good and looking forward to a good night's sleep.
     <</if>>
     <<if $hasMedications is true>>
-    He changes into his pajamas and sets his medications on the night stand for tomorrow morning
+    He changes into his pajamas and sets his medications on the night stand for tomorrow morning.
     <<else>>
-    As he changes into his pajamas he worries about how he'll feel tomorrow without his maintenance medications
+    As he changes into his pajamas he worries about how he'll feel tomorrow without his maintenance medications.
     <</if>>
     He crawls into bed and lays his head on the pillow and closes his eyes. As he drifts off to sleep he
     <<if $hasToy is true>>
-    thinks about how excited his grand daughter is going to be when he gives her the doll he bought...
+    thinks about how excited his granddaughter is going to be when he gives her the doll he bought...
     <<else>>
     feels guilty about not having a present for his granddaughter's birthday tomorrow...
     <</if>>
 <</if>>
 
-:: Final_Report [simulation briefing hidehud nobr] {"position":"2600,800","size":"100,100"}
+:: Final_Report [simulation briefing hidehud recap nobr] {"position":"2600,800","size":"100,100"}
 <<silently>>
 <<audio ":playing" stop>>
 <<run SimApp.prepareFinalReport()>>
-<<set _minutes to setup.playTime("minutes")>>
-<<set _seconds to setup.playTime("seconds")>>
+<<set _elapsed to SimApp.getElapsedParts()>>
+<<set _minutes to _elapsed.totalMinutes>>
+<<set _seconds to _elapsed.seconds>>
 <<if _seconds < 10>>
 <<set _secondsPad to "0" + _seconds>>
 <<else>>
@@ -477,6 +428,7 @@ You finally make it to your bedroom and sit on the edge of the mattress.
 <</silently>>
 <div style="text-align:center;">
 <h1>Simulation Complete</h1>
+<<if SimApp.getTeamName()>><h3>Team <<print SimApp.getTeamName()>></h3><</if>>
 <<if $win is true>>
 <h2>@@color:green;Mr. Holland made it through the day safely.@@</h2>
 <<else>>
@@ -509,7 +461,7 @@ You finally make it to your bedroom and sit on the edge of the mattress.
     <</if>>
 <<else>>
     <<if $Energy is 0>>
-    @@color:red;Mr. Holland is in the hospital:@@ You over exerted yourself today. Here is the breakdown of the physical demands of your day:
+    @@color:red;Mr. Holland is in the hospital:@@ You overexerted yourself today. Here is the breakdown of the physical demands of your day:
     <<elseif $Inhaler >= 7>>
     @@color:red;Mr. Holland is in the hospital:@@ You used your inhaler $Inhaler times. Using your inhaler too much increases your risk of tachycardic dysrhythmias due to albuterol's impact on beta-1 adrenergic receptors. Relying on the rescue inhaler instead of energy conservation techniques increases your risk for adverse medication reactions. Here is a breakdown of the physical demands of your day:
     <<else>>
@@ -532,7 +484,7 @@ You finally make it to your bedroom and sit on the edge of the mattress.
 <<if $wildRoll is 1>>
 <h4 class="wild-card-event">Event: Forgot Inhaler</h4>
 <br>
-Realizing you forgot your rescue inhaler could have had devastating consequences. You either had to expend more energy to go back upstairs to your apartment or risk going all day without it. Going without your inhaler leaves you reliant on pacing yourself and using good breathing techniques to manage your energy, but you are only one asthma trigger away from needing an ambulance!
+Realizing you forgot your rescue inhaler could have had devastating consequences. You either had to expend more energy to go back upstairs to your apartment or risk going all day without it. Going without your inhaler leaves you reliant on pacing yourself and using good breathing techniques to manage your energy, but you are only one trigger away from needing an ambulance!
 <<elseif $wildRoll is 2>>
 <h4 class="wild-card-event">Event: Caved to a Craving</h4>
 <br>
@@ -540,7 +492,7 @@ Nicotine addiction is a powerful hurdle. Smoking that cigarette caused immediate
 <<elseif $wildRoll is 3>>
 <h4 class="wild-card-event">Event: Wildfire Smoke</h4>
 <br>
-The heavy particulate matter from the wildfire smoke made every breath a struggle today. Navigating severe environmental hazards requires strict energy conservation and recognizing when it is too dangerous to push forward.
+The heavy particulate matter from the wildfire smoke made the air dangerous to breathe today. Navigating severe environmental hazards requires protecting your airway, strict energy conservation, and recognizing when it is too dangerous to push forward.
 <<elseif $wildRoll is 4>>
 <h4 class="wild-card-event">Event: Freezing Cold Air</h4>
 <br>
@@ -571,7 +523,7 @@ The blooming trees filled the air with allergens, triggering airway inflammation
 <</silently>>\
 <h1>Game Over</h1>\
 <hr>\
-You are very short of breath and can barely breath. You collapse on the ground and someone nearby calls an ambulance to bring you to the hospital.
+You are very short of breath and can barely breathe. You collapse on the ground and someone nearby calls an ambulance to bring you to the hospital.
 <img src="Media/images/ambulance.png" alt="Ambulance with lights and sirens in a tunnel" class="img-center">
 <hr>
 <<link "View debrief">><<run SimApp.prepareFinalReport(false); SimApp.goToSharedPassage("Final_Report")>><</link>>
@@ -583,7 +535,7 @@ You are very short of breath and can barely breath. You collapse on the ground a
 <</silently>>\
 <h1>Game Over</h1>\
 <hr>\
-Your heart is racing and feels like it is about to jump out of your chest. It hurts to breath and move. You curl up on the ground and a bystander calls an ambulance.
+Your heart is racing and feels like it is about to jump out of your chest. It hurts to breathe and move. You curl up on the ground and a bystander calls an ambulance.
 <img src="Media/images/ambulance.png" alt="Ambulance with lights and sirens in a tunnel" class="img-center">
 <hr>
 <<link "View debrief">><<run SimApp.prepareFinalReport(false); SimApp.goToSharedPassage("Final_Report")>><</link>>
@@ -596,11 +548,11 @@ Your heart is racing and feels like it is about to jump out of your chest. It hu
 <h1>Good Morning</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-Your alarm wakes you and its time to get up. You get the strangest feeling that this was the same song you woke up to yesterday morning...
+Your alarm wakes you and it's time to get up. You get the strangest feeling that this was the same song you woke up to yesterday morning...
 
 Before you spend too much time thinking about the radio playlist you remember you've got a lot of things to do today. You hope that you will be able to get it all done.
 <hr>\
-@@.holland;Mr.Holland@@ it's time to start the day. Go ahead and get out of bed now.
+@@.holland;Mr. Holland@@ it's time to start the day. Go ahead and get out of bed now.
     
 Once you are fully standing and ready to start your day, click below to head to the bathroom to get cleaned up.
 
@@ -608,7 +560,7 @@ Once you are fully standing and ready to start your day, click below to head to 
 <hr>
     <<patient-next "Head to the Bathroom (Shower)" "Showering">>\
 <<else>>\
-@@.holland;Mr. Holland's@@ alarm goes off, its time for him to wake up. As he listens to the song playing over the radio he gets the strangest feeling of deja-vu...
+@@.holland;Mr. Holland's@@ alarm goes off, it's time for him to wake up. As he listens to the song playing over the radio he gets the strangest feeling of deja-vu...
 <hr>\
 Tell @@.holland;Mr. Holland@@ to physically get out of bed. Observe their actions carefully as they do this.
     
@@ -627,7 +579,7 @@ Once he is fully standing, click the appropriate evaluation below.
 <<if State.variables.myRole == "patient">>\
 <h1>Walking back to get $yourItem</h1>\
 <hr>\
-@@.holland;Mr. Holland@@ Go ahead and walk back to your apartment to pick up $yourItem. 
+@@.holland;Mr. Holland@@, go ahead and walk back to your apartment to pick up $yourItem. 
 <hr>
 <<patient-next "Back in your apartment" "Item_Pickup">>\
 
@@ -637,7 +589,7 @@ Once he is fully standing, click the appropriate evaluation below.
 @@.holland;Mr. Holland@@ needs to walk back inside to retrieve $hisItem. Evaluate how he moves through the building on the way back to his apartment.
 <hr>
 <<dynamic-eval "Activity: Walking up stairs"
-" They took the elevator | -1 | 1 | elevator | green | Taking the elevator make is a lot easier | green"
+" They took the elevator | -1 | 1 | elevator | green | Taking the elevator makes it a lot easier | green"
 "They took the stairs | -7 | 1 | stairs | red | You can't believe you made it up all those stairs. It felt like climbing a mountain! | red"
 >>
 
@@ -650,7 +602,7 @@ Once he is fully standing, click the appropriate evaluation below.
 <h1>Walking out to the lobby</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-Now that you are done with breakfast it's time to start your day. Go ahead and start walking down stairs to the lobby.
+Now that you are done with breakfast it's time to start your day. Go ahead and start walking downstairs to the lobby.
 <hr>
 <<patient-next "Time to head outside" "Wildcard_Router">>
 
@@ -671,12 +623,12 @@ Now that @@.holland;Mr. Holland@@ is done with his breakfast he is ready to star
 <h1>Walking back downstairs</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-You have $yourItem and head back down stairs. Time to start those errands
+You have $yourItem and head back downstairs. Time to start those errands
 <hr>
 <<patient-next "Time to head outside" "Whistle_Stop_Out">>
 
 <<else>>\
-Now that @@.holland;Mr. Holland@@ has $hisItem its time to head back downstairs again. Use the general observer controls to record if he <strong>sits in a chair to rest</strong> along the way or if he <strong>rushes</strong>. 
+Now that @@.holland;Mr. Holland@@ has $hisItem it's time to head back downstairs again. Use the general observer controls to record if he <strong>sits in a chair to rest</strong> along the way or if he <strong>rushes</strong>. 
 <hr>
 <<dynamic-eval "Activity: Walking down stairs"
 " They took the elevator | -1 | 1 | elevator | green | You're glad your apartment has an elevator | green"
@@ -692,12 +644,12 @@ Now that @@.holland;Mr. Holland@@ has $hisItem its time to head back downstairs 
 <h1>Back Inside</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-You're back at your apartment and grab $yourItem. It's taxing having to retrace your steps, but your glad you did. It could have been dangerous going outside without $yourItem.
+You're back at your apartment and grab $yourItem. It's taxing having to retrace your steps, but you're glad you did. It could have been dangerous going outside without $yourItem.
 
 <<patient-next "Head back downstairs again" "Hallway_Out_Again">>
 
 <<else>>
-@@.holland;Mr. Holland@@ is back in his apartment to pick up $hisItem. It takes a lot of energy to retrace your steps. If your were in @@.holland;Mr. Holland's@@ role would you have gone back for $yourItem or kept going without it?
+@@.holland;Mr. Holland@@ is back in his apartment to pick up $hisItem. It takes a lot of energy to retrace his steps. If you were in @@.holland;Mr. Holland's@@ role would you have gone back for $yourItem or kept going without it?
 
 <</if>>
 
@@ -711,7 +663,7 @@ You're back at your apartment and grab $yourItem. It's taxing having to retrace 
 Your skin has been feeling dry lately. Perhaps some lotion would help your skin feel better. What would you like to do?
 <hr>
 <<patient-choices "Lotion choices"
-	"The lavendar scented lotion from your daughter | -2 | blue | red | It smells lovely, but strong, you immediately start coughing"
+	"The lavender scented lotion from your daughter | -2 | blue | red | It smells lovely, but strong, you immediately start coughing"
     "The generic unscented lotion | 0 | blue | green | It's nothing special, but it doesn't trigger your COPD symptoms"
 	"Skip the lotion, it might trigger your COPD | 0 | blue | red | You're concerned about how your skin is going to feel today without lotion, but you have to prioritize your breathing"
 >>\
@@ -732,7 +684,8 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
 
 :: PassageFooter {"position":"500,600","size":"100,100"}
 <<nobr>>
-<<if tags().includes("simulation") and State.variables.myRole == "observer">>
+/* "recap" passages (e.g. Bedtime) are end-of-day summaries: no observer buttons */
+<<if tags().includes("simulation") and State.variables.myRole == "observer" and not tags().includes("recap")>>
     <div id="observer-footer">
         
         <<if tags().includes("activity")>>
@@ -834,15 +787,17 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
     <</if>>
 
     <<silently>>
-        /* Host broadcasts elapsed time; SimApp sync loop handles state + tether */
+        /* Cloudflare: the room clock lives on the server. Playroom: host broadcasts elapsed time. */
         <<repeat 1s>>
-            <<if window.SimApp && window.SimApp.isPlayroomLoaded>>
-                <<if Playroom.isHost()>>
+            <<if window.SimApp && SimApp.isCloudNet()>>
+                <<run $(".time-display").text(SimApp.formatElapsed())>>
+            <<elseif window.SimApp && window.SimApp.isPlayroomLoaded>>
+                <<if Net.isHost()>>
                     <<replace '#hidden-time'>><<playtime>><</replace>>
-                    <<run Playroom.setState("sharedTime", $("#hidden-time").text(), true)>>
+                    <<run Net.setState("sharedTime", $("#hidden-time").text(), true)>>
                     <<run $(".time-display").text($("#hidden-time").text())>>
                 <<else>>
-                    <<run $(".time-display").text(Playroom.getState("sharedTime") || "00:00")>>
+                    <<run $(".time-display").text(Net.getState("sharedTime") || "00:00")>>
                 <</if>>
             <<else>>
                 <<replace '.time-display'>><<playtime>><</replace>>
@@ -864,10 +819,12 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
 :: Role_Selection [nobr]{"position":"1050,300","size":"100,100"}
 <h1>Choose Your Role</h1>
 <hr>
-Please coordinate with your partner. One of you must be the Mr. Holland, and the other must be the Observer.
+Please coordinate with your partner. One of you must be Mr. Holland, and the other must be the Observer.
 
 <div id="host-invite-slot"></div>
 
+<div id="team-name-slot" class="team-name-banner"></div>
+<br>
 <span id="wrap-patient">
     <<button "I will be <span class='holland'>Mr. Holland</span>">>
         <<run SimApp.setRole("patient")>>
@@ -883,6 +840,7 @@ Please coordinate with your partner. One of you must be the Mr. Holland, and the
 <<script>>
     if (window.SimApp) {
         SimApp.mountHostInviteButton("host-invite-slot", "Show Invite QR Code");
+        SimApp.mountTeamName("team-name-slot");
         SimApp.refreshRoleButtons();
         if (window.roleRefreshInterval) {
             clearInterval(window.roleRefreshInterval);
@@ -930,7 +888,7 @@ After that, you will need to assess how he performs the activity and how his bre
 <hr>
 
 <<dynamic-eval "Activity: Showering"
-  "He showered sitting down | 0 | 1 | satAndRested | green | You're glad your daughter convinced you to buy the shower chair, it certainely makes things easier in the morning | green"
+  "He showered sitting down | 0 | 1 | satAndRested | green | You're glad your daughter convinced you to buy the shower chair, it certainly makes things easier in the morning | green"
   "He showered standing up | -2 | 1 | standing | red | The day has barely begun and you're already starting to feel a little winded | red"
 >>\
 <</if>>
@@ -965,7 +923,7 @@ This is what your user interface will look like when you start the game. At the 
 <ul>
 <li>The time elapsed in the simulation. //Don't worry about the clock ticking right now it will reset after these tutorial pages when we start the actual simulation//</li>
 <li>@@.holland;Mr. Holland's@@ current energy</li>
-<li>If @@.holland;Mr. Holland@@ has is inhaler</li>
+<li>If @@.holland;Mr. Holland@@ has his inhaler</li>
 <li>How many points he has earned</li>
 </ul>
 
@@ -990,6 +948,7 @@ Once you feel comfortable with the controls and @@.holland;Mr. Holland@@ is comf
 
 
 :: Start [nobr]{"position":"800,400","size":"200,200"}
+<<run if (window.SimApp) { SimApp.revealConnectButton(); }>>
 <div class="center-heading1">@@.holland;Mr Holland's@@ Grand Day Out</div>
 <div class="center-heading3">Version <<print Story.title.replace(/^COPD simulation\s+/i, "")>></div>
 <hr>
@@ -1005,10 +964,10 @@ Welcome to this live augmented reality nursing simulation. You will need a partn
 Before we begin please review the briefing below.
 <hr>
 <h2>Briefing</h2>
-<p>Today you and your partner will be living a day in the life of @@.holland;Mr. Bernard Holland@@, a 75-year-old retired carpet layer who is living with COPD. He is 60-pack-year smoker who is currently trying to quit. He does not wear home oxygen, though he does often have to stop to catch his breath after walking for more than a few minutes on level ground.</p>
+<p>Today you and your partner will be living a day in the life of @@.holland;Mr. Bernard Holland@@, a 75-year-old retired carpet layer who is living with COPD. He is a 60-pack-year smoker who is currently trying to quit. He does not wear home oxygen, though he does often have to stop to catch his breath after walking for more than a few minutes on level ground.</p>
 
 <h3>Home Medications</h3>
-Mr. Holland is prescribed multiple medications to help him manage his COPD including twice daily maintenance inhalers along with on oral maintenance bronchodilator. In addition to his maintenance medications has also been prescribed a <strong>rescue inhaler</strong> to use when he is experiencing a sudden increase in his symptoms.
+Mr. Holland is prescribed multiple medications to help him manage his COPD including twice daily maintenance inhalers along with an oral maintenance bronchodilator. In addition to his maintenance medications he has also been prescribed a <strong>rescue inhaler</strong> to use when he is experiencing a sudden increase in his symptoms.
 <h3>Simulation Goals</h3>   
 <ul>
 <li>Your goal  is to accomplish as many tasks during your day as possible. This is a <strong>timed simulation</strong>. You and your partner will be competing against your classmates!</li>
@@ -1018,30 +977,30 @@ Mr. Holland is prescribed multiple medications to help him manage his COPD inclu
 
 <h3>Roles</h3>
 <ul>
-<li>@@.holland;Mr. Holand@@: In this role you will be making choices about what activities to complete and how to perform those activities to conserve your energy. </li>
-<li>@@.observer;The Observer@@:  In this role you will be evaluating  @@.holland;Mr. Holand's@@ performance throughout his daily routine. You will be adding and deducting energy based on how your partner acts out the activities.</li>
+<li>@@.holland;Mr. Holland@@: In this role you will be making choices about what activities to complete and how to perform those activities to conserve your energy. </li>
+<li>@@.observer;The Observer@@:  In this role you will be evaluating  @@.holland;Mr. Holland's@@ performance throughout his daily routine. You will be adding and deducting energy based on how your partner acts out the activities.</li>
 </ul>
 
 <h3>Augmented Reality Approach</h3>
 <ul>
-<li>To give you an understanding of what it is like to live with a chronic illness, the student playing the role of  @@.holland;Mr. Holand@@ will need to act out many of the activities as if you are actually doing them. For example putting on your shoes will require actually putting on your shoes, while folding laundry will require you to fold a pile of laundry.</li>
-<li>@@.observer;The Observer@@ will assign energy additions or substractions based on @@.holland;Mr. Holand's@@ actual physical performance of that task.</li>
-<li>Once you connect to the multiplayer lobby the student playing the role of @@.holland;Mr. Holand@@ wil be controlling the pace of the game and moving from activity station to activity station. The game will tell you where to go next or it may give you options to chose from.</li>
-<li>Meanwhile the @@.observer;The Observer@@ be provided specific scoring buttons for each task.</li>
+<li>To give you an understanding of what it is like to live with a chronic illness, the student playing the role of  @@.holland;Mr. Holland@@ will need to act out many of the activities as if you are actually doing them. For example putting on your shoes will require actually putting on your shoes, while folding laundry will require you to fold a pile of laundry.</li>
+<li>@@.observer;The Observer@@ will assign energy additions or subtractions based on @@.holland;Mr. Holland's@@ actual physical performance of that task.</li>
+<li>Once you connect to the multiplayer lobby the student playing the role of @@.holland;Mr. Holland@@ will be controlling the pace of the game and moving from activity station to activity station. The game will tell you where to go next or it may give you options to choose from.</li>
+<li>Meanwhile, @@.observer;the Observer@@ will be provided specific scoring buttons for each task.</li>
 </ul>
 
 <h3>Energy Management</h3>
 <ul>
-<li>@@.holland;Mr. Holand@@ will start with @@color:green;10 energy@@. and can have a maximum of @@color:green;15 energy@@.</li>
-<li>Each task you perform will cost energy, with certain tasksm or choices costing more than others. </li>
-<li>When you use energy conservation techniques or use your rescue inhaler @@.observer;The Observer@@ will be able to @@color:green; add energy@@. Conversly not using good breathing technique can result in @@color:red; subtracting energy@@</li>
-<li>If @@.holland;Mr. Holand@@ reaches @@color:red; 0 energy@@, its game over and you will have to return to <strong>room 8220 for debriefing.</strong></li>
+<li>@@.holland;Mr. Holland@@ will start with @@color:green;10 energy@@ and can have a maximum of @@color:green;15 energy@@.</li>
+<li>Each task you perform will cost energy, with certain tasks or choices costing more than others. </li>
+<li>When you use energy conservation techniques or use your rescue inhaler @@.observer;The Observer@@ will be able to @@color:green; add energy@@. Conversely not using good breathing technique can result in @@color:red; subtracting energy@@</li>
+<li>If @@.holland;Mr. Holland@@ reaches @@color:red; 0 energy@@, it's game over and you will have to return to <strong>room 8220 for debriefing.</strong></li>
 </ul>
 
 <h3>Today's Itinerary</h3>
-The game will start with  @@.holland;Mr. Holand@@ getting out of bed in the morning, which will start the clock for the simulation. After that, you’ll need to shower, brush your teeth, get dressed, along with other activities of daily living.
+The game will start with  @@.holland;Mr. Holland@@ getting out of bed in the morning, which will start the clock for the simulation. After that, you’ll need to shower, brush your teeth, get dressed, along with other activities of daily living.
 <br>
-It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot of errands on his to-do list including:
+It’s coming up on the end of the month and @@.holland;Mr. Holland@@ has a lot of errands on his to-do list including:
 <ul>
 <li>Go to the grocery store.</li>
 <li>Pick up his prescriptions <strong>(He is almost out of his maintenance medications, fortunately he still has an extra rescue inhaler!)</strong>.</li>
@@ -1052,10 +1011,9 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 <h2>To start the game</h2>
 <ul>
 <li>Have one player click the <strong><u>Connect to Multiplayer</u></strong> button below. This will connect you to the game lobby.</li>
-<li>Once in the game lobby click the <strong><u>Invite</u></strong> button. This will give you a QR code for your partner to pair up and form a team.. If you leave the lobby before your partner joins, the host can tap <strong><u>Show Invite QR Code</u></strong> on the role selection screen to display it again.</li>
+<li>Once in the game lobby click the <strong><u>Invite</u></strong> button. This will give you a QR code for your partner to pair up and form a team. If you leave the lobby before your partner joins, the host can tap <strong><u>Show Invite QR Code</u></strong> on the role selection screen to display it again.</li>
 <li>Once you've both joined the 1st player can then click the <strong><u>Launch</u></strong> button to enter the briefing area to learn the controls.</li>
 </ul>
-<i>Don't bother spending time customizing your avatar or player names. These won't be used in the game</i>
 
 <!--[[Role_Selection]]-->
 <!--[[Waiting_Room]]-->
@@ -1241,10 +1199,10 @@ Now that you are done showering it is time to brush your teeth. Go ahead and wal
 
 <<else>>\
 
-Now that @@.holland;Mr. Holland@@ is done showering he needs to brush his teeth. Go ahead to assess what technique he uses as he brushes his teeth,
+Now that @@.holland;Mr. Holland@@ is done showering he needs to brush his teeth. Go ahead to assess what technique he uses as he brushes his teeth.
 <hr>
 <<dynamic-eval "Activity: Brushing Teeth" 
-"He brushed sitting down | -1 | +1 | satAndRested | green | sitting down for this task helped conserve your energy | green" 
+"He brushed sitting down | -1 | +1 | satAndRested | green | Sitting down for this task helped conserve your energy | green" 
 "He brushed standing up | -2 | +1 | standing | red | Even small activities of daily living take their toll on your energy | red" >>\
 
 <</if>>
@@ -1268,7 +1226,7 @@ Go ahead and do them now, then tap the button below when you are finished.
 Watch @@.holland;Mr. Holland@@ perform the practice activity. Once they finish, record your assessment below.
 <hr>
 <<dynamic-eval "Practice: Jumping Jacks"
-  "They did 5 jumping jacks | -9 | 0 | none | red | What were you thinking?! You have advanced COPD! You can't exercise like you used to in High School!"
+  "They did 5 jumping jacks | -9 | 0 | none | red | What were you thinking?! You have advanced COPD! You can't exercise like you used to in high school!"
 >>\
 <</if>>
 <!--[[Tutorial_Rest]]-->
@@ -1292,7 +1250,7 @@ Once you are seated and breathing, tap the button below.
 <<dynamic-eval "Practice: Rest & Recovery"
   "Sat and did pursed lip breathing | +4 | 0 | pursedLip | green |That feels a little better. You are still winded, but not as bad. | green| "
 >>\
-Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will start the simulation from their screen.
+Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will start the simulation from his screen.
 <</if>>
 <!--[[Good_Morning_Mr._Holland]]-->
 
@@ -1300,8 +1258,10 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will sta
 :: Waiting_Room {"position":"1050,600","size":"100,100"}
 <h1>Waiting for Partner...</h1>\
 <hr>\
+<div id="team-name-slot-wait" class="team-name-banner"></div>\
+<<script>>setTimeout(function () { if (window.SimApp) { SimApp.mountTeamName("team-name-slot-wait"); } }, 0);<</script>>\
 <<if State.variables.myRole == "patient">>
-    You are the @@.holland;Mr. Holland@@. Please wait for your @@.observer;The Observer@@ to be ready.
+    You are @@.holland;Mr. Holland@@. Please wait for your @@.observer;Observer@@ to be ready.
 <<else>>
     You are @@.observer;The Observer@@. Please wait for your @@.holland;Mr. Holland@@ to be ready.
 <</if>>
@@ -1317,7 +1277,7 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will sta
         <<script>>
             clearInterval(window.waitingInterval);
             if (window.SimApp) {
-                Playroom.myPlayer().setState("role", "", true);
+                Net.myPlayer().setState("role", "", true);
                 SimApp.clearLobbyRole(SimApp.myRole);
                 SimApp.myRole = "";
             }
@@ -1357,7 +1317,7 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will sta
 <<if $myRole == "patient">>\
 You start walking toward Whistle Stop Park to begin your errands for the day.
 <hr>
-<<patient-next "Continue your errands" "Errands_Hub">>\
+<<patient-next "Arrive at Whistle Stop Park" "Errands_Hub">>\
 
 <<else>>\
 
@@ -1403,13 +1363,13 @@ What do you want to do?
 As you step outside, a strong craving for a cigarette hits you out of nowhere.
 <hr>
 <<patient-choices "Cigarette craving?" "no-eval"
-  "You know you shouldn't, but the urge is overpowering | -5 | red | red | You light up a cigarette and take a couple long slow drags. It doesn't take long for you to start coughing and wheezing. You know you should quit, but sometimes its really hard."
+  "You know you shouldn't, but the urge is overpowering | -5 | red | red | You light up a cigarette and take a couple long slow drags. It doesn't take long for you to start coughing and wheezing. You know you should quit, but sometimes it's really hard."
 >>\
 
 <<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>
 
 <<else>>\
-@@.holland;Mr. Holland@@ suddenly gets an over powering craving for cigarette. He can't resist, and lights one up. Addiction can be hard to overcome even when you know it is hurting you.
+@@.holland;Mr. Holland@@ suddenly gets an overpowering craving for a cigarette. He can't resist, and lights one up. Addiction can be hard to overcome even when you know it is hurting you.
 <hr>
 <</if>>
 
@@ -1426,11 +1386,11 @@ What do you want to do?
 <hr>
 <<patient-choices "What do you want to do?" "no-eval"
   "Push through the smoke and keep going| -7 | blue | red | Your chest burns with every breath, but you force yourself to keep walking"
-  "Go back inside and grab an N95 mask | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back up stairs to your apartment to grab a mask. | Hallway_In_Repeat"
+  "Go back inside and grab an N95 mask | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back upstairs to your apartment to grab a mask. | Hallway_In_Repeat"
 "It's too dangerous to be outside with all this smoke. Skip your errands and stay inside | 0 | blue | yellow | You're sad you won't have a present for your granddaughter tomorrow, and worried about what you'll do without your medications. But wildfire smoke could be deadly to you. | Hallway_In"
 >>\
 
-<<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>\
+<<patient-next "Continue" "Whistle_Stop_Out">>\
 
 <<else>>\
 @@.holland;Mr. Holland@@ steps outside and immediately starts coughing. There is a wildfire somewhere and thick smoke has settled over the town. Watch what he decides.
@@ -1447,20 +1407,20 @@ What do you want to do?
 <h1>Polar Vortex!</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-You step outside and are hit with a blast of freezing cold air. You immediately feel like it is harder to breath.
+You step outside and are hit with a blast of freezing cold air. You immediately feel like it is harder to breathe.
 
 What do you want to do?
 <hr>
 <<patient-choices "What do you want to do?" "no-eval"
   "Back in my day I used to walk 5 miles in the snow to go to school! I can deal with this!| -6 | blue | red | As you start walking you remember that when you were younger your lungs were also healthier. You sigh as you remember being able to sprint across the playground for what seemed like hours. Now you keep walking and feel your lungs freezing with every breath"
-  "Go back inside and grab a scarf | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back up stairs to your apartment to grab a scarf. | Hallway_In_Repeat"
-"Its too much work to turn back now. Cover your mouth and nose with your hands | -4 | blue | yellow | Covering your mouth and noise to warm up the air before you breath helps some, but it’s still a challenge to breath"
+  "Go back inside and grab a scarf | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back upstairs to your apartment to grab a scarf. | Hallway_In_Repeat"
+"It's too much work to turn back now. Cover your mouth and nose with your hands | -4 | blue | yellow | Covering your mouth and nose to warm up the air before you breathe helps some, but it’s still a challenge to breathe"
 >>\
 
-<<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>\
+<<patient-next "Continue" "Whistle_Stop_Out">>\
 
 <<else>>\
-@@.holland;Mr. Holland@@ steps outside and is hit with a blast of fridgid air. A polar vortex is causing record breaking low temperatures in the area.
+@@.holland;Mr. Holland@@ steps outside and is hit with a blast of frigid air. A polar vortex is causing record-breaking low temperatures in the area.
 //There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
 <hr>
 <</if>>
@@ -1482,7 +1442,7 @@ You step outside and take a breath. It is a completely beautiful, mild, and sunn
 <<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>\
 
 <<else>>
-It's a beautiful day outside. The weather is perfect, and the skies are clear. @@.holland;Mr. Holland@@ takes a deep breath in and smiles before continuing on with his errands.
+It's a beautiful day outside. The weather is perfect, and the skies are clear. @@.holland;Mr. Holland@@ takes a deep breath in and smiles before heading out on his errands.
 //There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
 <hr>
 <</if>>
@@ -1500,11 +1460,11 @@ What do you want to do?
 <hr>
 <<patient-choices "What do you want to do?" "no-eval"
   "Keep going and try and ignore the pollen| -7 | blue | red | Your chest tightens and you find yourself gasping as you walk outside into the clouds of yellow pollen"
-  "Go back inside and grab an N95 mask | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back up stairs to your apartment to grab a mask. | Hallway_In_Repeat"
-"Going outside when there is this much pollen in the air is too much. You decide to stay home for the day | 0 | blue | yellow | You're sad you won't have a present for your granddaughter tomorrow, and worried about what you'll do without your medications. But wildfire smoke could be deadly to you. | Hallway_In"
+  "Go back inside and grab an N95 mask | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back upstairs to your apartment to grab a mask. | Hallway_In_Repeat"
+"Going outside when there is this much pollen in the air is too much. You decide to stay home for the day | 0 | blue | yellow | You're sad you won't have a present for your granddaughter tomorrow, and worried about what you'll do without your medications. But with this much pollen in the air, going out could land you in the hospital. | Hallway_In"
 >>\
 
-<<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>\
+<<patient-next "Continue" "Whistle_Stop_Out">>\
 
 <<else>>\
 @@.holland;Mr. Holland@@ steps outside and immediately starts coughing. It seems like every tree, bush and flower is in bloom right now. A dusting of yellow pollen is visible on every surface and gusts of wind stir more pollen into the air.
@@ -1518,28 +1478,15 @@ What do you want to do?
 
 
 :: Wildcard_Router [simulation] {"position":"1100,1100","size":"100,100"}
-<<silently>>
-<<if typeof Playroom !== "undefined" and Playroom.isHost()>>
-<<set _wildRoll to random(1, 6)>>
-<<run SimApp.setVal("wildRoll", _wildRoll, true); SimApp.setVal("wildCarded", true, true)>>
-<<else>>
-<<run SimApp.syncFromPlayroom()>>
-<<set _wildRoll to SimApp.getVal("wildRoll")>>
-<</if>>
-<</silently>>
-<<if _wildRoll is 1>>
-<<run SimApp.setVal("yourItem", "your inhaler", true); SimApp.setVal("hisItem", "his inhaler", true); SimApp.deferGoToSharedPassage("Wildcard1")>>
-<<elseif _wildRoll is 2>>
-<<run SimApp.deferGoToSharedPassage("Wildcard2")>>
-<<elseif _wildRoll is 3>>
-<<run SimApp.setVal("yourItem", "a mask", true); SimApp.setVal("hisItem", "a mask", true); SimApp.deferGoToSharedPassage("Wildcard3")>>
-<<elseif _wildRoll is 4>>
-<<run SimApp.setVal("yourItem", "a scarf", true); SimApp.setVal("hisItem", "a scarf", true); SimApp.deferGoToSharedPassage("Wildcard4")>>
-<<elseif _wildRoll is 5>>
-<<run SimApp.deferGoToSharedPassage("Wildcard5")>>
-<<else>>
-<<run SimApp.deferGoToSharedPassage("Wildcard6")>>
-<</if>>
+/* One shared 6-sided roll (server-side on Cloudflare), then both players go to the same wild card */
+<<run SimApp.routeByRoll("wildRoll", [
+    { go: "Wildcard1", set: { yourItem: "your inhaler", hisItem: "his inhaler" } },
+    "Wildcard2",
+    { go: "Wildcard3", set: { yourItem: "a mask", hisItem: "a mask" } },
+    { go: "Wildcard4", set: { yourItem: "a scarf", hisItem: "a scarf" } },
+    "Wildcard5",
+    { go: "Wildcard6", set: { yourItem: "a mask", hisItem: "a mask" } }
+], "wildCarded")>>
 
 <!--[[Wildcard1]]-->
 <!--[[Wildcard2]]-->
@@ -1551,9 +1498,10 @@ What do you want to do?
 
 :: StoryScript [script]
 /* ============================================================
-   STORYSCRIPT — COPD Simulation runtime (v2.0.14)
+   STORYSCRIPT — COPD Simulation runtime (v2.2)
    ============================================================
    1. Playtime (Chapel macro + <<playtime>>)
+   1b. Net adapter — Playroom or Cloudflare backend behind one API
    2. SimApp — multiplayer simulation framework
       2a. Config, state keys, and variable access
       2b. Playroom connection, lobby, and role routing
@@ -1568,7 +1516,7 @@ What do you want to do?
       3b. <<dynamic-eval>>
       3c. <<patient-choices>>
       3d. <<patient-next>>
-   4. Bootstrap — viewport fix, Playroom CDN import
+   4. Bootstrap — viewport fix, multiplayer backend load
    ============================================================ */
 
 /* --- 1. Playtime (Chapel macro + <<playtime>>) --- */
@@ -1707,6 +1655,604 @@ What do you want to do?
     });
 }());
 
+/* --- 1b. Net adapter — one multiplayer API for SimApp, two backends --- */
+/*
+ * SimApp and passages talk to `window.Net`, never to a vendor SDK directly. Net has the
+ * Playroom-style surface the game already used (insertCoin, getState/setState, myPlayer,
+ * isHost, getRoomCode, onPlayerJoin, onDisconnect) plus a few extras (backend, inviteUrl,
+ * isRejoin). window.Net stays undefined until a backend is ready, which SimApp treats as
+ * "multiplayer still loading".
+ *
+ *   playroom — createPlayroomNet(window.Playroom): passthrough to Playroom Kit (default)
+ *   cf       — createCloudNet(): WebSocket to our Cloudflare pair room (/ws/room?s=&p=)
+ *
+ * Pick with ?net=cf in the URL, or setup.NET_BACKEND (see section 4).
+ */
+window.createPlayroomNet = function (P) {
+    return {
+        backend: "playroom",
+        insertCoin: function () { return P.insertCoin.apply(P, arguments); },
+        myPlayer: function () { return P.myPlayer(); },
+        isHost: function () { return P.isHost(); },
+        getState: function (key) { return P.getState(key); },
+        setState: function (key, val, reliable) { return P.setState(key, val, reliable); },
+        getRoomCode: function () { return P.getRoomCode(); },
+        onPlayerJoin: function (cb) { return P.onPlayerJoin(cb); },
+        onDisconnect: function (cb) {
+            if (typeof P.onDisconnect === "function") {
+                return P.onDisconnect(cb);
+            }
+        },
+        inviteUrl: function () { return null; },
+        isRejoin: function () { return null; }
+    };
+};
+
+/* CLOUDNET:BEGIN — extracted by tests/helpers (keep self-contained: no SugarCube globals) */
+window.createCloudNet = function (opts) {
+    opts = opts || {};
+    var WS = opts.WebSocket || window.WebSocket;
+    var loc = opts.location || window.location;
+    var hist = opts.history || window.history;
+    var setT = opts.setTimeout || function (fn, ms) { return setTimeout(fn, ms); };
+    var clearT = opts.clearTimeout || function (id) { clearTimeout(id); };
+    var nowFn = opts.now || function () { return Date.now(); };
+    var defer = opts.queueMicrotask || function (fn) { Promise.resolve().then(fn); };
+    var CONNECT_TIMEOUT_MS = opts.connectTimeoutMs || 12000;
+    var KEEPALIVE_MS = opts.keepaliveMs || 25000;
+    var storage = opts.storage;
+    if (storage === undefined) {
+        try { storage = window.localStorage; } catch (eStore) { storage = null; }
+    }
+
+    var net = {
+        backend: "cf",
+        session: "",
+        pair: "",
+        token: null,
+        you: null,          /* { pid, role, name } from the server */
+        snapshot: null,     /* last full room snapshot */
+        connected: false,   /* socket open and welcomed */
+        lastError: "",
+        clockOffset: 0      /* serverNow - local now */
+    };
+
+    var ws = null;
+    var wanted = false;
+    var takeoverNext = false; /* send { takeover: true } with the next hello */
+    var retry = 0;
+    var retryTimer = null;
+    var keepaliveTimer = null;
+    var cid = 0;
+    var pending = {};        /* key -> { val, cid } optimistic writes not yet acknowledged */
+    var pendingRole = null;  /* { val, cid } */
+    var batch = null;        /* set-patch waiting for the microtask flush */
+    var batchCid = 0;
+    var waiters = [];        /* insertCoin promises waiting for "welcome" */
+    var joinHandlers = [];
+    var disconnectHandlers = [];
+    var known = {};          /* pid -> { api, connected, quit: [] } */
+    var requests = {};       /* cid -> { resolve, timer } for calls that wait for the server */
+    var REQUEST_TIMEOUT_MS = opts.requestTimeoutMs || 6000;
+
+    function normalize(v) { return String(v || "").trim().toUpperCase(); }
+
+    function newPairCode() {
+        var chars = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+        var out = "";
+        for (var i = 0; i < 4; i++) {
+            out += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return out;
+    }
+
+    function readCodes() {
+        var q = new URLSearchParams(loc.search || "");
+        net.session = normalize(q.get("s"));
+        net.pair = normalize(q.get("p"));
+        if (net.session && !net.pair) {
+            /* First player of a pair: make a pair code and put it in the URL so refresh
+               and the invite link both land in the same room. */
+            net.pair = newPairCode();
+            q.set("p", net.pair);
+            try {
+                hist.replaceState(null, "", loc.pathname + "?" + q.toString() + (loc.hash || ""));
+            } catch (eHist) { /* ignore */ }
+        }
+    }
+
+    function tokenKey() { return "copdnet:" + net.session + ":" + net.pair; }
+    function storedToken() {
+        if (!storage || !net.session) { return null; }
+        try { return storage.getItem(tokenKey()); } catch (e) { return null; }
+    }
+    function saveToken(t) {
+        if (!storage) { return; }
+        try { storage.setItem(tokenKey(), t); } catch (e) { /* private mode */ }
+    }
+
+    function sendRaw(msg) {
+        if (ws && ws.readyState === 1) {
+            ws.send(JSON.stringify(msg));
+            return true;
+        }
+        return false;
+    }
+
+    function flushBatch() {
+        if (!batch) { return; }
+        var patch = batch;
+        var c = batchCid;
+        batch = null;
+        if (net.connected) {
+            sendRaw({ t: "set", patch: patch, cid: c });
+        }
+        /* Not connected: values stay in `pending` and are re-sent after "welcome". */
+    }
+
+    /** Sends any queued set-patch first, so messages reach the server in call order. */
+    function sendInOrder(msg) {
+        flushBatch();
+        return net.connected && sendRaw(msg);
+    }
+
+    function clearAcked(ack) {
+        Object.keys(pending).forEach(function (k) {
+            if (pending[k].cid <= ack) { delete pending[k]; }
+        });
+        if (pendingRole && pendingRole.cid <= ack) { pendingRole = null; }
+    }
+
+    function resendPending() {
+        var keys = Object.keys(pending);
+        if (keys.length) {
+            var patch = {};
+            keys.forEach(function (k) { patch[k] = pending[k].val; });
+            cid += 1;
+            keys.forEach(function (k) { pending[k].cid = cid; });
+            sendRaw({ t: "set", patch: patch, cid: cid });
+        }
+        if (pendingRole) {
+            cid += 1;
+            pendingRole.cid = cid;
+            sendRaw({ t: "claimRole", role: pendingRole.val, cid: cid });
+        }
+    }
+
+    function myRole() {
+        if (pendingRole) { return pendingRole.val || ""; }
+        return (net.you && net.you.role) || "";
+    }
+
+    function playerById(pid) {
+        var list = (net.snapshot && net.snapshot.players) || [];
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].pid === pid) { return list[i]; }
+        }
+        return null;
+    }
+
+    function makePlayerApi(pid) {
+        var rec = { connected: false, quit: [] };
+        rec.api = {
+            id: pid,
+            getState: function (key) {
+                if (net.you && pid === net.you.pid) {
+                    return meApi.getState(key);
+                }
+                var p = playerById(pid);
+                if (!p) { return undefined; }
+                if (key === "role") { return p.role || ""; }
+                if (key === "name") { return p.name || ""; }
+                return undefined;
+            },
+            setState: function (key, val) {
+                if (net.you && pid === net.you.pid) { meApi.setState(key, val); }
+            },
+            onQuit: function (cb) { rec.quit.push(cb); }
+        };
+        known[pid] = rec;
+        return rec;
+    }
+
+    /** Fires onPlayerJoin / onQuit as players' connected flags change. */
+    function updatePlayers() {
+        var list = (net.snapshot && net.snapshot.players) || [];
+        list.forEach(function (p) {
+            var rec = known[p.pid] || makePlayerApi(p.pid);
+            if (p.connected && !rec.connected) {
+                rec.connected = true;
+                joinHandlers.forEach(function (cb) {
+                    try { cb(rec.api); } catch (eJoin) { console.error(eJoin); }
+                });
+            } else if (!p.connected && rec.connected) {
+                rec.connected = false;
+                var quits = rec.quit;
+                rec.quit = [];
+                quits.forEach(function (cb) {
+                    try { cb(); } catch (eQuit) { console.error(eQuit); }
+                });
+            }
+        });
+    }
+
+    function settleWaiters(err) {
+        var list = waiters;
+        waiters = [];
+        list.forEach(function (w) {
+            clearT(w.timer);
+            if (err) { w.reject(err); } else { w.resolve(); }
+        });
+    }
+
+    function startKeepalive() {
+        clearT(keepaliveTimer);
+        keepaliveTimer = setT(function tick() {
+            if (ws && ws.readyState === 1) {
+                try { ws.send("ping"); } catch (ePing) { /* ignore */ }
+            }
+            keepaliveTimer = setT(tick, KEEPALIVE_MS);
+        }, KEEPALIVE_MS);
+    }
+
+    function onMessage(sock, data) {
+        if (sock !== ws || data === "pong") { return; }
+        var m;
+        try { m = JSON.parse(data); } catch (eParse) { return; }
+        if (m.serverNow) { net.clockOffset = m.serverNow - nowFn(); }
+
+        if (m.t === "welcome") {
+            net.token = m.token;
+            saveToken(m.token);
+            net.you = m.you;
+            net.snapshot = m.snapshot;
+            net.connected = true;
+            net.lastError = "";
+            retry = 0;
+            resendPending();
+            updatePlayers();
+            startKeepalive();
+            settleWaiters(null);
+            return;
+        }
+        if (m.t === "state" || m.t === "reject") {
+            if (m.t === "reject") {
+                net.lastError = m.reason || "rejected";
+                /* Refusals before "welcome" end this connect attempt (no retry loop). */
+                var fatal = ["room_full", "no_session", "session_closed", "session_unavailable"];
+                if (fatal.indexOf(m.reason) !== -1 && !net.connected) {
+                    wanted = false;
+                    settleWaiters(new Error(m.reason));
+                    try { sock.close(); } catch (eClose) { /* ignore */ }
+                    return;
+                }
+            }
+            if (m.snapshot) { net.snapshot = m.snapshot; }
+            if (m.you) { net.you = m.you; }
+            if (m.ack !== undefined) {
+                clearAcked(m.ack);
+                settleRequests(m.ack, m.t === "reject" ? m.reason : null);
+            }
+            updatePlayers();
+        }
+    }
+
+    /** Resolves server calls up to `ack`; the one that was refused gets { ok:false, reason }. */
+    function settleRequests(ack, reason) {
+        Object.keys(requests).forEach(function (k) {
+            var c = Number(k);
+            if (c > ack) { return; }
+            var r = requests[k];
+            delete requests[k];
+            clearT(r.timer);
+            r.resolve(c === ack && reason ? { ok: false, reason: reason } : { ok: true });
+        });
+    }
+
+    function failAllRequests(reason) {
+        Object.keys(requests).forEach(function (k) {
+            var r = requests[k];
+            delete requests[k];
+            clearT(r.timer);
+            r.resolve({ ok: false, reason: reason });
+        });
+    }
+
+    /** Sends msg and resolves when the server has applied (ok) or refused it. Never rejects. */
+    function request(msg) {
+        if (!net.connected) {
+            return Promise.resolve({ ok: false, reason: "offline" });
+        }
+        cid += 1;
+        msg.cid = cid;
+        var myCid = cid;
+        return new Promise(function (resolve) {
+            var r = { resolve: resolve, timer: null };
+            r.timer = setT(function () {
+                if (requests[myCid]) {
+                    delete requests[myCid];
+                    resolve({ ok: false, reason: "timeout" });
+                }
+            }, REQUEST_TIMEOUT_MS);
+            requests[myCid] = r;
+            if (!sendInOrder(msg)) {
+                delete requests[myCid];
+                clearT(r.timer);
+                resolve({ ok: false, reason: "offline" });
+            }
+        });
+    }
+
+    function onClosed(sock) {
+        if (sock !== ws) { return; }
+        ws = null;
+        clearT(keepaliveTimer);
+        var wasConnected = net.connected;
+        net.connected = false;
+        failAllRequests("offline");
+        if (wasConnected) {
+            disconnectHandlers.forEach(function (cb) {
+                try { cb({ code: 1006, reason: "socket closed" }); } catch (eCb) { console.error(eCb); }
+            });
+        }
+        if (wanted) {
+            retry = Math.min(retry + 1, 6);
+            clearT(retryTimer);
+            retryTimer = setT(open, Math.min(500 * Math.pow(2, retry), 10000));
+        }
+    }
+
+    function open() {
+        clearT(retryTimer);
+        if (ws && (ws.readyState === 0 || ws.readyState === 1)) { return; }
+        var base = opts.endpoint ||
+            ((loc.protocol === "https:" ? "wss:" : "ws:") + "//" + loc.host + "/ws/room");
+        var url = base + "?s=" + encodeURIComponent(net.session) + "&p=" + encodeURIComponent(net.pair);
+        var sock;
+        try {
+            sock = new WS(url);
+        } catch (eOpen) {
+            onClosed(null);
+            return;
+        }
+        ws = sock;
+        sock.onopen = function () {
+            if (sock !== ws) { return; }
+            var hello = { t: "hello", token: storedToken() };
+            if (takeoverNext) {
+                hello.takeover = true;
+                takeoverNext = false;
+            }
+            sock.send(JSON.stringify(hello));
+        };
+        sock.onmessage = function (ev) { onMessage(sock, ev.data); };
+        sock.onclose = function () { onClosed(sock); };
+        sock.onerror = function () { /* onclose follows */ };
+    }
+
+    var meApi = {
+        get id() { return net.you ? net.you.pid : undefined; },
+        getState: function (key) {
+            if (key === "role") { return myRole(); }
+            if (key === "name") { return (net.you && net.you.name) || ""; }
+            return undefined;
+        },
+        setState: function (key, val) {
+            if (key !== "role") { return; }
+            cid += 1;
+            pendingRole = { val: val || null, cid: cid };
+            sendInOrder({ t: "claimRole", role: val || null, cid: cid });
+        },
+        onQuit: function () { /* own quit is reported through onDisconnect */ }
+    };
+
+    /* ---- Playroom-compatible surface ---- */
+
+    net.insertCoin = function () {
+        if (!net.session) { readCodes(); }
+        if (!net.session) {
+            net.lastError = "session_required";
+            return Promise.reject(new Error("session_required"));
+        }
+        if (net.connected) { return Promise.resolve(); }
+        wanted = true;
+        var p = new Promise(function (resolve, reject) {
+            var w = { resolve: resolve, reject: reject, timer: null };
+            w.timer = setT(function () {
+                var i = waiters.indexOf(w);
+                if (i >= 0) {
+                    waiters.splice(i, 1);
+                    reject(new Error("connect_timeout"));
+                }
+            }, CONNECT_TIMEOUT_MS);
+            waiters.push(w);
+        });
+        open();
+        return p;
+    };
+
+    net.myPlayer = function () {
+        return net.connected && net.you ? meApi : undefined;
+    };
+
+    /** "Host" = lowest-numbered connected player (the first to join, like Playroom). */
+    net.isHost = function () {
+        if (!net.connected || !net.you || !net.snapshot) { return false; }
+        var list = net.snapshot.players || [];
+        for (var i = 0; i < list.length; i++) {
+            if (list[i].connected || list[i].pid === net.you.pid) {
+                return list[i].pid === net.you.pid;
+            }
+        }
+        return false;
+    };
+
+    net.getState = function (key) {
+        if (Object.prototype.hasOwnProperty.call(pending, key)) { return pending[key].val; }
+        if (!net.snapshot) { return undefined; }
+        return net.snapshot.game[key];
+    };
+
+    /** Optimistic: visible locally at once, sent in one batched message per tick. */
+    net.setState = function (key, val) {
+        cid += 1;
+        pending[key] = { val: val, cid: cid };
+        if (!batch) {
+            batch = {};
+            defer(flushBatch);
+        }
+        batch[key] = val;
+        batchCid = cid;
+    };
+
+    net.getRoomCode = function () {
+        return net.session && net.pair ? net.session + "-" + net.pair : "";
+    };
+
+    net.onPlayerJoin = function (cb) {
+        joinHandlers.push(cb);
+        Object.keys(known).forEach(function (pid) {
+            if (known[pid].connected) { cb(known[pid].api); }
+        });
+    };
+
+    net.onDisconnect = function (cb) { disconnectHandlers.push(cb); };
+
+    /* ---- extras ---- */
+
+    net.inviteUrl = function () {
+        if (!net.session || !net.pair) { return null; }
+        var origin = loc.origin || (loc.protocol + "//" + loc.host);
+        return origin + loc.pathname + "?s=" + encodeURIComponent(net.session) +
+            "&p=" + encodeURIComponent(net.pair);
+    };
+
+    /** True when this browser already holds a player token for this session + pair. */
+    net.isRejoin = function () {
+        if (!net.session) { readCodes(); }
+        return !!storedToken();
+    };
+
+    /** Atomic add on the server (use for counters so simultaneous clicks all count). */
+    net.inc = function (key, by, min, max) {
+        cid += 1;
+        var msg = { t: "inc", key: key, by: by, cid: cid };
+        if (typeof min === "number") { msg.min = min; }
+        if (typeof max === "number") { msg.max = max; }
+        return sendInOrder(msg);
+    };
+
+    net.serverNow = function () { return nowFn() + net.clockOffset; };
+
+    /**
+     * Pair is full but this student is one of its two players on a new device/browser:
+     * take back whichever seat is offline (keeps its role). Resolves like insertCoin.
+     */
+    net.takeoverSeat = function () {
+        takeoverNext = true;
+        return net.insertCoin();
+    };
+
+    /* ---- server-owned rules (Milestone C) — each returns Promise<{ ok, reason? }> ---- */
+
+    /** Move the room to `passage` only if it is still at `expectSeq` (no double-advance). */
+    net.navigate = function (passage, expectSeq, timerMode, patch) {
+        var msg = { t: "navigate", passage: passage, expectSeq: expectSeq };
+        if (timerMode) { msg.timer = timerMode; }
+        if (patch) { msg.patch = patch; }
+        return request(msg);
+    };
+
+    /** One shared dice roll per key per passage; read the result with getState(key). */
+    net.roll = function (key, sides) {
+        return request({ t: "roll", key: key, sides: sides });
+    };
+
+    /** Named once-per-passage calculation on the server (e.g. "errandsDrain"). */
+    net.op = function (name) {
+        return request({ t: "op", name: name });
+    };
+
+    net.timerReset = function () {
+        return request({ t: "timer", action: "reset" });
+    };
+
+    /**
+     * Try Again: new attempt with `defaults`, both devices sent to `passage`.
+     * `fromAttempt` = the attempt this screen shows; if the partner already started a new one,
+     * the server refuses (stale_attempt) instead of starting another.
+     */
+    net.reset = function (defaults, passage, fromAttempt) {
+        return request({
+            t: "reset",
+            fromAttempt: typeof fromAttempt === "number" ? fromAttempt : net.attempt(),
+            game: defaults,
+            passage: passage
+        });
+    };
+
+    net.setName = function (name) {
+        return request({ t: "name", name: String(name || "") });
+    };
+
+    /** Atomic add with an optimistic local value; returns the value shown right away. */
+    net.incState = function (key, by, min, max) {
+        var cur = Number(net.getState(key));
+        var next = (isNaN(cur) ? 0 : cur) + by;
+        if (typeof min === "number") { next = Math.max(min, next); }
+        if (typeof max === "number") { next = Math.min(max, next); }
+        cid += 1;
+        pending[key] = { val: next, cid: cid };
+        var msg = { t: "inc", key: key, by: by, cid: cid };
+        if (typeof min === "number") { msg.min = min; }
+        if (typeof max === "number") { msg.max = max; }
+        sendInOrder(msg);
+        return next;
+    };
+
+    net.attempt = function () {
+        return (net.snapshot && net.snapshot.attempt) || 1;
+    };
+
+    /** Room clock in ms (server-owned: paused on pausetimer passages, stopped at Final_Report). */
+    net.elapsedMs = function () {
+        var t = net.snapshot && net.snapshot.timer;
+        if (!t || t.startedAt === null || t.startedAt === undefined) { return 0; }
+        var end = t.stoppedAt !== null && t.stoppedAt !== undefined ? t.stoppedAt
+            : (t.pausedAt !== null && t.pausedAt !== undefined ? t.pausedAt : net.serverNow());
+        return Math.max(0, end - t.startedAt - (t.pausedMs || 0));
+    };
+
+    /** Reconnect right away (e.g. phone unlocked) instead of waiting for the backoff timer. */
+    net.wake = function () {
+        if (wanted && !ws) {
+            retry = 0;
+            open();
+        }
+    };
+
+    /** Test hook: drop the socket without scheduling a reconnect. */
+    net._drop = function () {
+        wanted = false;
+        clearT(retryTimer);
+        if (ws) {
+            var sock = ws;
+            try { sock.close(); } catch (eDrop) { /* ignore */ }
+            onClosed(sock);
+        }
+    };
+
+    if (opts.listenVisibility !== false && typeof document !== "undefined" && document.addEventListener) {
+        document.addEventListener("visibilitychange", function () {
+            if (document.visibilityState === "visible") { net.wake(); }
+        });
+    }
+
+    readCodes();
+    return net;
+};
+/* CLOUDNET:END */
+
 /* --- 2. SimApp — multiplayer simulation framework --- */
 
 window.SimApp = {
@@ -1716,8 +2262,22 @@ window.SimApp = {
     _syncTimer: null,
     _gameOverInterval: null,
     _gameOverFinalizing: false,
+    _lastAppliedPassageSeq: -1,
+    _recovering: false,
+    _recoverDebounceUntil: 0,
+    _passageCommitInFlight: false,
+    _allowAdvanceWithoutPartner: false,
+    _wakeHandlersRegistered: false,
+    _hasJoinedRoom: false,
+    _connectInFlight: false,
+    _syncBannerHideTimer: null,
+    _partnerAbsent: false,
+    _lastAttempt: null,
 
     GAME_OVER_SECONDS: 8,
+    PASSAGE_COMMIT_TIMEOUT_MS: 2000,
+    RECOVER_DEBOUNCE_MS: 1000,
+    RECONNECT_GRACE_MS: 600000,
     GAME_OVER_MESSAGES: {
         Game_Over_Energy: "You have pushed your body too far...",
         Game_Over_Inhaler: "You have used your rescue inhaler too many times..."
@@ -1762,14 +2322,141 @@ window.SimApp = {
 
     /** True when an active simulation is already running in this room */
     isRoomActive: function () {
-        if (typeof Playroom === "undefined") {
+        if (typeof Net === "undefined") {
             return false;
         }
-        return Playroom.getState("roomStarted") === true;
+        if (Net.getState("roomStarted") === true) {
+            return true;
+        }
+        var existing = Net.getState("currentPassage");
+        if (existing && existing !== "Role_Selection" && existing !== "Start") {
+            return true;
+        }
+        var seq = Number(Net.getState("passageSeq"));
+        if (!isNaN(seq) && seq > 0) {
+            return true;
+        }
+        if (Net.getState("lobby_patient") === true || Net.getState("lobby_observer") === true) {
+            return true;
+        }
+        if (Net.getState("patientPlayerId") || Net.getState("observerPlayerId")) {
+            return true;
+        }
+        return false;
+    },
+
+    /**
+     * After insertCoin, shared state can lag briefly — wait before deciding to wipe.
+     */
+    waitForRoomSnapshot: function (timeoutMs) {
+        var self = this;
+        timeoutMs = timeoutMs || 2500;
+        /* CloudNet receives the full room snapshot before insertCoin resolves — nothing to wait for. */
+        if (this.isCloudNet()) {
+            var activeNow = this.isRoomActive();
+            return Promise.resolve({
+                ready: true,
+                active: activeNow,
+                timedOut: false,
+                currentPassage: Net.getState("currentPassage"),
+                roomStarted: Net.getState("roomStarted")
+            });
+        }
+        return new Promise(function (resolve) {
+            var start = Date.now();
+            function tick() {
+                if (typeof Net === "undefined") {
+                    resolve({ ready: false, active: false, timedOut: true });
+                    return;
+                }
+                var passage = Net.getState("currentPassage");
+                var started = Net.getState("roomStarted");
+                var hasAny =
+                    started === true ||
+                    passage !== undefined ||
+                    Net.getState("passageSeq") !== undefined ||
+                    Net.getState("lobby_patient") !== undefined ||
+                    Net.getState("patientPlayerId") !== undefined;
+                var active = self.isRoomActive();
+                if (active || (hasAny && started === true)) {
+                    resolve({
+                        ready: true,
+                        active: active,
+                        timedOut: false,
+                        currentPassage: passage,
+                        roomStarted: started
+                    });
+                    return;
+                }
+                if (hasAny && Date.now() - start > 400) {
+                    /* State keys exist (even if room looks new) — stop waiting */
+                    resolve({
+                        ready: true,
+                        active: active,
+                        timedOut: false,
+                        currentPassage: passage,
+                        roomStarted: started
+                    });
+                    return;
+                }
+                if (Date.now() - start >= timeoutMs) {
+                    resolve({
+                        ready: false,
+                        active: self.isRoomActive(),
+                        timedOut: true,
+                        currentPassage: passage,
+                        roomStarted: started
+                    });
+                    return;
+                }
+                setTimeout(tick, 50);
+            }
+            tick();
+        });
     },
 
     getRole: function () {
         return this.myRole || State.variables.myRole || "";
+    },
+
+    getRoomPassageSeq: function () {
+        if (typeof Net !== "undefined") {
+            var seq = Number(Net.getState("passageSeq"));
+            if (!isNaN(seq)) {
+                return seq;
+            }
+        }
+        var local = Number(State.variables.passageSeq);
+        return isNaN(local) ? 0 : local;
+    },
+
+    getConnectedPlayerCount: function () {
+        return this.getPlayerCount();
+    },
+
+    /** After roles are chosen, expect two connected devices */
+    expectsPartner: function () {
+        return this.checkReadyState() || this.getRole() === "patient" || this.getRole() === "observer";
+    },
+
+    hasPartnerConnected: function () {
+        return this.getConnectedPlayerCount() >= 2;
+    },
+
+    canPatientAdvance: function () {
+        if (!this.isPlayroomLoaded || typeof Net === "undefined" || !Net.myPlayer()) {
+            return false;
+        }
+        if (this._recovering || this._passageCommitInFlight) {
+            return false;
+        }
+        if (this._allowAdvanceWithoutPartner) {
+            return true;
+        }
+        if (!this.expectsPartner()) {
+            return true;
+        }
+        return this.hasPartnerConnected();
     },
 
     /** Default simulation variables (room init + post-tutorial reset) */
@@ -1827,7 +2514,10 @@ window.SimApp = {
         });
         State.variables.playtime = Date.now();
         this.setVal("sharedTime", "00:00", true);
-        $(".time-display").text("00:00");
+        if (this.isCloudNet()) {
+            Net.timerReset();
+        }
+        $(".time-display").text("00:00:00");
         this.updateHud();
     },
 
@@ -1877,9 +2567,40 @@ window.SimApp = {
 
     /** Full reset after debrief — returns team to Start */
     restartFromDebrief: function () {
+        if (this.isCloudNet()) {
+            /* New attempt: fresh stats + clock, roles kept, both devices go to the hub. */
+            var self = this;
+            var defaults = Object.assign({}, this.DEFAULT_GAME_STATE);
+            this.clearGameOverSequence();
+            var shownAttempt = this._lastAttempt === null ? Net.attempt() : this._lastAttempt;
+            Net.reset(defaults, "Simulation_Hub", shownAttempt).then(function () {
+                self.followNewAttempt();
+            });
+            return;
+        }
         this.resetSimulationForStart();
-        this.setVal("currentPassage", "Start", true);
         this.goToSharedPassage("Start");
+    },
+
+    /** Cloudflare: when either player starts a new attempt, both jump to the room passage. */
+    followNewAttempt: function () {
+        if (!this.isCloudNet()) {
+            return false;
+        }
+        var attempt = Net.attempt();
+        if (this._lastAttempt === null) {
+            this._lastAttempt = attempt;
+            return false;
+        }
+        if (attempt <= this._lastAttempt) {
+            return false;
+        }
+        this._lastAttempt = attempt;
+        this.clearGameOverSequence();
+        this.syncFromPlayroom();
+        this.applyRoomPassage(true);
+        this.updateHud();
+        return true;
     },
 
     /** Count connected peers (including this device) */
@@ -1888,29 +2609,469 @@ window.SimApp = {
         if (count > 0) {
             return count;
         }
-        if (typeof Playroom !== "undefined" && Playroom.myPlayer()) {
+        if (typeof Net !== "undefined" && Net.myPlayer()) {
             return 1;
         }
         return 0;
     },
 
     isPlayroomHost: function () {
-        return typeof Playroom !== "undefined" && Playroom.isHost();
+        return typeof Net !== "undefined" && Net.isHost();
+    },
+
+    /* --- Sync status banner --- */
+
+    ensureSyncBanner: function () {
+        if ($("#sim-sync-banner").length) {
+            return;
+        }
+        var self = this;
+        var html =
+            '<div id="sim-sync-banner" class="sim-sync-banner hidden" role="status" aria-live="polite">' +
+            '<span id="sim-sync-banner-text"></span>' +
+            '<button type="button" id="sim-sync-banner-continue" class="sim-sync-banner-continue hidden">' +
+            "Continue anyway</button>" +
+            "</div>";
+        $("body").append(html);
+        $("#sim-sync-banner-continue").on("click", function () {
+            self._allowAdvanceWithoutPartner = true;
+            self.hideSyncBanner();
+            self.refreshPatientNextSlot();
+        });
+    },
+
+    showSyncBanner: function (message, kind, options) {
+        options = options || {};
+        this.ensureSyncBanner();
+        var $banner = $("#sim-sync-banner");
+        var $continue = $("#sim-sync-banner-continue");
+        $banner
+            .removeClass("hidden state-info state-ok state-warn state-error")
+            .addClass("state-" + (kind || "info"));
+        $("#sim-sync-banner-text").text(message || "");
+        if (options.showContinue) {
+            $continue.removeClass("hidden");
+        } else {
+            $continue.addClass("hidden");
+        }
+        if (this._syncBannerHideTimer) {
+            clearTimeout(this._syncBannerHideTimer);
+            this._syncBannerHideTimer = null;
+        }
+        if (options.sticky) {
+            return;
+        }
+        var hideMs = options.hideAfterMs != null ? options.hideAfterMs : 2500;
+        if (hideMs > 0) {
+            var self = this;
+            this._syncBannerHideTimer = setTimeout(function () {
+                self.hideSyncBanner();
+            }, hideMs);
+        }
+    },
+
+    hideSyncBanner: function () {
+        if (this._syncBannerHideTimer) {
+            clearTimeout(this._syncBannerHideTimer);
+            this._syncBannerHideTimer = null;
+        }
+        $("#sim-sync-banner").addClass("hidden");
+        $("#sim-sync-banner-continue").addClass("hidden");
+    },
+
+    refreshPartnerPresenceBanner: function () {
+        if (!this._hasJoinedRoom || this._recovering || this._passageCommitInFlight) {
+            return;
+        }
+        if (!this.expectsPartner()) {
+            if (this._partnerAbsent) {
+                this._partnerAbsent = false;
+                this.hideSyncBanner();
+            }
+            return;
+        }
+        if (this.hasPartnerConnected()) {
+            if (this._partnerAbsent) {
+                this._partnerAbsent = false;
+                this._allowAdvanceWithoutPartner = false;
+                this.showSyncBanner("Partner reconnected", "ok", { hideAfterMs: 2000 });
+                this.refreshPatientNextSlot();
+            }
+            return;
+        }
+        this._partnerAbsent = true;
+        this.showSyncBanner(
+            "Partner disconnected — waiting to rejoin…",
+            "warn",
+            { sticky: true, showContinue: true }
+        );
+        this.refreshPatientNextSlot();
     },
 
     /* --- 2b. Playroom connection, lobby, and role routing --- */
 
-    /** Join URL Playroom reads on load (#r=roomCode) */
+    /** True when the Cloudflare backend (CloudNet) is active instead of Playroom. */
+    isCloudNet: function () {
+        return typeof Net !== "undefined" && Net.backend === "cf";
+    },
+
+    /** Room-clock instruction sent with each passage change (Cloudflare backend). */
+    timerModeFor: function (passageName) {
+        if (passageName === "Final_Report") {
+            return "stop";
+        }
+        if (this.LOBBY_PASSAGES.indexOf(passageName) !== -1) {
+            return "none";
+        }
+        var pd = Story.get(passageName);
+        if (pd && pd.tags && pd.tags.includes("pausetimer")) {
+            return "pause";
+        }
+        return "run";
+    },
+
+    /** Elapsed simulation time as { hours, minutes, seconds, totalMinutes }. */
+    getElapsedParts: function () {
+        var ms;
+        if (this.isCloudNet()) {
+            ms = Net.elapsedMs();
+        } else if (typeof setup !== "undefined" && setup.playTime) {
+            ms = Number(setup.playTime("ms")) || 0;
+        } else {
+            ms = 0;
+        }
+        var totalSeconds = Math.floor(ms / 1000);
+        return {
+            hours: Math.floor(totalSeconds / 3600),
+            minutes: Math.floor(totalSeconds / 60) % 60,
+            seconds: totalSeconds % 60,
+            totalMinutes: Math.floor(totalSeconds / 60)
+        };
+    },
+
+    /** HUD clock text (hh:mm:ss, same format as <<playtime>>). */
+    formatElapsed: function () {
+        var p = this.getElapsedParts();
+        function pad(n) {
+            return n < 10 ? "0" + n : "" + n;
+        }
+        return pad(p.hours) + ":" + pad(p.minutes) + ":" + pad(p.seconds);
+    },
+
+    /**
+     * Add to a numeric room variable. Cloudflare: atomic on the server, so the observer's
+     * and patient's clicks can't overwrite each other. Returns the value to show now.
+     */
+    _addVal: function (key, by, min, max) {
+        if (this.isCloudNet() && this.isPlayroomLoaded) {
+            var v = Net.incState(key, by, min, max);
+            State.variables[key] = v;
+            return v;
+        }
+        var cur = Number(this.getVal(key));
+        if (isNaN(cur)) {
+            cur = 0;
+        }
+        var next = cur + by;
+        if (typeof min === "number" && next < min) {
+            next = min;
+        }
+        if (typeof max === "number" && next > max) {
+            next = max;
+        }
+        this.setVal(key, next);
+        return next;
+    },
+
+    /**
+     * Router passages: go to targets[roll - 1] using one shared dice roll.
+     * targets: passage names, or { go: passage, set: { key: value } } to also set variables.
+     * (Not "to": SugarCube rewrites the word "to" into "=" inside <<run>>, breaking the object.)
+     * Cloudflare: the server rolls once per visit, so both devices land on the same passage.
+     * Playroom: the host rolls (legacy behavior).
+     */
+    routeByRoll: function (rollKey, targets, visitedKey) {
+        var self = this;
+        /* Remember which visit this is, so a late device follows instead of re-rolling. */
+        var routerPassage = passage();
+        var routerSeq = this.getRoomPassageSeq();
+        setTimeout(function () {
+            self._routeByRollNow(rollKey, targets, visitedKey, routerPassage, routerSeq);
+        }, Engine.minDomActionDelay || 40);
+    },
+
+    /** Does the work for routeByRoll; resolves to the destination passage (or null). */
+    _routeByRollNow: async function (rollKey, targets, visitedKey, routerPassage, routerSeq) {
+        var sides = targets.length;
+        var roll;
+        if (this.isCloudNet()) {
+            /* The partner already rolled and moved the room on — follow it, don't roll again. */
+            if (
+                routerPassage &&
+                (Net.getState("currentPassage") !== routerPassage || this.getRoomPassageSeq() !== routerSeq)
+            ) {
+                this.applyRoomPassage(false);
+                return null;
+            }
+            var res = await Net.roll(rollKey, sides);
+            roll = Number(Net.getState(rollKey));
+            if (!res.ok || !(roll >= 1 && roll <= sides)) {
+                this.showSyncBanner("Could not sync — check connection", "error", { sticky: true });
+                return null;
+            }
+        } else if (typeof Net !== "undefined" && Net.isHost()) {
+            roll = 1 + Math.floor(Math.random() * sides);
+            this.setVal(rollKey, roll, true);
+        } else {
+            this.syncFromPlayroom();
+            roll = Number(this.getVal(rollKey)) || 1;
+        }
+        State.variables[rollKey] = roll;
+        if (visitedKey) {
+            this.setVal(visitedKey, true, true);
+        }
+        var target = targets[Math.min(Math.max(roll, 1), sides) - 1];
+        var dest = typeof target === "string" ? target : target.go;
+        if (target && typeof target === "object" && target.set) {
+            var self = this;
+            Object.keys(target.set).forEach(function (k) {
+                self.setVal(k, target.set[k], true);
+            });
+        }
+        await this.goToSharedPassage(dest);
+        return dest;
+    },
+
+    /** Whistle_Stop_In: Energy -= errandsRun², once per visit. */
+    applyErrandsDrain: function () {
+        var self = this;
+        function after(newEnergy) {
+            self.updateHud();
+            if (newEnergy <= 0) {
+                self.scheduleGameOver("Game_Over_Energy");
+            }
+        }
+        if (this.isCloudNet()) {
+            Net.op("errandsDrain").then(function (res) {
+                if (res.ok) {
+                    after(Number(Net.getState("Energy")));
+                }
+            });
+            return;
+        }
+        if (typeof Net === "undefined" || !Net.isHost()) {
+            return;
+        }
+        var errands = Number(this.getVal("errandsRun")) || 0;
+        var energy = Number(this.getVal("Energy"));
+        if (isNaN(energy)) {
+            energy = 10;
+        }
+        var next = Math.min(15, Math.max(0, energy - errands * errands));
+        this.setVal("Energy", next, true);
+        after(next);
+    },
+
+    /** Join URL Playroom reads on load (#r=R{roomCode}) */
     getInviteUrl: function () {
         var base = window.location.href.split("#")[0];
-        if (typeof Playroom === "undefined") {
+        if (typeof Net === "undefined") {
             return base;
         }
-        var code = Playroom.getRoomCode();
+        /* Cloudflare backend: invite link is ?s=SESSION&p=PAIR (no #r= hash) */
+        var cfUrl = typeof Net.inviteUrl === "function" ? Net.inviteUrl() : null;
+        if (cfUrl) {
+            return cfUrl;
+        }
+        var code = Net.getRoomCode();
         if (!code) {
             return base;
         }
-        return base + "#r=" + encodeURIComponent(code);
+        return base + this.roomCodeToHash(code);
+    },
+
+    /** Playroom join hash uses a leading R before the room code (e.g. #r=R8PVM). */
+    roomCodeToHash: function (code) {
+        var c = String(code || "").replace(/^#r=/i, "");
+        if (!c) {
+            return "";
+        }
+        if (c.charAt(0) !== "R") {
+            c = "R" + c;
+        }
+        return "#r=" + c;
+    },
+
+    parseStoredRoomCode: function (raw) {
+        if (!raw) {
+            return "";
+        }
+        var c = String(raw).trim();
+        if (c.indexOf("#r=") === 0) {
+            c = c.slice(3);
+        }
+        if (c.charAt(0) === "R" && c.length > 1) {
+            c = c.slice(1);
+        }
+        return c;
+    },
+
+    /** True when URL or storage indicates rejoining an existing room (not first host create). */
+    isRejoinAttempt: function () {
+        if (this.isCloudNet()) {
+            return Net.isRejoin();
+        }
+        if (window.location.hash && /#r=/i.test(String(window.location.hash || ""))) {
+            return true;
+        }
+        try {
+            return !!localStorage.getItem("simRoomCode");
+        } catch (eRejoin) {
+            return false;
+        }
+    },
+
+    /**
+     * Host's URL often loses #r= after insertCoin; persist so refresh rejoins the same room.
+     */
+    persistRoomJoinHint: function (roomCode) {
+        if (this.isCloudNet()) {
+            return; /* session + pair already live in the URL query; token in localStorage */
+        }
+        var code = this.parseStoredRoomCode(roomCode);
+        if (!code) {
+            return;
+        }
+        try {
+            localStorage.setItem("simRoomCode", code);
+        } catch (eSave) { /* ignore */ }
+        var hash = this.roomCodeToHash(code);
+        if (window.location.hash !== hash) {
+            try {
+                history.replaceState(
+                    null,
+                    "",
+                    window.location.pathname + window.location.search + hash
+                );
+            } catch (eHash) { /* ignore */ }
+        }
+    },
+
+    persistRoleHint: function (roleName) {
+        var code = this.parseStoredRoomCode(
+            (typeof Net !== "undefined" && Net.getRoomCode && Net.getRoomCode()) ||
+                (function () {
+                    try { return localStorage.getItem("simRoomCode"); } catch (e) { return null; }
+                })()
+        );
+        if (!code || !roleName) {
+            return;
+        }
+        try {
+            localStorage.setItem("simRole_" + code, String(roleName));
+        } catch (eRole) { /* ignore */ }
+    },
+
+    readRoleHint: function (roomCode) {
+        var code = this.parseStoredRoomCode(
+            roomCode ||
+                (typeof Net !== "undefined" && Net.getRoomCode && Net.getRoomCode()) ||
+                (function () {
+                    try { return localStorage.getItem("simRoomCode"); } catch (e) { return null; }
+                })()
+        );
+        if (!code) {
+            return "";
+        }
+        try {
+            return localStorage.getItem("simRole_" + code) || "";
+        } catch (eRead) {
+            return "";
+        }
+    },
+
+    revealConnectButton: function () {
+        var loader = document.getElementById("loading-overlay");
+        var btnContainer = document.getElementById("connect-container");
+        if (loader) {
+            loader.classList.add("hidden");
+        }
+        if (this.isCloudNet() && !Net.session) {
+            this.mountSessionCodeForm();
+            return;
+        }
+        if (btnContainer) {
+            btnContainer.classList.remove("hidden");
+        }
+    },
+
+    /**
+     * Cloudflare backend needs a class session code (?s=). Without one, ask for it
+     * instead of showing Connect. Submitting reloads with ?s=CODE.
+     */
+    mountSessionCodeForm: function () {
+        var $slot = $("#connect-container");
+        if (!$slot.length) {
+            return;
+        }
+        $slot.removeClass("hidden").html(
+            '<div class="session-code-form">' +
+            '<label for="sim-session-code"><strong>Class session code</strong> — from your instructor</label><br>' +
+            '<input type="text" id="sim-session-code" maxlength="24" autocapitalize="characters" autocomplete="off" placeholder="e.g. REGN-1109A"> ' +
+            '<button type="button" id="sim-session-go">Join Session</button>' +
+            '<p id="sim-session-error" class="session-code-error hidden">Codes are 3–24 letters, numbers or dashes.</p>' +
+            "</div>"
+        );
+        function go() {
+            var code = String($("#sim-session-code").val() || "").trim().toUpperCase();
+            if (!/^[A-Z0-9][A-Z0-9-]{2,23}$/.test(code)) {
+                $("#sim-session-error").removeClass("hidden");
+                return;
+            }
+            var q = new URLSearchParams(window.location.search);
+            q.set("s", code);
+            q.delete("p");
+            window.location.search = "?" + q.toString();
+        }
+        $("#sim-session-go").on("click", go);
+        $("#sim-session-code").on("keydown", function (ev) {
+            if (ev.key === "Enter") {
+                go();
+            }
+        });
+    },
+
+    /**
+     * Before insertCoin: if hash was stripped (common for host), restore from localStorage.
+     */
+    restoreRoomHashBeforeConnect: function () {
+        if (this.isCloudNet()) {
+            return { restored: false, hash: "", storedRoom: null };
+        }
+        if (window.location.hash && /#r=/i.test(window.location.hash)) {
+            return { restored: false, hash: String(window.location.hash) };
+        }
+        var stored = null;
+        try {
+            stored = localStorage.getItem("simRoomCode");
+        } catch (eRead) { /* ignore */ }
+        var code = this.parseStoredRoomCode(stored);
+        if (!code) {
+            return { restored: false, hash: "", storedRoom: null };
+        }
+        var hash = this.roomCodeToHash(code);
+        try {
+            history.replaceState(
+                null,
+                "",
+                window.location.pathname + window.location.search + hash
+            );
+        } catch (eSet) {
+            try {
+                window.location.hash = hash.replace(/^#/, "");
+            } catch (eSet2) { /* ignore */ }
+        }
+        return { restored: true, hash: hash, storedRoom: code };
     },
 
     ensureInviteModal: function () {
@@ -1973,14 +3134,16 @@ window.SimApp = {
         }
         this.ensureInviteModal();
         var url = this.getInviteUrl();
-        var code = typeof Playroom !== "undefined" ? Playroom.getRoomCode() : "";
+        var code = typeof Net !== "undefined" ? Net.getRoomCode() : "";
         $("#sim-invite-code").text(code || "—");
         $("#sim-invite-qr").attr(
             "src",
             "https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=" + encodeURIComponent(url)
         );
-        this.refreshInviteModal();
+        /* Show first, then refresh: refresh closes the modal if the partner is already here
+           (it skips hidden modals, so refreshing first left it open over the game). */
         $("#sim-invite-modal").removeClass("hidden");
+        this.refreshInviteModal();
     },
 
     hideInviteModal: function () {
@@ -2009,7 +3172,7 @@ window.SimApp = {
 
     /** Connect to Playroom lobby, init room if new, resume if reconnecting */
     connect: async function () {
-        if (typeof Playroom === "undefined") {
+        if (typeof Net === "undefined") {
             if (!$("#sim-playroom-loading-notice").length) {
                 $("body").append(
                     '<div id="sim-playroom-loading-notice" class="sim-playroom-loading-notice" role="status">' +
@@ -2022,23 +3185,60 @@ window.SimApp = {
         $("#sim-playroom-loading-notice").remove();
 
         var self = this;
+        if (self._connectInFlight) {
+            return;
+        }
+        if (self._hasJoinedRoom && Net.myPlayer()) {
+            await self.recoverSession({ reason: "connect" });
+            self._recovering = false;
+            self._passageCommitInFlight = false;
+            self.refreshPatientNextSlot();
+            return;
+        }
+
         self.registerPlayerHandlers();
+        self.registerWakeHandlers();
+        self._connectInFlight = true;
 
         try {
-            await Playroom.insertCoin({
-                maxPlayersPerRoom: 2,
-                skipLobby: false,
-                reconnectGracePeriod: 120000
-            });
+            self.restoreRoomHashBeforeConnect();
+            var rejoining = self.isRejoinAttempt();
+            await Net.insertCoin(
+                {
+                    maxPlayersPerRoom: 2,
+                    skipLobby: true,
+                    reconnectGracePeriod: self.RECONNECT_GRACE_MS
+                },
+                undefined,
+                function () {
+                    self.showSyncBanner("Reconnecting…", "info", { sticky: true });
+                }
+            );
 
-            if (Playroom.isHost() && !self.isRoomActive()) {
+            if (typeof Net.onDisconnect === "function" && !self._disconnectHandlerRegistered) {
+                self._disconnectHandlerRegistered = true;
+                Net.onDisconnect(function () {
+                    self.showSyncBanner("Reconnecting…", "info", { sticky: true });
+                });
+            }
+
+            self._hasJoinedRoom = true;
+
+            var roomCode = Net.getRoomCode && Net.getRoomCode();
+            self.persistRoomJoinHint(roomCode);
+
+            var snapshot = await self.waitForRoomSnapshot(2500);
+            var isHost = Net.isHost();
+            var active = snapshot.active || self.isRoomActive();
+
+            if (isHost && !active && !rejoining) {
                 self.initRoomState();
             }
 
             self.startSyncLoop();
-            self.resumeSession();
+            await self.recoverSession({ reason: "connect" });
 
-            if (Playroom.isHost() && self.getPlayerCount() < 2) {
+            if (Net.isHost() && self.getPlayerCount() < 2) {
                 setTimeout(function () {
                     self.showInviteModal();
                 }, Engine.minDomActionDelay || 40);
@@ -2046,73 +3246,319 @@ window.SimApp = {
             setTimeout(function () {
                 self.wireDevCaptionControls();
             }, Engine.minDomActionDelay || 40);
+
+            self._recovering = false;
+            self._passageCommitInFlight = false;
+            self.refreshPatientNextSlot();
         } catch (e) {
-            console.error("Failed to connect to Playroom:", e);
+            console.error("Failed to connect to multiplayer:", e);
+            if (e && e.message === "session_required") {
+                self.showSyncBanner("This link needs a class session code from your instructor.", "error", {
+                    sticky: true
+                });
+                alert("This game link is missing a class session code. Ask your instructor for the session link.");
+                return;
+            }
+            if (e && (e.message === "no_session" || e.message === "session_closed")) {
+                var closed = e.message === "session_closed";
+                var msgText = closed
+                    ? "This class session has been closed by your instructor. Ask for the current session code."
+                    : "Session code \"" + Net.session + "\" was not found. Check the code with your instructor.";
+                self.showSyncBanner(msgText, "error", { sticky: true });
+                alert(msgText);
+                /* Back to the session-code box */
+                var q = new URLSearchParams(window.location.search);
+                q.delete("s");
+                q.delete("p");
+                var rest = q.toString();
+                window.location.search = rest ? "?" + rest : "";
+                return;
+            }
+            if (e && e.message === "session_unavailable") {
+                self.showSyncBanner("Could not reach the class session — try again in a moment.", "error", { sticky: true });
+                return;
+            }
+            if (e && e.message === "room_full") {
+                var mine = window.confirm(
+                    "This pair already has two players.\n\n" +
+                    "If you ARE one of them and changed phones or browsers, tap OK to take your seat back " +
+                    "(only works while your old device is offline).\n\n" +
+                    "Otherwise tap Cancel and ask your instructor for a new pair link."
+                );
+                if (mine) {
+                    self._pendingTakeover = true;
+                } else {
+                    self.showSyncBanner("This pair already has two players.", "error", { sticky: true });
+                }
+                return;
+            }
+            self.showSyncBanner("Connection error. Please refresh and try again.", "error", {
+                sticky: true
+            });
             alert("Connection error. Please refresh and try again.");
+        } finally {
+            self._connectInFlight = false;
+            self._recovering = false;
+            self._passageCommitInFlight = false;
+            self.refreshPatientNextSlot();
         }
+        if (self._pendingTakeover) {
+            self._pendingTakeover = false;
+            await self.takeOverSeat();
+        }
+    },
+
+    /** Cloudflare: claim the offline seat in a full pair, then continue like a normal connect. */
+    takeOverSeat: async function () {
+        if (!this.isCloudNet()) {
+            return false;
+        }
+        try {
+            await Net.takeoverSeat();
+        } catch (eTake) {
+            this.showSyncBanner("Both players are still connected — ask your instructor for a new pair link.", "error", {
+                sticky: true
+            });
+            return false;
+        }
+        await this.connect();
+        return true;
+    },
+
+    registerWakeHandlers: function () {
+        if (this._wakeHandlersRegistered) {
+            return;
+        }
+        this._wakeHandlersRegistered = true;
+        var self = this;
+        document.addEventListener("visibilitychange", function () {
+            if (document.visibilityState === "visible" && self._hasJoinedRoom) {
+                self.recoverSession({ reason: "visibility" });
+            }
+        });
+        window.addEventListener("pageshow", function (event) {
+            if (self._hasJoinedRoom) {
+                self.recoverSession({ reason: event.persisted ? "pageshow-bfcache" : "pageshow" });
+            }
+        });
+        window.addEventListener("focus", function () {
+            if (self._hasJoinedRoom) {
+                self.recoverSession({ reason: "focus" });
+            }
+        });
     },
 
     /** Host-only: initialize a brand-new room (skipped on reconnect) */
     initRoomState: function () {
-        if (!Playroom.isHost() || this.isRoomActive()) {
+        if (!Net.isHost() || this.isRoomActive()) {
             return;
         }
 
         var r = true;
-        Playroom.setState("roomStarted", true, r);
-        Playroom.setState("currentPassage", "Role_Selection", r);
-        Playroom.setState("sharedTime", "00:00", r);
-        Playroom.setState("lobby_patient", false, r);
-        Playroom.setState("lobby_observer", false, r);
-        Playroom.setState("patientPlayerId", "", r);
-        Playroom.setState("observerPlayerId", "", r);
+        Net.setState("roomStarted", true, r);
+        Net.setState("currentPassage", "Role_Selection", r);
+        Net.setState("passageSeq", 0, r);
+        Net.setState("sharedTime", "00:00", r);
+        Net.setState("lobby_patient", false, r);
+        Net.setState("lobby_observer", false, r);
+        Net.setState("patientPlayerId", "", r);
+        Net.setState("observerPlayerId", "", r);
 
         var self = this;
         Object.keys(this.DEFAULT_GAME_STATE).forEach(function (key) {
-            Playroom.setState(key, self.DEFAULT_GAME_STATE[key], r);
+            Net.setState(key, self.DEFAULT_GAME_STATE[key], r);
         });
     },
 
-    /** After connect/refresh: restore role and active passage without resetting room */
-    resumeSession: function () {
-        var me = Playroom.myPlayer();
+    restoreRoleFromRoom: function () {
+        var me = Net.myPlayer();
         if (!me) {
-            Engine.play("Role_Selection");
-            return;
+            return "";
+        }
+        var myId = me.id;
+        var savedRole = me.getState("role") || "";
+        if (!savedRole) {
+            if (Net.getState("patientPlayerId") === myId) {
+                savedRole = "patient";
+            } else if (Net.getState("observerPlayerId") === myId) {
+                savedRole = "observer";
+            }
+        }
+        if (!savedRole) {
+            savedRole = this.readRoleHint(Net.getRoomCode && Net.getRoomCode()) || "";
+        }
+        if (!savedRole) {
+            return "";
         }
 
-        var savedRole = me.getState("role");
-        if (savedRole) {
-            this.myRole = savedRole;
-            State.variables.myRole = savedRole;
-            $("body").removeClass("role-patient role-observer").addClass("role-" + savedRole);
+        me.setState("role", savedRole, true);
+        this.myRole = savedRole;
+        State.variables.myRole = savedRole;
+        $("body").removeClass("role-patient role-observer").addClass("role-" + savedRole);
+        this.persistRoleHint(savedRole);
+
+        var lobbyKey = "lobby_" + savedRole;
+        var ownerKey = savedRole + "PlayerId";
+        if (this.getVal(lobbyKey) !== true) {
+            this.setVal(lobbyKey, true, true);
+        }
+        if (this.getVal(ownerKey) !== myId) {
+            this.setVal(ownerKey, myId, true);
+        }
+        return savedRole;
+    },
+
+    applyRoomPassage: function (force) {
+        if (typeof Net === "undefined") {
+            return false;
+        }
+        var dest = Net.getState("currentPassage");
+        var seq = this.getRoomPassageSeq();
+        if (!dest || !Story.has(dest)) {
+            return false;
+        }
+        if (!force && seq <= this._lastAppliedPassageSeq) {
+            return false;
+        }
+        if (passage() !== dest) {
+            Engine.play(dest);
+        }
+        this._lastAppliedPassageSeq = seq;
+        return true;
+    },
+
+    /**
+     * Rejoin room snapshot after connect, refresh, unlock, or focus.
+     * Room state is law: restore role, sync vars, hard-navigate to currentPassage.
+     */
+    recoverSession: async function (options) {
+        options = options || {};
+        var now = Date.now();
+        if (this._recovering) {
+            return false;
+        }
+        if (now < this._recoverDebounceUntil && options.reason !== "connect") {
+            return false;
         }
 
-        this.syncFromPlayroom();
-
-        var target = Playroom.getState("currentPassage");
-        if (target && Story.has(target)) {
-            Engine.play(target);
-            return;
+        /* Focus fires often — skip full recovery when already matched to room snapshot */
+        if (
+            options.reason === "focus" &&
+            typeof Net !== "undefined" &&
+            Net.myPlayer() &&
+            this.getRole() &&
+            Net.getState("currentPassage") === passage() &&
+            this.getRoomPassageSeq() <= this._lastAppliedPassageSeq
+        ) {
+            this.refreshPartnerPresenceBanner();
+            return true;
         }
 
-        if (savedRole) {
-            Engine.play(this.checkReadyState() ? "Simulation_Hub" : "Waiting_Room");
-        } else {
-            Engine.play("Role_Selection");
+        /*
+         * Partner picked a role first → room currentPassage becomes Waiting_Room.
+         * Focus/visibility must not yank this client off Role_Selection before they pick.
+         */
+        if (
+            options.reason !== "connect" &&
+            typeof Net !== "undefined" &&
+            Net.myPlayer() &&
+            !this.getRole() &&
+            !Net.myPlayer().getState("role") &&
+            Net.getState("currentPassage") === "Waiting_Room" &&
+            (passage() === "Role_Selection" || passage() === "Start")
+        ) {
+            return true;
+        }
+
+        this._recovering = true;
+        this._recoverDebounceUntil = now + this.RECOVER_DEBOUNCE_MS;
+        this.showSyncBanner("Reconnecting…", "info", { sticky: true });
+
+        try {
+            if (typeof Net === "undefined") {
+                this.showSyncBanner("Playroom unavailable", "error", { sticky: true });
+                return false;
+            }
+
+            if (!Net.myPlayer()) {
+                try {
+                    this.restoreRoomHashBeforeConnect();
+                    await Net.insertCoin({
+                        maxPlayersPerRoom: 2,
+                        skipLobby: true,
+                        reconnectGracePeriod: this.RECONNECT_GRACE_MS
+                    });
+                    this._hasJoinedRoom = true;
+                    this.persistRoomJoinHint(Net.getRoomCode && Net.getRoomCode());
+                    var snap = await this.waitForRoomSnapshot(2500);
+                    if (
+                        Net.isHost() &&
+                        !(snap.active || this.isRoomActive()) &&
+                        !this.isRejoinAttempt()
+                    ) {
+                        this.initRoomState();
+                    }
+                } catch (reErr) {
+                    console.error("Playroom rejoin failed:", reErr);
+                    this.showSyncBanner("Could not rejoin room — refresh the page", "error", {
+                        sticky: true
+                    });
+                    return false;
+                }
+            }
+
+            if (Net.isHost() && !this.isRoomActive() && !this.isRejoinAttempt()) {
+                this.initRoomState();
+            }
+
+            var savedRole = this.restoreRoleFromRoom();
+            this.syncFromPlayroom();
+
+            var target = Net.getState("currentPassage");
+            if (target && Story.has(target)) {
+                /*
+                 * Host sets currentPassage=Waiting_Room after picking a role.
+                 * Do NOT force the other player off Role_Selection before they pick —
+                 * that left lobby_observer unset and stuck both in Waiting_Room.
+                 */
+                if (target === "Waiting_Room" && !savedRole) {
+                    if (passage() !== "Role_Selection") {
+                        Engine.play("Role_Selection");
+                    }
+                } else {
+                    this.applyRoomPassage(true);
+                }
+            } else if (savedRole) {
+                Engine.play(this.checkReadyState() ? "Simulation_Hub" : "Waiting_Room");
+            } else {
+                Engine.play("Role_Selection");
+            }
+
+            this.showSyncBanner("Back in sync", "ok", { hideAfterMs: 2000 });
+            this.refreshPartnerPresenceBanner();
+            this.refreshPatientNextSlot();
+            return true;
+        } finally {
+            this._recovering = false;
+            this.refreshPatientNextSlot();
         }
     },
 
+    /** @deprecated use recoverSession — kept for any external callers */
+    resumeSession: function () {
+        this.recoverSession({ reason: "resume" });
+    },
+
     setVal: function (key, val, reliable) {
-        if (this.isPlayroomLoaded && typeof Playroom !== "undefined") {
-            Playroom.setState(key, val, reliable !== false);
+        if (this.isPlayroomLoaded && typeof Net !== "undefined") {
+            Net.setState(key, val, reliable !== false);
         }
         State.variables[key] = val;
     },
 
     getVal: function (key) {
-        if (this.isPlayroomLoaded && typeof Playroom !== "undefined") {
-            var val = Playroom.getState(key);
+        if (this.isPlayroomLoaded && typeof Net !== "undefined") {
+            var val = Net.getState(key);
             if (val !== undefined) {
                 return val;
             }
@@ -2122,21 +3568,136 @@ window.SimApp = {
 
     /* --- 2c. Shared navigation and passage tethering --- */
 
-    /** Patient-driven navigation: updates global passage + resets eval lock */
-    nextPassage: function (passageName) {
-        this.setVal("evalComplete", false, true);
-        this.setVal("currentPassage", passageName, true);
-        if (this.getRole() === "patient" && Story.has(passageName)) {
-            Engine.play(passageName);
+    waitForPassageCommit: function (passageName, seq, timeoutMs) {
+        var self = this;
+        timeoutMs = timeoutMs || this.PASSAGE_COMMIT_TIMEOUT_MS;
+        return new Promise(function (resolve) {
+            var start = Date.now();
+            function tick() {
+                if (typeof Net === "undefined") {
+                    resolve(false);
+                    return;
+                }
+                var cur = Net.getState("currentPassage");
+                var curSeq = Number(Net.getState("passageSeq"));
+                if (cur === passageName && curSeq === seq) {
+                    resolve(true);
+                    return;
+                }
+                if (Date.now() - start >= timeoutMs) {
+                    resolve(false);
+                    return;
+                }
+                setTimeout(tick, 50);
+            }
+            tick();
+        });
+    },
+
+    /**
+     * Write reliable room snapshot first, confirm readback, then render locally.
+     * options.resetEval — clear evalComplete (patient next)
+     * options.playLocal — Engine.play after confirm (default true)
+     */
+    commitPassageChange: async function (passageName, options) {
+        options = options || {};
+        if (!passageName || !Story.has(passageName)) {
+            return false;
+        }
+        if (this._passageCommitInFlight) {
+            return false;
+        }
+
+        /* Peer already committed this destination — apply locally without bumping seq */
+        if (typeof Net !== "undefined") {
+            var existing = Net.getState("currentPassage");
+            var existingSeq = this.getRoomPassageSeq();
+            if (existing === passageName && existingSeq > this._lastAppliedPassageSeq) {
+                this._lastAppliedPassageSeq = existingSeq;
+                if (options.playLocal !== false && passage() !== passageName) {
+                    Engine.play(passageName);
+                }
+                return true;
+            }
+        }
+
+        this._passageCommitInFlight = true;
+        this.refreshPatientNextSlot();
+        try {
+            if (this.isCloudNet()) {
+                return await this._commitPassageCloud(passageName, options);
+            }
+            if (options.resetEval) {
+                this.setVal("evalComplete", false, true);
+            }
+            var prevSeq = this.getRoomPassageSeq();
+            var nextSeq = prevSeq + 1;
+            this.setVal("currentPassage", passageName, true);
+            this.setVal("passageSeq", nextSeq, true);
+
+            var confirmed = true;
+            if (this.isPlayroomLoaded && typeof Net !== "undefined" && Net.myPlayer()) {
+                confirmed = await this.waitForPassageCommit(
+                    passageName,
+                    nextSeq,
+                    options.timeoutMs || this.PASSAGE_COMMIT_TIMEOUT_MS
+                );
+            }
+            if (!confirmed) {
+                this.showSyncBanner("Could not sync — check connection", "error", { sticky: true });
+                return false;
+            }
+            this._lastAppliedPassageSeq = nextSeq;
+            if (options.playLocal !== false && passage() !== passageName) {
+                Engine.play(passageName);
+            }
+            return true;
+        } finally {
+            this._passageCommitInFlight = false;
+            this.refreshPatientNextSlot();
+            this.refreshPartnerPresenceBanner();
         }
     },
 
-    /** Both players must see this passage (hub, game over, critical events) */
-    goToSharedPassage: function (passageName) {
-        this.setVal("currentPassage", passageName, true);
-        if (Story.has(passageName) && passage() !== passageName) {
-            Engine.play(passageName);
+    /**
+     * Cloudflare: one atomic navigate (passage + seq + eval reset + room clock).
+     * If the partner moved the room first, follow the room instead.
+     */
+    _commitPassageCloud: async function (passageName, options) {
+        var expectSeq = this.getRoomPassageSeq();
+        var patch = options.resetEval ? { evalComplete: false } : null;
+        if (patch) {
+            State.variables.evalComplete = false;
         }
+        var res = await Net.navigate(passageName, expectSeq, this.timerModeFor(passageName), patch);
+        if (res.ok || Net.getState("currentPassage") === passageName) {
+            this._lastAppliedPassageSeq = this.getRoomPassageSeq();
+            if (options.playLocal !== false && passage() !== passageName) {
+                Engine.play(passageName);
+            }
+            return true;
+        }
+        if (res.reason === "stale_seq") {
+            this.applyRoomPassage(true);
+            return false;
+        }
+        this.showSyncBanner("Could not sync — check connection", "error", { sticky: true });
+        return false;
+    },
+
+    /** Patient-driven navigation: updates global passage + resets eval lock */
+    nextPassage: async function (passageName) {
+        if (!this.canPatientAdvance()) {
+            this.refreshPartnerPresenceBanner();
+            this.refreshPatientNextSlot();
+            return false;
+        }
+        return this.commitPassageChange(passageName, { resetEval: true, playLocal: true });
+    },
+
+    /** Both players must see this passage (hub, game over, critical events) */
+    goToSharedPassage: async function (passageName) {
+        return this.commitPassageChange(passageName, { resetEval: false, playLocal: true });
     },
 
     /* --- 2d. Game-over scheduling and countdown --- */
@@ -2282,10 +3843,7 @@ window.SimApp = {
 
     /** After role pick, sync lobby passage so tether does not yank to Role_Selection */
     goToWaitingRoom: function () {
-        this.setVal("currentPassage", "Waiting_Room", true);
-        if (passage() !== "Waiting_Room") {
-            Engine.play("Waiting_Room");
-        }
+        this.commitPassageChange("Waiting_Room", { playLocal: true });
     },
 
     clearLobbyRole: function (roleName) {
@@ -2297,7 +3855,7 @@ window.SimApp = {
 
     /** Mirror per-player roles into global flags (host runs each sync tick) */
     syncLobbyRolesFromPlayers: function () {
-        if (!Playroom.isHost()) {
+        if (!Net.isHost()) {
             return;
         }
         var hasPatient = false;
@@ -2320,12 +3878,12 @@ window.SimApp = {
     },
 
     setRole: function (roleName) {
-        if (typeof Playroom === "undefined" || !Playroom.myPlayer()) {
+        if (typeof Net === "undefined" || !Net.myPlayer()) {
             alert("Not connected to multiplayer yet.");
             return;
         }
 
-        var myId = Playroom.myPlayer().id;
+        var myId = Net.myPlayer().id;
         var lobbyKey = "lobby_" + roleName;
         var ownerKey = roleName + "PlayerId";
         var ownerId = this.getVal(ownerKey);
@@ -2345,22 +3903,52 @@ window.SimApp = {
             return;
         }
 
-        Playroom.myPlayer().setState("role", roleName, true);
+        Net.myPlayer().setState("role", roleName, true);
         this.setVal(lobbyKey, true, true);
         this.setVal(ownerKey, myId, true);
         this.myRole = roleName;
         State.variables.myRole = roleName;
         $("body").removeClass("role-patient role-observer").addClass("role-" + roleName);
+        this.persistRoleHint(roleName);
 
-        if (Playroom.isHost()) {
+        if (Net.isHost()) {
             this.syncLobbyRolesFromPlayers();
         }
 
         this.goToWaitingRoom();
     },
 
+    /** Team name generated by the class session ("Steady Otters"), or "" before it is known. */
+    getTeamName: function () {
+        if (!this.isCloudNet() || !Net.snapshot) {
+            return "";
+        }
+        return Net.snapshot.teamName || "";
+    },
+
+    /** Fills a lobby slot with "Your team: …" (retries briefly until the name arrives). */
+    mountTeamName: function (slotId, triesLeft) {
+        var self = this;
+        var tries = typeof triesLeft === "number" ? triesLeft : 20;
+        var $slot = $("#" + slotId);
+        var name = this.getTeamName();
+        /* Passage scripts run before the passage is on the page: wait for the slot too. */
+        if ($slot.length && name) {
+            $slot.empty().append(
+                $("<span>").text("Your team: "),
+                $("<strong>").text(name)
+            );
+            return;
+        }
+        if (tries > 0) {
+            setTimeout(function () {
+                self.mountTeamName(slotId, tries - 1);
+            }, 250);
+        }
+    },
+
     refreshRoleButtons: function () {
-        if (typeof Playroom === "undefined" || !Playroom.myPlayer()) {
+        if (typeof Net === "undefined" || !Net.myPlayer()) {
             return;
         }
         if (passage() !== "Role_Selection") {
@@ -2369,7 +3957,7 @@ window.SimApp = {
 
         var otherRole = null;
         Object.values(this.players).forEach(function (p) {
-            if (p.id !== Playroom.myPlayer().id) {
+            if (p.id !== Net.myPlayer().id) {
                 otherRole = p.getState("role");
             }
         });
@@ -2444,43 +4032,56 @@ window.SimApp = {
             self.syncLobbyRolesFromPlayers();
             self.broadcastLobbyAdvance();
             self.tetherToPassage();
+            self.refreshPartnerPresenceBanner();
             self.updateHud();
         }, 100);
     },
 
     /** Track peers — registered once when Playroom loads (not per connect) */
     registerPlayerHandlers: function () {
-        if (this._playerHandlersRegistered || typeof Playroom === "undefined") {
+        if (this._playerHandlersRegistered || typeof Net === "undefined") {
             return;
         }
         this._playerHandlersRegistered = true;
         var self = this;
-        Playroom.onPlayerJoin(function (playerState) {
+        Net.onPlayerJoin(function (playerState) {
             self.players[playerState.id] = playerState;
             playerState.onQuit(function () {
                 delete self.players[playerState.id];
                 self.refreshInviteModal();
+                self.refreshPartnerPresenceBanner();
+                self.refreshPatientNextSlot();
             });
-            if (Playroom.isHost()) {
+            if (Net.isHost()) {
                 self.syncLobbyRolesFromPlayers();
             }
             self.refreshRoleButtons();
             self.refreshInviteModal();
+            self.refreshPartnerPresenceBanner();
+            self.refreshPatientNextSlot();
         });
     },
 
     syncFromPlayroom: function () {
-        if (typeof Playroom === "undefined") {
+        if (typeof Net === "undefined") {
             return;
         }
         var self = this;
         this.STATE_KEYS.forEach(function (key) {
-            var v = Playroom.getState(key);
+            var v = Net.getState(key);
             if (v !== undefined) {
                 State.variables[key] = v;
             }
         });
-        var me = Playroom.myPlayer();
+        var seq = Net.getState("passageSeq");
+        if (seq !== undefined) {
+            State.variables.passageSeq = seq;
+        }
+        /* Remember the attempt we joined, so a partner's Try Again is noticed (followNewAttempt) */
+        if (this.isCloudNet() && this._lastAttempt === null) {
+            this._lastAttempt = Net.attempt();
+        }
+        var me = Net.myPlayer();
         if (me) {
             var savedRole = me.getState("role");
             if (savedRole) {
@@ -2515,19 +4116,22 @@ window.SimApp = {
         if (!this.checkReadyState()) {
             return;
         }
-        var globalDest = Playroom.getState("currentPassage");
+        var globalDest = Net.getState("currentPassage");
         if (globalDest === "Simulation_Hub") {
+            var here = passage();
+            if (
+                (here === "Role_Selection" || here === "Waiting_Room") &&
+                !this._passageCommitInFlight &&
+                !this._recovering
+            ) {
+                this.applyRoomPassage(true);
+            }
             return;
         }
         if (globalDest && globalDest !== "Role_Selection" && globalDest !== "Waiting_Room") {
             return;
         }
-        if (Playroom.isHost()) {
-            this.goToSharedPassage("Simulation_Hub");
-            return;
-        }
-        var here = passage();
-        if (here === "Role_Selection" || here === "Waiting_Room") {
+        if (Net.isHost() && this.getRoomPassageSeq() === 0) {
             this.goToSharedPassage("Simulation_Hub");
         }
     },
@@ -2539,20 +4143,36 @@ window.SimApp = {
 
     /** Observer follows Patient on simulation passages only; Patient follows Game Over */
     tetherToPassage: function () {
-        if (typeof Playroom === "undefined") {
+        if (typeof Net === "undefined" || this._recovering || this._passageCommitInFlight) {
+            return;
+        }
+        if (this.followNewAttempt()) {
             return;
         }
         this.advanceLobbyIfReady();
 
-        var dest = Playroom.getState("currentPassage");
-        if (!dest || dest === passage() || !Story.has(dest)) {
+        var dest = Net.getState("currentPassage");
+        var seq = this.getRoomPassageSeq();
+        if (!dest || !Story.has(dest)) {
+            return;
+        }
+        if (seq <= this._lastAppliedPassageSeq) {
             return;
         }
         var role = this.getRole();
         if (role === "observer" && this.shouldObserverTether(dest)) {
             Engine.play(dest);
+            this._lastAppliedPassageSeq = seq;
         } else if (role === "patient" && dest.indexOf("Game_Over") === 0) {
             Engine.play(dest);
+            this._lastAppliedPassageSeq = seq;
+        } else if (
+            role === "patient" &&
+            dest === "Simulation_Hub" &&
+            (passage() === "Role_Selection" || passage() === "Waiting_Room")
+        ) {
+            Engine.play(dest);
+            this._lastAppliedPassageSeq = seq;
         }
     },
 
@@ -2823,18 +4443,10 @@ window.SimApp = {
 
     /** Apply energy delta; clamps 0–15, updates HUD, may schedule game over */
     applyEnergyDelta: function (amount) {
-        var currentEnergy = Number(this.getVal("Energy"));
-        if (isNaN(currentEnergy)) {
-            currentEnergy = 10;
+        if (isNaN(Number(this.getVal("Energy")))) {
+            this.setVal("Energy", 10);
         }
-        var newEnergy = currentEnergy + amount;
-        if (newEnergy > 15) {
-            newEnergy = 15;
-        }
-        if (newEnergy < 0) {
-            newEnergy = 0;
-        }
-        this.setVal("Energy", newEnergy);
+        var newEnergy = this._addVal("Energy", amount, 0, 15);
         if ($("#energy-display").length) {
             $("#energy-display").text(newEnergy);
         }
@@ -2847,12 +4459,7 @@ window.SimApp = {
 
     /** Apply points delta and refresh #points-display */
     applyPointsDelta: function (amount) {
-        var currentPoints = Number(this.getVal("Points"));
-        if (isNaN(currentPoints)) {
-            currentPoints = 0;
-        }
-        var newPoints = currentPoints + amount;
-        this.setVal("Points", newPoints);
+        var newPoints = this._addVal("Points", amount);
         if ($("#points-display").length) {
             $("#points-display").text(newPoints);
         }
@@ -2866,8 +4473,7 @@ window.SimApp = {
             if (!behaviorName) {
                 continue;
             }
-            var currentVal = this.getVal(behaviorName) || 0;
-            this.setVal(behaviorName, currentVal + 1);
+            this._addVal(behaviorName, 1);
         }
     },
 
@@ -2889,9 +4495,7 @@ window.SimApp = {
     /** Rescue inhaler button (PassageFooter) */
     applyInhalerUse: function () {
         this._spawnStatPopups($("#wrap-inhaler button"), 2, 0);
-        var currentInhaler = Number(this.getVal("Inhaler")) || 0;
-        var newInhaler = currentInhaler + 1;
-        this.setVal("Inhaler", newInhaler);
+        var newInhaler = this._addVal("Inhaler", 1);
         if ($("#inhaler-display").length) {
             $("#inhaler-display").text(newInhaler);
         }
@@ -3140,19 +4744,9 @@ window.SimApp = {
             var current;
             var next;
             if (item.op === "add") {
-                current = Number(self.getVal(item.key));
-                if (isNaN(current)) {
-                    current = 0;
-                }
-                next = current + item.value;
-                self.setVal(item.key, next, true);
+                self._addVal(item.key, Number(item.value) || 0);
             } else if (item.op === "subtract") {
-                current = Number(self.getVal(item.key));
-                if (isNaN(current)) {
-                    current = 0;
-                }
-                next = current - item.value;
-                self.setVal(item.key, next, true);
+                self._addVal(item.key, -(Number(item.value) || 0));
             } else {
                 self.setVal(item.key, item.value, true);
             }
@@ -3236,6 +4830,10 @@ window.SimApp = {
             if (self.isGameOverPending()) {
                 return;
             }
+            if (!self.canPatientAdvance()) {
+                self.refreshPartnerPresenceBanner();
+                return;
+            }
             var gameOver = !self.applyPatientEnergy(choice.energy);
             if (choice.stateOps && choice.stateOps.length) {
                 self.applyPatientChoiceStateOps(choice.stateOps);
@@ -3297,6 +4895,13 @@ window.SimApp = {
         var feedback = this.getVal("patientFeedback") || "";
         var feedbackColor = this.getVal("patientFeedbackColor") || "red";
 
+        if (this._passageCommitInFlight || this._recovering) {
+            $slot.html(
+                '<div class="gray-box patient-footer-hint">Syncing with partner<span class="loading-text"></span></div>'
+            );
+            return;
+        }
+
         if (choicesMounted && !this._patientChoiceResolved) {
             $slot.html(
                 '<div class="gray-box patient-footer-hint">Make your selection above, then wait for your Observer.</div>'
@@ -3324,6 +4929,13 @@ window.SimApp = {
             return;
         }
 
+        if (!this.canPatientAdvance()) {
+            $slot.html(
+                '<div class="gray-box patient-footer-hint">Waiting for partner to reconnect<span class="loading-text"></span></div>'
+            );
+            return;
+        }
+
         var html = "";
         if (feedback) {
             html += this._renderPatientConsequence(feedback, feedbackColor);
@@ -3336,6 +4948,11 @@ window.SimApp = {
         $slot.html(html);
         $slot.find(".patient-next-btn").on("click", function () {
             if (self.isObserverEvalRequired() && self.getVal("evalComplete") !== true) {
+                return;
+            }
+            if (!self.canPatientAdvance()) {
+                self.refreshPartnerPresenceBanner();
+                self.refreshPatientNextSlot();
                 return;
             }
             if (cfg.resetBeforeStart) {
@@ -3523,28 +5140,102 @@ window.SimApp = {
     }
 }());
 
-/* Load Playroom Kit via SugarCube CDN importer */
-importScripts("https://unpkg.com/playroomkit/multiplayer.full.umd.js")
-    .then(function () {
-        window.SimApp.isPlayroomLoaded = true;
-        window.SimApp.registerPlayerHandlers();
-        var loader = document.getElementById("loading-overlay");
-        var btnContainer = document.getElementById("connect-container");
-        if (loader && btnContainer) {
-            loader.classList.add("hidden");
-            btnContainer.classList.remove("hidden");
-        }
-    })
-    .catch(function (error) {
-        console.error("Playroom script failed to load:", error);
-        var loader = document.getElementById("loading-overlay");
-        if (loader) {
-            loader.innerHTML = "Failed to load multiplayer services. Please check your internet and refresh the page.";
-            loader.style.color = "red";
+/*
+ * Multiplayer backend: "cf" (Cloudflare pair rooms, default) or "playroom" (Playroom Kit, fallback).
+ * Override per link with ?net=playroom or ?net=cf; change the default with setup.NET_BACKEND.
+ *
+ * setup.NET_ENDPOINT is the Cloudflare WebSocket address used when the game is opened from
+ * somewhere other than the Worker itself (GitHub Pages, a local file, Twine preview).
+ * When the page is served by the Worker (or wrangler dev on localhost), the same host is used.
+ */
+setup.NET_BACKEND = setup.NET_BACKEND || "cf";
+setup.NET_ENDPOINT = setup.NET_ENDPOINT || "wss://copd-sim.rparker-d61.workers.dev/ws/room";
+
+function simCloudEndpoint() {
+    var host = String(window.location.host || "");
+    var servedByWorker = /\.workers\.dev$/i.test(window.location.hostname || "") ||
+        /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host);
+    return servedByWorker ? null : setup.NET_ENDPOINT;
+}
+
+function simNetReady(net) {
+    window.Net = net;
+    window.SimApp.isPlayroomLoaded = true;
+    window.SimApp.registerPlayerHandlers();
+    window.SimApp.revealConnectButton();
+}
+
+function simChooseBackend() {
+    var q = null;
+    try { q = new URLSearchParams(window.location.search).get("net"); } catch (eQ) { /* old browser */ }
+    var b = String(q || setup.NET_BACKEND || "cf").toLowerCase();
+    return b === "playroom" ? "playroom" : "cf";
+}
+
+if (simChooseBackend() === "cf") {
+    /*
+     * No SDK to download. Start's Connect button / session-code box only exist once the passage
+     * is attached to the page, so reveal them on :passagedisplay (and once after :storyready).
+     */
+    $(document).on(":passagedisplay", function () {
+        if (window.Net && passage() === "Start") {
+            window.SimApp.revealConnectButton();
         }
     });
+    $(document).one(":storyready", function () {
+        simNetReady(window.createCloudNet({ endpoint: simCloudEndpoint() }));
+        /* SugarCube restores the last passage on reload; without a session code there is no
+           room to be in, so go back to Start (where the session-code box is). */
+        if (!window.Net.session && passage() !== "Start") {
+            Engine.play("Start");
+            return;
+        }
+        setTimeout(function () {
+            if (passage() === "Start") {
+                window.SimApp.revealConnectButton();
+            }
+        }, 0);
+        /* An invite or refresh link carries ?s=&p= — rejoin automatically so Connect is not required */
+        if (window.Net.session && window.Net.pair && !window.SimApp._hasJoinedRoom && !window.SimApp._autoConnectStarted) {
+            window.SimApp._autoConnectStarted = true;
+            window.SimApp.showSyncBanner("Joining room…", "info", { sticky: true });
+            window.SimApp.connect();
+        }
+    });
+} else {
+    /* Load Playroom Kit via SugarCube CDN importer */
+    importScripts("https://unpkg.com/playroomkit/multiplayer.full.umd.js")
+        .then(function () {
+            simNetReady(window.createPlayroomNet(window.Playroom));
+            /* Refresh keeps #r= — auto-rejoin so Connect is not required after reload */
+            var hasRoomHash = !!(window.location.hash && /#r=/i.test(String(window.location.hash || "")));
+            if (hasRoomHash && !window.SimApp._hasJoinedRoom && !window.SimApp._autoConnectStarted) {
+                window.SimApp._autoConnectStarted = true;
+                window.SimApp.showSyncBanner("Rejoining room…", "info", { sticky: true });
+                window.SimApp.connect();
+            }
+        })
+        .catch(function (error) {
+            console.error("Playroom script failed to load:", error);
+            var loader = document.getElementById("loading-overlay");
+            if (loader) {
+                loader.innerHTML = "Failed to load multiplayer services. Please check your internet and refresh the page.";
+                loader.style.color = "red";
+            }
+        });
+}
 
 :: StoryStylesheet [stylesheet]
+/* Team name (generated by the class session) shown in the lobby */
+.team-name-banner:empty { display: none; }
+.team-name-banner {
+    margin: 0.75em 0;
+    padding: 0.5em 0.75em;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.1em;
+}
 /* Global box model — prevents padding from pushing content past the viewport */
 *, *::before, *::after {
     box-sizing: border-box;
@@ -3724,6 +5415,57 @@ body, html {
   line-height: 1.4;
   text-align: center;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+/* Sync / reconnect status strip (refresh, unlock, partner drop) */
+.sim-sync-banner {
+  position: fixed;
+  left: 50%;
+  top: max(12px, env(safe-area-inset-top));
+  transform: translateX(-50%);
+  z-index: 1600;
+  max-width: min(94vw, 440px);
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #1e272e;
+  color: #ffffff;
+  font-size: 0.9em;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+}
+.sim-sync-banner.hidden {
+  display: none !important;
+}
+.sim-sync-banner.state-ok {
+  background: #1e5c36;
+}
+.sim-sync-banner.state-warn {
+  background: #7a5b12;
+}
+.sim-sync-banner.state-error {
+  background: #7a1f1f;
+}
+.sim-sync-banner-continue {
+  display: inline-block;
+  width: auto;
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 0.9em;
+  background-color: #ffffff;
+  color: #1e272e;
+  box-shadow: none;
+}
+.sim-sync-banner-continue.hidden {
+  display: none !important;
+}
+.sim-sync-banner-continue:hover {
+  background-color: #e8e8e8;
 }
 /* 2. Global styling for a clean, app-like feel */
 

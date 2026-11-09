@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pair Room Sync Test</title>
+<style>
+  :root { --bg:#f6f7f9; --fg:#1d232b; --muted:#5b6673; --card:#fff; --line:#d9dee5; --ok:#1f7a3d; --bad:#b3261e; --accent:#2457c5; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#14181d; --fg:#e7ebf0; --muted:#9aa5b1; --card:#1d232b; --line:#323b46; --ok:#5cc983; --bad:#ff8a80; --accent:#8ab0ff; } }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:15px/1.45 system-ui, sans-serif; }
+  main { max-width:640px; margin:0 auto; display:grid; gap:12px; }
+  h1 { font-size:20px; margin:0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; display:grid; gap:8px; }
+  .row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  input { font:inherit; padding:6px 8px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--fg); min-width:0; width:9em; }
+  button { font:inherit; padding:6px 12px; border-radius:6px; border:1px solid var(--accent); background:var(--accent); color:#fff; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--accent); }
+  #status.ok { color:var(--ok); } #status.bad { color:var(--bad); }
+  pre { margin:0; white-space:pre-wrap; word-break:break-word; font-size:13px; max-height:40vh; overflow:auto; }
+  .muted { color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Pair room sync test</h1>
+  <p class="muted">Open this page on two devices with the same session and pair code. Changes on one should appear on the other; refresh either device and its role should come back.</p>
+
+  <div class="card">
+    <div class="row">
+      <label>Session <input id="s" value="TEST1" autocomplete="off"></label>
+      <label>Pair <input id="p" value="1" autocomplete="off"></label>
+      <button id="connect">Connect</button>
+      <button id="forget" class="ghost" title="Drop this device's saved token">Forget me</button>
+    </div>
+    <div>Status: <strong id="status">disconnected</strong> · You: <strong id="you">—</strong></div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <button data-role="patient">Be patient</button>
+      <button data-role="observer">Be observer</button>
+      <button data-role="" class="ghost">Drop role</button>
+    </div>
+    <div class="row">
+      <button id="points">Points +1</button>
+      <button id="energy">Energy −1</button>
+      <button id="nav" class="ghost">Navigate to next passage</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <strong>Room snapshot</strong>
+    <pre id="snap">—</pre>
+  </div>
+</main>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var ws = null, snapshot = null, you = null, retry = 0, retryTimer = null, wanted = false;
+
+  var q = new URLSearchParams(location.search);
+  if (q.get("s")) $("s").value = q.get("s");
+  if (q.get("p")) $("p").value = q.get("p");
+
+  function key() { return "copdnet:" + $("s").value.trim().toUpperCase() + ":" + $("p").value.trim().toUpperCase(); }
+  function getToken() { try { return localStorage.getItem(key()); } catch (e) { return null; } }
+  function setToken(t) { try { localStorage.setItem(key(), t); } catch (e) { /* private mode */ } }
+
+  function setStatus(text, cls) { $("status").textContent = text; $("status").className = cls || ""; }
+  function render() {
+    $("you").textContent = you ? (you.role || "no role") : "—";
+    $("snap").textContent = snapshot ? JSON.stringify(snapshot, null, 2) : "—";
+  }
+
+  function connect() {
+    wanted = true;
+    clearTimeout(retryTimer);
+    if (ws) { ws.onclose = null; ws.close(); }
+    var proto = location.protocol === "https:" ? "wss:" : "ws:";
+    var url = proto + "//" + location.host + "/ws/room?s=" + encodeURIComponent($("s").value) + "&p=" + encodeURIComponent($("p").value);
+    setStatus("connecting…");
+    ws = new WebSocket(url);
+    ws.onopen = function () {
+      retry = 0;
+      ws.send(JSON.stringify({ t: "hello", token: getToken() }));
+    };
+    ws.onmessage = function (ev) {
+      var m = JSON.parse(ev.data);
+      if (m.t === "welcome") { setToken(m.token); you = m.you; snapshot = m.snapshot; setStatus("connected", "ok"); }
+      else if (m.t === "state") { snapshot = m.snapshot; if (m.you) you = m.you; }
+      else if (m.t === "reject") { snapshot = m.snapshot; if (m.you) you = m.you; setStatus("rejected: " + m.reason, "bad"); setTimeout(function () { if (ws && ws.readyState === 1) setStatus("connected", "ok"); }, 2000); }
+      render();
+    };
+    ws.onclose = function () {
+      setStatus("disconnected — retrying", "bad");
+      if (!wanted) return;
+      retry = Math.min(retry + 1, 6);
+      retryTimer = setTimeout(connect, Math.min(500 * Math.pow(2, retry), 10000));
+    };
+  }
+
+  function send(msg) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); }
+
+  $("connect").onclick = connect;
+  $("forget").onclick = function () { try { localStorage.removeItem(key()); } catch (e) {} you = null; render(); };
+  document.querySelectorAll("[data-role]").forEach(function (b) {
+    b.onclick = function () { send({ t: "claimRole", role: b.getAttribute("data-role") || null }); };
+  });
+  $("points").onclick = function () { send({ t: "inc", key: "Points", by: 1 }); };
+  $("energy").onclick = function () { send({ t: "inc", key: "Energy", by: -1, min: 0, max: 15 }); };
+  $("nav").onclick = function () { if (snapshot) send({ t: "navigate", passage: "Passage_" + (snapshot.passageSeq + 1), expectSeq: snapshot.passageSeq }); };
+
+  // Phones drop sockets when locked; reconnect as soon as the page is visible again.
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && wanted && (!ws || ws.readyState > 1)) connect();
+  });
+
+  if (q.get("s")) connect();
+})();
+</script>
+</body>
+</html>
