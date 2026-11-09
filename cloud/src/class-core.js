@@ -3,8 +3,10 @@
  * The ClassSession Durable Object (class-session.js) wraps this; Node tests drive it directly.
  *
  * A session is created by the instructor. Pairs register the first time a student joins
- * (canJoin). Closing a session stops NEW pairs; pairs already playing can finish and their
- * results still count.
+ * (canJoin) and get a generated team name ("Steady Otters") that is unique in the session —
+ * that name is what the leaderboard and CSV show (no student names are collected).
+ * Closing a session stops NEW pairs; pairs already playing can finish and their results
+ * still count.
  */
 import { rankResults, bestPerPair, formatElapsed } from "./ranking.js";
 
@@ -23,21 +25,48 @@ export function newSessionCode(random = Math.random) {
     return `COPD-${out}`;
 }
 
+/* Team names: friendly adjective + animal. 30 × 30 = 900 combinations per session. */
+export const TEAM_ADJECTIVES = [
+    "Brave", "Calm", "Steady", "Mighty", "Swift", "Clever", "Bright", "Bold", "Gentle", "Lucky",
+    "Sunny", "Cosmic", "Daring", "Eager", "Fearless", "Golden", "Happy", "Jolly", "Kind", "Lively",
+    "Merry", "Noble", "Plucky", "Quick", "Radiant", "Spirited", "Trusty", "Valiant", "Witty", "Zesty",
+];
+export const TEAM_ANIMALS = [
+    "Otters", "Owls", "Foxes", "Pandas", "Falcons", "Turtles", "Hummingbirds", "Dolphins", "Koalas", "Penguins",
+    "Badgers", "Beavers", "Bison", "Cardinals", "Cheetahs", "Eagles", "Geckos", "Herons", "Jaguars", "Lynxes",
+    "Manatees", "Meerkats", "Narwhals", "Ospreys", "Pelicans", "Puffins", "Ravens", "Sea Lions", "Tigers", "Wolves",
+];
+
+/** A team name not already used in this session. */
+export function newTeamName(used, random = Math.random) {
+    const taken = new Set(used);
+    for (let i = 0; i < 50; i++) {
+        const name =
+            TEAM_ADJECTIVES[Math.floor(random() * TEAM_ADJECTIVES.length)] + " " +
+            TEAM_ANIMALS[Math.floor(random() * TEAM_ANIMALS.length)];
+        if (!taken.has(name)) return name;
+    }
+    // Very full session (or unlucky rolls): walk the list, then number them.
+    for (const a of TEAM_ADJECTIVES) for (const b of TEAM_ANIMALS) if (!taken.has(`${a} ${b}`)) return `${a} ${b}`;
+    let n = 2;
+    while (taken.has(`Team ${n}`)) n++;
+    return `Team ${n}`;
+}
+
 export function newSession({ code, course, now }) {
     return { v: 1, code, course: cleanCourse(course), createdAt: now, closedAt: null, pairs: {}, results: [] };
 }
 
-function emptyPair(pair, now) {
+function emptyPair(pair, now, teamName) {
     return {
         pair,
+        teamName,
         attempt: 1,
         status: "waiting",
         passage: "",
         points: 0,
         energy: 10,
         elapsedMs: 0,
-        patientName: "",
-        observerName: "",
         patientConnected: false,
         observerConnected: false,
         updatedAt: now,
@@ -45,15 +74,24 @@ function emptyPair(pair, now) {
 }
 
 /**
- * May a NEW student seat in `pair` join? Registers the pair on first join.
- * @returns {{ ok: boolean, reason?: string, dirty: boolean }}
+ * May a NEW student seat in `pair` join? Registers the pair (with a team name) on first join.
+ * Also answers already-registered pairs with their team name (gives one to pairs registered
+ * before team names existed).
+ * @returns {{ ok: boolean, reason?: string, teamName?: string, dirty: boolean }}
  */
-export function canJoin(session, pair, now) {
+export function canJoin(session, pair, now, random = Math.random) {
     if (!session) return { ok: false, reason: "no_session", dirty: false };
-    if (session.pairs[pair]) return { ok: true, dirty: false };
+    const used = () => Object.values(session.pairs).map((p) => p.teamName).filter(Boolean);
+    const existing = session.pairs[pair];
+    if (existing) {
+        if (existing.teamName) return { ok: true, teamName: existing.teamName, dirty: false };
+        existing.teamName = newTeamName(used(), random);
+        return { ok: true, teamName: existing.teamName, dirty: true };
+    }
     if (session.closedAt) return { ok: false, reason: "session_closed", dirty: false };
-    session.pairs[pair] = emptyPair(pair, now);
-    return { ok: true, dirty: true };
+    const teamName = newTeamName(used(), random);
+    session.pairs[pair] = emptyPair(pair, now, teamName);
+    return { ok: true, teamName, dirty: true };
 }
 
 /**
@@ -62,7 +100,8 @@ export function canJoin(session, pair, now) {
  */
 export function applyProgress(session, p) {
     if (!session || !p || !p.pair || !session.pairs[p.pair]) return false;
-    session.pairs[p.pair] = { ...session.pairs[p.pair], ...p };
+    const { teamName, ...rest } = p; // the session owns the team name
+    session.pairs[p.pair] = { ...session.pairs[p.pair], ...rest };
     return true;
 }
 
@@ -70,22 +109,23 @@ export function applyProgress(session, p) {
 export function applyResult(session, r) {
     if (!session || !r || !r.pair) return false;
     session.results = session.results.filter((x) => !(x.pair === r.pair && x.attempt === r.attempt));
-    session.results.push(r);
+    const team = session.pairs[r.pair] && session.pairs[r.pair].teamName;
+    session.results.push(team ? { ...r, teamName: team } : r);
     if (session.pairs[r.pair]) session.pairs[r.pair].status = "finished";
     return true;
 }
 
-/** "Robin & Sam", or "Pair KCP2" when no nicknames were given. */
+/** The team name, or "Pair KCP2" for pairs from before team names existed. */
 export function pairLabel(r) {
-    const names = [r.patientName, r.observerName].filter(Boolean);
-    return names.length ? names.join(" & ") : `Pair ${r.pair}`;
+    return r.teamName || `Pair ${r.pair}`;
 }
 
 /** Everything the instructor page shows. */
 export function board(session) {
     if (!session) return null;
-    const pairs = Object.values(session.pairs).sort((a, b) => String(a.pair).localeCompare(String(b.pair)));
-    const withLabels = (rows) => rows.map((r) => ({ ...r, label: pairLabel(r) }));
+    const pairs = Object.values(session.pairs).sort((a, b) => pairLabel(a).localeCompare(pairLabel(b)));
+    const teamOf = (r) => (session.pairs[r.pair] && session.pairs[r.pair].teamName) || r.teamName;
+    const withLabels = (rows) => rows.map((r) => ({ ...r, label: pairLabel({ ...r, teamName: teamOf(r) }) }));
     const finishedPairs = new Set(session.results.map((r) => r.pair)).size;
     return {
         code: session.code,
@@ -104,7 +144,7 @@ export function board(session) {
 
 function csvCell(value) {
     let v = value === null || value === undefined ? "" : String(value);
-    // Stop spreadsheet formula injection from nicknames like "=HYPERLINK(...)"
+    // Stop spreadsheet formula injection (defense in depth; team names are generated)
     if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
     return /[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
 }
@@ -112,15 +152,14 @@ function csvCell(value) {
 /** CSV of every attempt, ranked (rank = rank among all attempts). */
 export function toCsv(session) {
     const header = [
-        "rank", "session", "pair", "patient", "observer", "attempt", "points", "time",
+        "rank", "session", "team", "pair", "attempt", "points", "time",
         "elapsed_seconds", "energy", "has_meds", "has_toy", "outcome", "finished_at",
     ];
     const rows = rankResults(session ? session.results : []).map((r) => [
         r.rank,
         session.code,
+        pairLabel({ ...r, teamName: (session.pairs[r.pair] && session.pairs[r.pair].teamName) || r.teamName }),
         r.pair,
-        r.patientName,
-        r.observerName,
         r.attempt,
         r.points,
         formatElapsed(r.elapsedMs),

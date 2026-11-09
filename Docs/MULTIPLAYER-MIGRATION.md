@@ -28,7 +28,7 @@ Replace Playroom Kit with a **serverless** backend on Cloudflare Workers and Dur
 
 ### Non-goals (for now)
 
-- Accounts or student logins (session codes plus nicknames are enough).
+- Accounts or student logins (session codes plus generated team names are enough).
 - LMS/Canvas grade passback.
 - Rooms with more than two players, including mid-game spectators (decided in §10).
 - A custom domain (the free `*.workers.dev` address is used).
@@ -230,7 +230,7 @@ These differences from the tables above were made during implementation:
 
 **Lobby changes**
 - **Session code:** without `?s=`, the Start screen shows a "Class session code" box instead of Connect.
-- **Nickname:** Role Selection has an optional nickname box (up to 20 characters). It's remembered on the device and sent to the server for the leaderboard.
+- **Team name** (replaces the earlier optional nickname box): when a pair first joins, the class session gives it a generated name such as "Steady Otters", unique within that session. Students see it on Role Selection, Waiting Room and the debrief, so they can find themselves on the projector. No student names are collected.
 - **Taking back a seat:** if a pair is full, a student who switched device or browser can take back whichever seat is offline, keeping its role (`hello {takeover:true}`). They're asked to confirm first. An online seat can never be taken.
 
 **Where the game connects**
@@ -262,7 +262,7 @@ These differences from the tables above were made during implementation:
 
 | Piece | Role |
 |---|---|
-| `room-core.js` | Builds the **official result** when a pair reaches Final_Report, once per attempt, from server state: points, elapsed time, energy, meds, toy and nicknames. "Made it" = no Game Over this attempt, Energy > 0 and Inhaler < 7. It also sends progress (status, screen, score) on joins, moves and presence changes. |
+| `room-core.js` | Builds the **official result** when a pair reaches Final_Report, once per attempt, from server state: points, elapsed time, energy, meds, toy and the team name. "Made it" = no Game Over this attempt, Energy > 0 and Inhaler < 7. It also sends progress (status, screen, score) on joins, moves and presence changes. |
 | `ClassSession` Durable Object (one per session code) | Holds the live board, pushes it to the instructor page over a WebSocket, writes each result to D1, and admits pairs (`canJoin`). |
 | `PairRoom` | Asks `canJoin` before seating any **new** player. Unknown code → `no_session`; closed session with a new pair → `session_closed`. The game shows a clear message and returns the student to the session-code box. Reconnects and seat takeovers in an admitted pair always work. |
 | `ranking.js`, `class-core.js`, `auth.js` | Pure, tested modules. The PIN check is constant-time, and wrong PINs are delayed 0.75 s. |
@@ -286,6 +286,8 @@ These differences from the tables above were made during implementation:
 **Local development:** put `ADMIN_PIN=...` in `cloud/.dev.vars` (gitignored), then run `npx wrangler d1 migrations apply copd-sim-results --local` once.
 
 **Tests:** 42 resync, 14 client, 8 gameplay, 41 server (now including ranking, class sessions, results, CSV, PIN), plus the flow validator.
+
+**Later change: team names.** The class session generates each pair's team name (adjective + animal, 900 combinations, unique per session) and the pair room keeps a copy for the game screens. The leaderboard, live pairs table and CSV (`team` column) show it. D1 migration `0002_team_name.sql` adds `results.team_name`; run `npx wrangler d1 migrations apply copd-sim-results --remote` once after deploying. Pairs from before the change get a team name the next time a player joins; finished results from before show as "Pair XXXX".
 
 ## 7. Client changes
 
@@ -337,7 +339,7 @@ Pairs still tied after rule 5 share the same rank. Unfinished attempts are liste
 
 ## 9. Security & privacy
 
-- **Student privacy (FERPA):** collect only a nickname or first name per role, with no student IDs or emails. Set a retention period, e.g. delete results older than one academic year (a scheduled Worker job can do this).
+- **Student privacy (FERPA):** no student names, IDs or emails are collected; pairs are identified only by a generated team name (e.g. "Steady Otters"). Set a retention period, e.g. delete results older than one academic year (a scheduled Worker job can do this).
 - **Instructor actions** (create/close session, view leaderboard, export): protected by a single admin PIN stored as a Cloudflare secret (not in the repo). Only one instructor needs access, so no login system.
 - **Validation:** the server only accepts known game keys, with type and range checks (e.g. Energy 0–10), plus a per-connection rate limit.
 - **Network:** WebSockets over `wss://` on port 443, which normally passes through campus networks.

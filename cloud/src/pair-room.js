@@ -58,13 +58,17 @@ export class PairRoom extends DurableObject {
             msg = null;
         }
 
-        // Gate new seats on the instructor's class session.
-        if (msg && msg.t === "hello" && !(typeof msg.token === "string" && this.room.state.players[msg.token])) {
+        // Gate new seats on the instructor's class session (and pick up the team name).
+        const knownSeat = !!(msg && typeof msg.token === "string" && this.room.state.players[msg.token]);
+        if (msg && msg.t === "hello" && (!knownSeat || !this.room.state.teamName)) {
             const gate = await this.checkSession();
-            if (!gate.ok) {
+            if (!gate.ok && !knownSeat) {
                 ws.send(JSON.stringify({ t: "reject", reason: gate.reason }));
                 ws.close(4003, gate.reason);
                 return;
+            }
+            if (gate.ok && this.room.setTeamName(gate.teamName)) {
+                await this.ctx.storage.put(STATE_KEY, this.room.state);
             }
         }
 

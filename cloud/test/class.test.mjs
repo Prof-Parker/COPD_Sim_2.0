@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { compareResults, rankResults, bestPerPair, formatElapsed } from "../src/ranking.js";
-import { newSession, canJoin, applyProgress, applyResult, board, toCsv, newSessionCode, SESSION_RE } from "../src/class-core.js";
+import { newSession, canJoin, applyProgress, applyResult, board, toCsv, newSessionCode, newTeamName, SESSION_RE, TEAM_ADJECTIVES, TEAM_ANIMALS } from "../src/class-core.js";
 import { RoomCore } from "../src/room-core.js";
 import { pinMatches, pinFromRequest } from "../src/auth.js";
 
@@ -54,6 +54,44 @@ test("pairs can join an open session; a closed session only admits pairs already
     assert.deepEqual(canJoin(s, "P2", 4), { ok: false, reason: "session_closed", dirty: false });
 });
 
+/* ---------------- team names ---------------- */
+
+test("each pair gets a generated team name, unique within the session, kept on rejoin", () => {
+    const s = newSession({ code: "COPD-TEST", course: "", now: 1 });
+    const first = canJoin(s, "AAAA", 1, () => 0); // forces the same first pick every time
+    const second = canJoin(s, "BBBB", 1, () => 0);
+    assert.equal(first.teamName, "Brave Otters");
+    assert.notEqual(second.teamName, first.teamName);
+    assert.equal(canJoin(s, "AAAA", 2).teamName, "Brave Otters"); // second player / reconnect
+    assert.equal(s.pairs.AAAA.teamName, "Brave Otters");
+});
+
+test("team names are adjective + animal, and never repeat even when the list runs out", () => {
+    const used = [];
+    for (let i = 0; i < TEAM_ADJECTIVES.length * TEAM_ANIMALS.length + 3; i++) used.push(newTeamName(used));
+    assert.equal(new Set(used).size, used.length);
+    assert.match(used[0], /^[A-Z][a-z]+ [A-Z][a-z]+( [A-Z][a-z]+)?$/);
+    assert.deepEqual(used.slice(-3), ["Team 2", "Team 3", "Team 4"]);
+});
+
+test("pairs registered before team names existed get one on their next join", () => {
+    const s = newSession({ code: "COPD-TEST", course: "", now: 1 });
+    s.pairs.OLD1 = { pair: "OLD1", attempt: 1, status: "playing" };
+    s.closedAt = 5; // still allowed: the pair was already admitted
+    const res = canJoin(s, "OLD1", 6);
+    assert.equal(res.ok, true);
+    assert.ok(res.teamName);
+    assert.equal(res.dirty, true);
+});
+
+test("a progress update can't rename a team", () => {
+    const s = newSession({ code: "COPD-TEST", course: "", now: 1 });
+    const { teamName } = canJoin(s, "AAAA", 1);
+    applyProgress(s, { pair: "AAAA", teamName: "Hacked Name", points: 3 });
+    assert.equal(s.pairs.AAAA.teamName, teamName);
+    assert.equal(s.pairs.AAAA.points, 3);
+});
+
 test("a refused pair's progress update can't register it (closed session stays closed)", () => {
     const s = newSession({ code: "COPD-TEST", course: "", now: 1 });
     s.closedAt = 2;
@@ -65,29 +103,34 @@ test("a refused pair's progress update can't register it (closed session stays c
 
 test("board: live pairs, ranked best and all attempts, finished count, labels", () => {
     const s = newSession({ code: "COPD-TEST", course: "", now: 1 });
-    canJoin(s, "AAAA", 1);
-    canJoin(s, "BBBB", 1);
-    applyProgress(s, { pair: "AAAA", status: "playing", passage: "Breakfast", points: 4, patientName: "Robin", observerName: "Sam" });
-    applyResult(s, r("AAAA", 1, 20, 500_000, 4, false, false, { patientName: "Robin", observerName: "Sam" }));
-    applyResult(s, r("AAAA", 2, 30, 600_000, 2, false, false, { patientName: "Robin", observerName: "Sam" }));
-    applyResult(s, r("AAAA", 2, 30, 600_000, 2, false, false, { patientName: "Robin", observerName: "Sam" })); // duplicate replaced
+    const team = canJoin(s, "AAAA", 1).teamName;
+    s.pairs.BBBB = { pair: "BBBB", attempt: 1, status: "waiting" }; // legacy pair without a team name
+    applyProgress(s, { pair: "AAAA", status: "playing", passage: "Breakfast", points: 4 });
+    applyResult(s, r("AAAA", 1, 20, 500_000, 4));
+    applyResult(s, r("AAAA", 2, 30, 600_000, 2));
+    applyResult(s, r("AAAA", 2, 30, 600_000, 2)); // duplicate replaced
     const b = board(s);
     assert.equal(b.pairCount, 2);
     assert.equal(b.finishedPairs, 1);
     assert.equal(b.all.length, 2);
     assert.equal(b.best.length, 1);
     assert.equal(b.best[0].attempt, 2);
-    assert.equal(b.best[0].label, "Robin & Sam");
+    assert.equal(b.best[0].label, team);
+    assert.equal(b.all[1].label, team);
     assert.equal(b.pairs.find((p) => p.pair === "AAAA").status, "finished");
     assert.equal(b.pairs.find((p) => p.pair === "BBBB").label, "Pair BBBB");
 });
 
 test("CSV: ranked rows, readable times, and no spreadsheet formula injection", () => {
     const s = newSession({ code: "COPD-TEST", course: "", now: 1 });
-    applyResult(s, r("AAAA", 1, 20, 65_000, 4, true, false, { patientName: "=HYPERLINK(1)", observerName: 'Sam "S"' }));
+    s.pairs.AAAA = { pair: "AAAA", teamName: 'Steady "Otters"' };
+    s.pairs.BBBB = { pair: "BBBB", teamName: "=HYPERLINK(1)" };
+    applyResult(s, r("AAAA", 1, 20, 65_000, 4, true, false));
+    applyResult(s, r("BBBB", 1, 10, 65_000, 4, false, false, { win: false }));
     const lines = toCsv(s).trim().split("\r\n");
-    assert.equal(lines[0], "rank,session,pair,patient,observer,attempt,points,time,elapsed_seconds,energy,has_meds,has_toy,outcome,finished_at");
-    assert.equal(lines[1], `1,COPD-TEST,AAAA,'=HYPERLINK(1),"Sam ""S""",1,20,1:05,65,4,yes,no,made it through the day,2023-11-14T22:13:20.000Z`);
+    assert.equal(lines[0], "rank,session,team,pair,attempt,points,time,elapsed_seconds,energy,has_meds,has_toy,outcome,finished_at");
+    assert.equal(lines[1], `1,COPD-TEST,"Steady ""Otters""",AAAA,1,20,1:05,65,4,yes,no,made it through the day,2023-11-14T22:13:20.000Z`);
+    assert.equal(lines[2], `2,COPD-TEST,'=HYPERLINK(1),BBBB,1,10,1:05,65,4,no,no,hospital,2023-11-14T22:13:20.000Z`);
 });
 
 test("generated session codes are valid and avoid look-alike characters", () => {
@@ -120,12 +163,13 @@ test("reaching Final_Report emits one official result built from server state", 
     room.handle(a, { t: "set", patch: { Energy: 6, Points: 22, Inhaler: 2, hasMedications: true, hasToy: false } });
     nav("Simulation_Hub", "run");
     tick(90_000);
+    room.setTeamName("Calm Owls");
     const done = nav("Final_Report", "stop");
     const result = done.events.find((e) => e.type === "result").result;
     assert.deepEqual(
         { ...result, finishedAt: undefined },
         {
-            pair: "AAAA", attempt: 1, patientName: "Robin", observerName: "Sam", points: 22, energy: 6,
+            pair: "AAAA", teamName: "Calm Owls", attempt: 1, points: 22, energy: 6,
             elapsedMs: 90_000, hasMeds: true, hasToy: false, win: true, finishedAt: undefined,
         }
     );

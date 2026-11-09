@@ -171,7 +171,7 @@
       <p class="muted small not-projector" style="margin-top:0">Ranked by most points, then fastest time, most energy left, has meds, has toy. Ties share a rank.</p>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>#</th><th>Pair</th><th class="num">Points</th><th class="num">Time</th><th class="num">Energy</th><th>Meds</th><th>Toy</th><th class="not-projector">Attempt</th><th class="not-projector">Outcome</th></tr></thead>
+          <thead><tr><th>#</th><th>Team</th><th class="num">Points</th><th class="num">Time</th><th class="num">Energy</th><th>Meds</th><th>Toy</th><th class="not-projector">Attempt</th><th class="not-projector">Outcome</th></tr></thead>
           <tbody id="board-body"></tbody>
         </table>
       </div>
@@ -181,7 +181,7 @@
       <h2>Pairs right now</h2>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Pair</th><th>Players</th><th>Status</th><th>Screen</th><th class="num">Attempt</th><th class="num">Points</th><th class="num">Energy</th><th class="num">Time</th></tr></thead>
+          <thead><tr><th>Team</th><th>Online</th><th>Status</th><th>Screen</th><th class="num">Attempt</th><th class="num">Points</th><th class="num">Energy</th><th class="num">Time</th></tr></thead>
           <tbody id="pairs-body"></tbody>
         </table>
       </div>
@@ -379,9 +379,9 @@
     }).join("") : "<tr><td colspan='9' class='muted'>No finished attempts yet.</td></tr>";
 
     $("pairs-body").innerHTML = b.pairs.length ? b.pairs.map(function (p) {
-      var players = "<span class='dot " + (p.patientConnected ? "on" : "") + "'></span>" + esc(p.patientName || "Patient") +
-        " &nbsp; <span class='dot " + (p.observerConnected ? "on" : "") + "'></span>" + esc(p.observerName || "Observer");
-      return "<tr><td><strong>" + esc(p.pair) + "</strong></td><td>" + players + "</td><td><span class='chip " + esc(p.status) + "'>" + esc(p.status) +
+      var players = "<span class='dot " + (p.patientConnected ? "on" : "") + "'></span>Patient" +
+        " &nbsp; <span class='dot " + (p.observerConnected ? "on" : "") + "'></span>Observer";
+      return "<tr><td><strong>" + esc(p.label) + "</strong> <span class='muted small'>" + esc(p.pair) + "</span></td><td>" + players + "</td><td><span class='chip " + esc(p.status) + "'>" + esc(p.status) +
         "</span></td><td class='small'>" + esc(String(p.passage || "").replace(/_/g, " ")) + "</td><td class='num'>" + p.attempt +
         "</td><td class='num'>" + p.points + "</td><td class='num'>" + p.energy + "</td><td class='num'>" + fmtTime(p.elapsedMs) + "</td></tr>";
     }).join("") : "<tr><td colspan='8' class='muted'>No pairs yet. Share the link above.</td></tr>";

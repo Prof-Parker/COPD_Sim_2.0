@@ -79,7 +79,7 @@ export class ClassSession extends DurableObject {
             await this.save();
             this.broadcast();
         }
-        return { ok: res.ok, reason: res.reason };
+        return { ok: res.ok, reason: res.reason, teamName: res.teamName };
     }
 
     async progress(p) {
@@ -92,12 +92,14 @@ export class ClassSession extends DurableObject {
     async result(r) {
         if (!applyResult(this.session, r)) return;
         await this.save();
+        const pair = this.session.pairs[r.pair];
+        const teamName = (pair && pair.teamName) || r.teamName || "";
         await this.d1(
             `INSERT OR REPLACE INTO results
-               (session_code, pair_code, attempt, patient_name, observer_name, points, energy,
+               (session_code, pair_code, attempt, team_name, patient_name, observer_name, points, energy,
                 elapsed_ms, has_meds, has_toy, win, finished_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            this.session.code, r.pair, r.attempt, r.patientName, r.observerName, r.points, r.energy,
+             VALUES (?, ?, ?, ?, '', '', ?, ?, ?, ?, ?, ?, ?)`,
+            this.session.code, r.pair, r.attempt, teamName, r.points, r.energy,
             r.elapsedMs, r.hasMeds ? 1 : 0, r.hasToy ? 1 : 0, r.win ? 1 : 0, r.finishedAt
         );
         this.broadcast();
