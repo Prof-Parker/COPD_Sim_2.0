@@ -63,6 +63,9 @@ function createJqueryStub() {
         removeClass() {
             return chain;
         },
+        toggleClass() {
+            return chain;
+        },
         text() {
             return chain;
         },
