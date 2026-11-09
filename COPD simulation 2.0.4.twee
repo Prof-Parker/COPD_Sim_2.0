@@ -413,7 +413,7 @@ You finally make it to your bedroom and sit on the edge of the mattress.
     <</if>>
 <</if>>
 
-:: Final_Report [simulation briefing hidehud nobr] {"position":"2600,800","size":"100,100"}
+:: Final_Report [simulation briefing hidehud recap nobr] {"position":"2600,800","size":"100,100"}
 <<silently>>
 <<audio ":playing" stop>>
 <<run SimApp.prepareFinalReport()>>
