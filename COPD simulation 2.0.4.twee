@@ -1,5 +1,5 @@
 :: StoryTitle
-COPD simulation 2.0.17
+COPD simulation 2.2
 
 
 :: StoryData
@@ -1498,7 +1498,7 @@ What do you want to do?
 
 :: StoryScript [script]
 /* ============================================================
-   STORYSCRIPT — COPD Simulation runtime (v2.0.16)
+   STORYSCRIPT — COPD Simulation runtime (v2.2)
    ============================================================
    1. Playtime (Chapel macro + <<playtime>>)
    1b. Net adapter — Playroom or Cloudflare backend behind one API
