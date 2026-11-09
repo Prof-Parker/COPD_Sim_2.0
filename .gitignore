@@ -2,4 +2,8 @@ PAPER-PLUGIN-GUIDE.md
 scripts/send-to-paper.ps1
 .vscode/
 .cursor/
+cloud/node_modules/
+cloud/dist/
+cloud/.wrangler/
+cloud/.dev.vars
 

@@ -1,6 +1,6 @@
 # Multiplayer Migration: Playroom → Cloudflare Durable Objects
 
-**Status:** Draft / proposal (no code yet)
+**Status:** In progress. Milestone A (backend skeleton in `cloud/`) is built and tested locally; it is not deployed yet
 **Author:** Robin Parker
 **Last updated:** November 2026
 **Target branch:** `net-cloudflare` (off `Beta`)
@@ -161,6 +161,17 @@ Every message has a `t` (type) field. The server is authoritative and sends a se
 | `pong` | `{ serverNow }` | Used to correct the client's clock for the timer |
 
 **Reconnect flow:** the client stores `token` in localStorage under the session and pair code, then reconnects with exponential backoff and sends `hello {token}`. The server gives back the same role and a fresh snapshot. If a client sees a gap in `seq`, it requests a full snapshot.
+
+### 6.1 As built (Milestone A)
+
+These differences from the tables above were made during implementation:
+
+- **Full snapshots instead of patches.** The room state is only a few KB, so every change sends `{t:"state", seq, snapshot, you}` to both players. Clients simply replace their copy, so there's no patch-merging or `seq`-gap logic. Cloudflare bills per message, not per byte, so this costs the same.
+- **`you` on every message.** Each socket receives its own `{role, name}`, so a client always knows its role without seeing the other player's token.
+- **New `inc {key, by, min?, max?}` message.** This is an atomic add on the server. Local testing showed that a client-side "read value, add 1, `set`" loses updates when two clicks land at once. Points, Energy and behavior counters must use `inc`.
+- **`sync {}`** asks for a fresh snapshot.
+- **Room size:** the first two tokens to join own the room. A third device is rejected with `room_full`; a known token can always reconnect.
+- **Test page:** `/ws-test.html?s=TEST1&p=1`. Open it on two devices to check sync, roles, presence and reconnect.
 
 ## 7. Client changes
 

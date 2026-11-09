@@ -1,0 +1,21 @@
+// Cloudflare config for the COPD Simulation multiplayer backend.
+// Docs: https://developers.cloudflare.com/workers/wrangler/configuration/
+{
+    "name": "copd-sim",
+    "main": "src/worker.js",
+    "compatibility_date": "2025-09-01",
+
+    // Copies ../index.html, ../Media and ./public into ./dist before every dev/deploy.
+    "build": { "command": "node scripts/stage-assets.mjs" },
+
+    // The game and test pages, served as static files from the same *.workers.dev address.
+    "assets": { "directory": "./dist" },
+
+    "durable_objects": {
+        "bindings": [{ "name": "PAIR_ROOM", "class_name": "PairRoom" }]
+    },
+    // SQLite-backed Durable Objects (the only kind on the free plan).
+    "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PairRoom"] }],
+
+    "observability": { "enabled": true }
+}
