@@ -3,6 +3,12 @@
  *
  * Thin wrapper: WebSockets (hibernation API) + storage. All game rules live in room-core.js.
  * One object exists per "<session>:<pair>" name; Cloudflare runs it only while sockets are active.
+ *
+ * Class sessions (Milestone D):
+ * - A NEW seat may only join if the instructor's session exists and (for a new pair) is open:
+ *   the ClassSession object answers canJoin(pair). Refusals reach the client as
+ *   { t:"reject", reason:"no_session" | "session_closed" } before any welcome.
+ * - Progress and the official end-of-attempt result are forwarded to the ClassSession.
  */
 import { DurableObject } from "cloudflare:workers";
 import { RoomCore, routeMessages } from "./room-core.js";
@@ -39,6 +45,11 @@ export class PairRoom extends DurableObject {
         return new Response(null, { status: 101, webSocket: client });
     }
 
+    classSession() {
+        if (!this.env.CLASS_SESSION || !this.room.state.sessionCode) return null;
+        return this.env.CLASS_SESSION.get(this.env.CLASS_SESSION.idFromName(this.room.state.sessionCode));
+    }
+
     async webSocketMessage(ws, raw) {
         let msg;
         try {
@@ -46,12 +57,49 @@ export class PairRoom extends DurableObject {
         } catch {
             msg = null;
         }
+
+        // Gate new seats on the instructor's class session.
+        if (msg && msg.t === "hello" && !(typeof msg.token === "string" && this.room.state.players[msg.token])) {
+            const gate = await this.checkSession();
+            if (!gate.ok) {
+                ws.send(JSON.stringify({ t: "reject", reason: gate.reason }));
+                ws.close(4003, gate.reason);
+                return;
+            }
+        }
+
         const conn = ws.deserializeAttachment() || { token: null };
         const before = conn.token;
-        const { out, dirty } = this.room.handle(conn, msg, this.connectedTokens());
+        const { out, dirty, events } = this.room.handle(conn, msg, this.connectedTokens());
         if (conn.token !== before) ws.serializeAttachment({ token: conn.token });
         if (dirty) await this.ctx.storage.put(STATE_KEY, this.room.state);
         this.deliver(ws, out);
+        this.forward(events);
+    }
+
+    /** Asks the ClassSession whether a new seat may join this pair. */
+    async checkSession() {
+        const stub = this.classSession();
+        if (!stub) return { ok: true }; // no class sessions configured (e.g. older deploy)
+        try {
+            return await stub.canJoin(this.room.state.pairCode);
+        } catch (e) {
+            console.error("canJoin failed:", e && e.message);
+            return { ok: false, reason: "session_unavailable" };
+        }
+    }
+
+    /** Sends leaderboard events to the ClassSession without holding up the game. */
+    forward(events) {
+        if (!events || !events.length) return;
+        const stub = this.classSession();
+        if (!stub) return;
+        for (const ev of events) {
+            const call = ev.type === "result" ? stub.result(ev.result) : stub.progress(ev.progress);
+            this.ctx.waitUntil(
+                Promise.resolve(call).catch((e) => console.error(`ClassSession ${ev.type} failed:`, e && e.message))
+            );
+        }
     }
 
     async webSocketClose(ws) {
@@ -68,8 +116,10 @@ export class PairRoom extends DurableObject {
         } catch {
             /* already closed */
         }
-        const { out } = this.room.presenceChanged(this.connectedTokens(ws));
+        const { out, events } = this.room.presenceChanged(this.connectedTokens(ws));
         this.deliver(ws, out.map((o) => ({ ...o, to: "others" })));
+        // A refused or never-joined socket leaves an empty room: nothing to report.
+        if (Object.keys(this.room.state.players).length) this.forward(events);
     }
 
     /** Tokens with an open socket, ignoring `closing` (a socket that is going away). */

@@ -1921,9 +1921,11 @@ window.createCloudNet = function (opts) {
         if (m.t === "state" || m.t === "reject") {
             if (m.t === "reject") {
                 net.lastError = m.reason || "rejected";
-                if (m.reason === "room_full" && !net.connected) {
+                /* Refusals before "welcome" end this connect attempt (no retry loop). */
+                var fatal = ["room_full", "no_session", "session_closed", "session_unavailable"];
+                if (fatal.indexOf(m.reason) !== -1 && !net.connected) {
                     wanted = false;
-                    settleWaiters(new Error("room_full"));
+                    settleWaiters(new Error(m.reason));
                     try { sock.close(); } catch (eClose) { /* ignore */ }
                     return;
                 }
@@ -3258,6 +3260,25 @@ window.SimApp = {
                     sticky: true
                 });
                 alert("This game link is missing a class session code. Ask your instructor for the session link.");
+                return;
+            }
+            if (e && (e.message === "no_session" || e.message === "session_closed")) {
+                var closed = e.message === "session_closed";
+                var msgText = closed
+                    ? "This class session has been closed by your instructor. Ask for the current session code."
+                    : "Session code \"" + Net.session + "\" was not found. Check the code with your instructor.";
+                self.showSyncBanner(msgText, "error", { sticky: true });
+                alert(msgText);
+                /* Back to the session-code box */
+                var q = new URLSearchParams(window.location.search);
+                q.delete("s");
+                q.delete("p");
+                var rest = q.toString();
+                window.location.search = rest ? "?" + rest : "";
+                return;
+            }
+            if (e && e.message === "session_unavailable") {
+                self.showSyncBanner("Could not reach the class session — try again in a moment.", "error", { sticky: true });
                 return;
             }
             if (e && e.message === "room_full") {
@@ -5167,6 +5188,12 @@ if (simChooseBackend() === "cf") {
     });
     $(document).one(":storyready", function () {
         simNetReady(window.createCloudNet({ endpoint: simCloudEndpoint() }));
+        /* SugarCube restores the last passage on reload; without a session code there is no
+           room to be in, so go back to Start (where the session-code box is). */
+        if (!window.Net.session && passage() !== "Start") {
+            Engine.play("Start");
+            return;
+        }
         setTimeout(function () {
             if (passage() === "Start") {
                 window.SimApp.revealConnectButton();

@@ -3,7 +3,8 @@
 **Status:** In progress.
 - **Milestone A** (backend skeleton in `cloud/`) is built and deployed.
 - **Milestone B** (Net adapter) is built. The game runs on either backend.
-- **Milestone C** (server-owned rules) is built and tested locally. **Cloudflare is now the default**; add `?net=playroom` for the old backend. Real-phone QA is still to do.
+- **Milestone C** (server-owned rules) is built and phone-tested. **Cloudflare is now the default**; add `?net=playroom` for the old backend.
+- **Milestone D** (class sessions, D1 results, instructor leaderboard at `/class.html`) is built and tested locally; not yet deployed (see §6.4 for the one-time setup).
 **Author:** Robin Parker
 **Last updated:** November 2026
 **Target branch:** `net-cloudflare` (off `Beta`)
@@ -245,6 +246,46 @@ These differences from the tables above were made during implementation:
 - Start's Connect/session controls now appear after the passage is displayed (`:passagedisplay`).
 
 **Tests:** 42 resync, 14 client, 7 gameplay (`tests/gameplay-cf.test.mjs`), 27 server, plus the flow validator.
+
+### 6.4 As built (Milestone D — class sessions and leaderboard)
+
+**Instructor page: `/class.html`** (sign in with the `ADMIN_PIN` secret)
+- **Create a session:** a random code like `COPD-K7MQ`, or your own (e.g. `REGN-1109A`), plus an optional course label.
+- **Sharing:** the page shows the student join link, its QR code, and a copy button.
+- **Live board:** pairs joined / playing / finished, each pair's players (with online dots), current screen, attempt, points, energy and time.
+- **Leaderboard:** ranked by §8.1, ties share a rank. Toggle between **Best per pair** and **All attempts**.
+- **Projector mode:** full-screen, big type, top 10, and "X of Y pairs finished". Exit with Esc.
+- **Export CSV:** every attempt, ranked. Names that could act as spreadsheet formulas are neutralised.
+- **Close / Reopen session:** closing stops *new* pairs. Pairs already playing can finish and their results still count.
+
+**Who decides what**
+
+| Piece | Role |
+|---|---|
+| `room-core.js` | Builds the **official result** when a pair reaches Final_Report, once per attempt, from server state: points, elapsed time, energy, meds, toy and nicknames. "Made it" = no Game Over this attempt, Energy > 0 and Inhaler < 7. It also sends progress (status, screen, score) on joins, moves and presence changes. |
+| `ClassSession` Durable Object (one per session code) | Holds the live board, pushes it to the instructor page over a WebSocket, writes each result to D1, and admits pairs (`canJoin`). |
+| `PairRoom` | Asks `canJoin` before seating any **new** player. Unknown code → `no_session`; closed session with a new pair → `session_closed`. The game shows a clear message and returns the student to the session-code box. Reconnects and seat takeovers in an admitted pair always work. |
+| `ranking.js`, `class-core.js`, `auth.js` | Pure, tested modules. The PIN check is constant-time, and wrong PINs are delayed 0.75 s. |
+
+**Storage and retention**
+- **D1 (`copd-sim-results`):** `sessions` and `results` tables (`cloud/migrations/0001_init.sql`).
+- **Daily cron (08:00 UTC):** deletes D1 rows older than 365 days.
+- **Each session's Durable Object:** wipes its own data 365 days after creation (alarm).
+
+**Fixed along the way**
+- A refused pair's "socket closed" update could register that pair on the board and let it past a closed session. Progress can now only update admitted pairs, and empty rooms send nothing.
+- On Cloudflare with no session code, SugarCube's restored passage is replaced by Start, so the code box always shows.
+- The instructor page fits phone width, and projector mode scales with screen size.
+
+**One-time setup on Cloudflare** (run in `cloud/`)
+1. `npx wrangler secret put ADMIN_PIN`: choose a long passphrase; the page refuses PINs shorter than 6 characters.
+2. `npx wrangler deploy`: the first deploy creates the D1 database and writes its `database_id` into `wrangler.jsonc`. Commit that change.
+3. `npx wrangler d1 migrations apply copd-sim-results --remote`: creates the tables.
+4. Open `https://copd-sim.<subdomain>.workers.dev/class.html`, sign in and create a session.
+
+**Local development:** put `ADMIN_PIN=...` in `cloud/.dev.vars` (gitignored), then run `npx wrangler d1 migrations apply copd-sim-results --local` once.
+
+**Tests:** 42 resync, 14 client, 8 gameplay, 41 server (now including ranking, class sessions, results, CSV, PIN), plus the flow validator.
 
 ## 7. Client changes
 

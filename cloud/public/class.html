@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Class Leaderboard</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --surface: #ffffff; --fg: #1b2129; --muted: #5d6874; --line: #dde2e8;
+    --accent: #2457c5; --accent-fg: #ffffff; --good: #1f7a3d; --bad: #b3261e; --warn: #8a5a00;
+    --chip: #eef1f5; --gold: #b8860b; --row-hi: #f0f5ff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #12161b; --surface: #1b2129; --fg: #e8ecf1; --muted: #9aa6b2; --line: #2f3843;
+      --accent: #8ab0ff; --accent-fg: #0d1420; --good: #5cc983; --bad: #ff8a80; --warn: #f0c060;
+      --chip: #252d37; --gold: #f0c060; --row-hi: #1f2a3a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 48px; display: grid; gap: 16px; }
+  /* Let grid/flex children shrink on phones instead of pushing the page sideways */
+  main > *, .row > *, .join > * { min-width: 0; }
+  h1, h2, .link { overflow-wrap: anywhere; }
+  h1 { font-size: 22px; margin: 0; }
+  h2 { font-size: 17px; margin: 0 0 8px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .spread { justify-content: space-between; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .hidden { display: none !important; }
+  label { font-weight: 600; }
+  input { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); min-width: 0; }
+  button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); cursor: pointer; font-weight: 600; }
+  button.ghost { background: transparent; color: var(--accent); }
+  button.danger { background: transparent; color: var(--bad); border-color: var(--bad); }
+  button:disabled { opacity: .5; cursor: default; }
+  .chip { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--chip); font-size: 12px; font-weight: 600; }
+  .chip.playing { color: var(--accent); } .chip.finished { color: var(--good); } .chip.waiting { color: var(--muted); }
+  .chip.closed { color: var(--bad); } .chip.open { color: var(--good); }
+  .err { color: var(--bad); font-weight: 600; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  td.num, th.num { text-align: right; }
+  tr.top td { background: var(--row-hi); }
+  .rank { font-weight: 800; }
+  .rank.r1 { color: var(--gold); }
+  .join { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; }
+  .join img { width: 132px; height: 132px; border-radius: 8px; background: #fff; padding: 6px; }
+  .join code { font-size: 26px; font-weight: 800; letter-spacing: .04em; }
+  .link { word-break: break-all; }
+  .stats { display: flex; gap: 20px; flex-wrap: wrap; }
+  .stat b { display: block; font-size: 24px; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; background: var(--muted); }
+  .dot.on { background: var(--good); }
+  .seg button { border-radius: 0; } .seg button:first-child { border-radius: 8px 0 0 8px; } .seg button:last-child { border-radius: 0 8px 8px 0; }
+  .seg { display: inline-flex; }
+  #live-status.ok { color: var(--good); } #live-status.bad { color: var(--bad); }
+
+  /* Projector mode: big type, leaderboard only */
+  body.projector main { max-width: none; padding: clamp(16px, 3vw, 48px); }
+  body.projector .not-projector { display: none !important; }
+  body.projector h1 { font-size: clamp(24px, 4.5vw, 52px); }
+  body.projector #board-card { border: none; background: transparent; padding: 0; }
+  body.projector table { font-size: clamp(16px, 2.8vw, 34px); }
+  body.projector th { font-size: clamp(11px, 1.4vw, 18px); }
+  body.projector td, body.projector th { padding: clamp(6px, 1.2vw, 16px) clamp(6px, 1.4vw, 20px); }
+  body.projector .proj-head { display: flex !important; }
+  .proj-head { display: none !important; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 24px; }
+  .proj-head h1 { flex: 1 1 auto; }
+  .proj-head .progress { font-size: clamp(16px, 2.6vw, 30px); color: var(--muted); }
+
+  @media (max-width: 640px) {
+    .join { grid-template-columns: 1fr; }
+    .join code { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="row spread not-projector">
+    <h1>COPD Simulation — Class Leaderboard</h1>
+    <button id="signout" class="ghost hidden" type="button">Sign out</button>
+  </div>
+
+  <!-- 1. PIN -->
+  <section id="pin-card" class="card hidden">
+    <h2>Instructor sign-in</h2>
+    <form id="pin-form" class="row">
+      <input id="pin" type="password" autocomplete="current-password" placeholder="Instructor PIN" aria-label="Instructor PIN" required>
+      <button type="submit">Sign in</button>
+    </form>
+    <p id="pin-error" class="err hidden"></p>
+    <p class="muted small">The PIN is the <code>ADMIN_PIN</code> secret set in Cloudflare. It is kept only in this browser tab.</p>
+  </section>
+
+  <!-- 2. Sessions -->
+  <section id="sessions-card" class="card hidden not-projector">
+    <h2>Start a class session</h2>
+    <form id="create-form" class="row">
+      <input id="new-course" placeholder="Course / section (optional), e.g. REGN 15P Mon AM" maxlength="60" style="flex:1 1 240px">
+      <input id="new-code" placeholder="Custom code (optional)" maxlength="24" style="flex:0 1 200px; text-transform:uppercase">
+      <button type="submit">Create session</button>
+    </form>
+    <p id="create-error" class="err hidden"></p>
+    <h2 style="margin-top:16px">Recent sessions</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Code</th><th>Course</th><th>Created</th><th>Status</th><th class="num">Results</th><th></th></tr></thead>
+        <tbody id="sessions-body"><tr><td colspan="6" class="muted">Loading…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 3. One session -->
+  <section id="session-view" class="hidden">
+    <div class="card not-projector" style="margin-bottom:16px">
+      <div class="row spread">
+        <div>
+          <div class="muted small" id="sv-course"></div>
+          <div class="row"><h2 style="margin:0">Session</h2> <span id="sv-state" class="chip"></span>
+            <span id="live-status" class="small"></span></div>
+        </div>
+        <div class="row">
+          <button id="back" class="ghost" type="button">All sessions</button>
+          <button id="projector" type="button">Projector mode</button>
+          <button id="export" class="ghost" type="button">Export CSV</button>
+          <button id="close" class="danger" type="button">Close session</button>
+        </div>
+      </div>
+      <div class="join" style="margin-top:12px">
+        <img id="sv-qr" alt="QR code for the student join link">
+        <div>
+          <div class="muted small">Students: open this link (or type the code on the game's start screen)</div>
+          <code id="sv-code"></code>
+          <div class="row" style="margin-top:6px">
+            <a id="sv-link" class="link small" target="_blank" rel="noopener"></a>
+            <button id="copy-link" class="ghost" type="button">Copy link</button>
+          </div>
+          <p class="muted small" style="margin:6px 0 0">The first student of each pair opens the link; their partner scans the invite QR on that student's screen.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card not-projector" style="margin-bottom:16px">
+      <div class="stats">
+        <div class="stat"><b id="st-pairs">0</b><span class="muted small">pairs joined</span></div>
+        <div class="stat"><b id="st-playing">0</b><span class="muted small">playing now</span></div>
+        <div class="stat"><b id="st-finished">0</b><span class="muted small">pairs finished</span></div>
+      </div>
+    </div>
+
+    <div id="board-card" class="card">
+      <div class="proj-head" style="margin-bottom:16px">
+        <h1 id="proj-title">Leaderboard</h1>
+        <span class="progress" id="proj-progress"></span>
+        <button id="exit-projector" class="ghost" type="button">Exit</button>
+      </div>
+      <div class="row spread not-projector" style="margin-bottom:8px">
+        <h2 style="margin:0">Leaderboard</h2>
+        <div class="seg" role="group" aria-label="Which attempts">
+          <button id="mode-best" type="button">Best per pair</button>
+          <button id="mode-all" type="button" class="ghost">All attempts</button>
+        </div>
+      </div>
+      <p class="muted small not-projector" style="margin-top:0">Ranked by most points, then fastest time, most energy left, has meds, has toy. Ties share a rank.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Pair</th><th class="num">Points</th><th class="num">Time</th><th class="num">Energy</th><th>Meds</th><th>Toy</th><th class="not-projector">Attempt</th><th class="not-projector">Outcome</th></tr></thead>
+          <tbody id="board-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card not-projector" style="margin-top:16px">
+      <h2>Pairs right now</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Pair</th><th>Players</th><th>Status</th><th>Screen</th><th class="num">Attempt</th><th class="num">Points</th><th class="num">Energy</th><th class="num">Time</th></tr></thead>
+          <tbody id="pairs-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var PIN_KEY = "copdClassPin";
+  var MODE_KEY = "copdBoardMode";
+  var state = { pin: null, code: null, board: null, mode: "best", ws: null, retry: 0, retryTimer: null };
+
+  function store(k, v) { try { v === null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) {} }
+  function load(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+  function lstore(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+  function lload(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function fmtTime(ms) { var t = Math.max(0, Math.floor((ms || 0) / 1000)); var m = Math.floor(t / 60), s = t % 60; return m + ":" + (s < 10 ? "0" : "") + s; }
+  function fmtDate(ms) { return ms ? new Date(ms).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : ""; }
+  function show(el, on) { el.classList.toggle("hidden", !on); }
+  function joinUrl(code) { return location.origin + "/?s=" + encodeURIComponent(code); }
+
+  async function api(method, path, body) {
+    var res = await fetch(path, {
+      method: method,
+      headers: Object.assign({ Authorization: "Bearer " + state.pin }, body ? { "Content-Type": "application/json" } : {}),
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (res.status === 401) { signOut("That PIN was not accepted."); throw new Error("bad_pin"); }
+    return res;
+  }
+
+  /* ---------- sign in ---------- */
+  function signOut(message) {
+    state.pin = null; store(PIN_KEY, null); disconnect();
+    show($("pin-card"), true); show($("sessions-card"), false); show($("session-view"), false); show($("signout"), false);
+    $("pin-error").textContent = message || ""; show($("pin-error"), !!message);
+  }
+  $("pin-form").addEventListener("submit", async function (ev) {
+    ev.preventDefault();
+    state.pin = $("pin").value; $("pin").value = "";
+    try { await loadSessions(); } catch (e) { return; }
+    store(PIN_KEY, state.pin); show($("pin-card"), false); show($("signout"), true);
+    route();
+  });
+  $("signout").addEventListener("click", function () { signOut(""); });
+
+  /* ---------- sessions list ---------- */
+  async function loadSessions() {
+    var res = await api("GET", "/api/sessions");
+    var data = await res.json();
+    var rows = (data.sessions || []).map(function (s) {
+      return "<tr><td><strong>" + esc(s.code) + "</strong></td><td>" + esc(s.course) + "</td><td>" + esc(fmtDate(s.createdAt)) +
+        "</td><td><span class='chip " + (s.closedAt ? "closed'>Closed" : "open'>Open") + "</span></td><td class='num'>" + (s.resultCount || 0) +
+        "</td><td><button class='ghost' data-open='" + esc(s.code) + "'>Open</button></td></tr>";
+    });
+    $("sessions-body").innerHTML = rows.length ? rows.join("") : "<tr><td colspan='6' class='muted'>No sessions yet — create one above.</td></tr>";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-open]"), function (b) {
+      b.addEventListener("click", function () { openSession(b.getAttribute("data-open")); });
+    });
+  }
+  $("create-form").addEventListener("submit", async function (ev) {
+    ev.preventDefault();
+    show($("create-error"), false);
+    var body = { course: $("new-course").value };
+    var custom = $("new-code").value.trim().toUpperCase();
+    if (custom) body.code = custom;
+    var res = await api("POST", "/api/session", body);
+    var data = await res.json();
+    if (!data.ok) {
+      $("create-error").textContent = data.reason === "exists" ? "That code is already used — pick another." :
+        data.reason === "bad_code" ? "Codes are 3–24 letters, numbers or dashes." : "Could not create the session (" + data.reason + ").";
+      show($("create-error"), true);
+      return;
+    }
+    $("new-course").value = ""; $("new-code").value = "";
+    openSession(data.code);
+  });
+
+  /* ---------- one session ---------- */
+  function openSession(code) {
+    state.code = code;
+    history.replaceState(null, "", "?s=" + encodeURIComponent(code));
+    show($("sessions-card"), false); show($("session-view"), true);
+    $("sv-code").textContent = code;
+    var link = joinUrl(code);
+    $("sv-link").textContent = link; $("sv-link").href = link;
+    $("sv-qr").src = "https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=" + encodeURIComponent(link);
+    connect();
+  }
+  $("back").addEventListener("click", function () {
+    disconnect(); state.code = null; state.board = null;
+    history.replaceState(null, "", location.pathname);
+    show($("session-view"), false); show($("sessions-card"), true); loadSessions();
+  });
+  $("copy-link").addEventListener("click", function () {
+    var link = joinUrl(state.code);
+    (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () {
+      $("copy-link").textContent = "Copied!"; setTimeout(function () { $("copy-link").textContent = "Copy link"; }, 1500);
+    }, function () { window.prompt("Copy this link:", link); });
+  });
+  $("close").addEventListener("click", async function () {
+    if (!state.board) return;
+    var closing = !state.board.closedAt;
+    if (closing && !confirm("Close session " + state.code + "? New pairs won't be able to join. Pairs already playing can finish.")) return;
+    await api("POST", "/api/session/" + encodeURIComponent(state.code) + (closing ? "/close" : "/reopen"));
+  });
+  $("export").addEventListener("click", async function () {
+    var res = await api("GET", "/api/session/" + encodeURIComponent(state.code) + "/export.csv");
+    if (!res.ok) { alert("Export failed."); return; }
+    var blob = await res.blob();
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "copd-sim-" + state.code + ".csv";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  });
+  function setMode(mode) {
+    state.mode = mode; lstore(MODE_KEY, mode);
+    $("mode-best").classList.toggle("ghost", mode !== "best");
+    $("mode-all").classList.toggle("ghost", mode !== "all");
+    render();
+  }
+  $("mode-best").addEventListener("click", function () { setMode("best"); });
+  $("mode-all").addEventListener("click", function () { setMode("all"); });
+  function setProjector(on) {
+    document.body.classList.toggle("projector", on);
+    if (on && document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen().catch(function () {}); }
+    if (!on && document.fullscreenElement && document.exitFullscreen) { document.exitFullscreen().catch(function () {}); }
+    render();
+  }
+  $("projector").addEventListener("click", function () { setProjector(true); });
+  $("exit-projector").addEventListener("click", function () { setProjector(false); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape" && document.body.classList.contains("projector")) setProjector(false); });
+
+  /* ---------- live board ---------- */
+  function setLive(text, cls) { $("live-status").textContent = text; $("live-status").className = "small " + (cls || ""); }
+  function disconnect() {
+    clearTimeout(state.retryTimer);
+    if (state.ws) { state.ws.onclose = null; state.ws.close(); state.ws = null; }
+  }
+  function connect() {
+    disconnect();
+    var proto = location.protocol === "https:" ? "wss:" : "ws:";
+    var ws = new WebSocket(proto + "//" + location.host + "/ws/class?s=" + encodeURIComponent(state.code));
+    state.ws = ws;
+    setLive("connecting…");
+    ws.onopen = function () { ws.send(JSON.stringify({ t: "auth", pin: state.pin })); };
+    ws.onmessage = function (ev) {
+      var m = JSON.parse(ev.data);
+      if (m.t === "board") { state.retry = 0; state.board = m.board; setLive("● live", "ok"); render(); }
+      else if (m.t === "error") {
+        ws.onclose = null;
+        if (m.reason === "bad_pin") { signOut("That PIN was not accepted."); }
+        else if (m.reason === "no_session") { setLive("session not found", "bad"); }
+      }
+    };
+    ws.onclose = function () {
+      setLive("reconnecting…", "bad");
+      state.retry = Math.min(state.retry + 1, 6);
+      state.retryTimer = setTimeout(connect, Math.min(500 * Math.pow(2, state.retry), 10000));
+    };
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && state.code && (!state.ws || state.ws.readyState > 1)) connect();
+  });
+
+  function render() {
+    var b = state.board;
+    if (!b) return;
+    $("sv-course").textContent = b.course || "";
+    $("sv-state").textContent = b.closedAt ? "Closed" : "Open";
+    $("sv-state").className = "chip " + (b.closedAt ? "closed" : "open");
+    $("close").textContent = b.closedAt ? "Reopen session" : "Close session";
+    $("close").className = b.closedAt ? "ghost" : "danger";
+    var playing = b.pairs.filter(function (p) { return p.status === "playing"; }).length;
+    $("st-pairs").textContent = b.pairCount;
+    $("st-playing").textContent = playing;
+    $("st-finished").textContent = b.finishedPairs;
+    $("proj-title").textContent = "Leaderboard — " + b.code;
+    $("proj-progress").textContent = b.finishedPairs + " of " + b.pairCount + " pairs finished";
+
+    var projector = document.body.classList.contains("projector");
+    var rows = (state.mode === "all" && !projector) ? b.all : b.best;
+    if (projector) rows = rows.slice(0, 10);
+    $("board-body").innerHTML = rows.length ? rows.map(function (r) {
+      return "<tr class='" + (r.rank <= 3 ? "top" : "") + "'><td class='rank r" + r.rank + "'>" + r.rank + "</td><td>" + esc(r.label) +
+        "</td><td class='num'>" + r.points + "</td><td class='num'>" + fmtTime(r.elapsedMs) + "</td><td class='num'>" + r.energy +
+        "</td><td>" + (r.hasMeds ? "✓" : "—") + "</td><td>" + (r.hasToy ? "✓" : "—") +
+        "</td><td class='not-projector'>" + r.attempt + "</td><td class='not-projector'>" + (r.win ? "<span style='color:var(--good)'>Made it</span>" : "<span style='color:var(--bad)'>Hospital</span>") + "</td></tr>";
+    }).join("") : "<tr><td colspan='9' class='muted'>No finished attempts yet.</td></tr>";
+
+    $("pairs-body").innerHTML = b.pairs.length ? b.pairs.map(function (p) {
+      var players = "<span class='dot " + (p.patientConnected ? "on" : "") + "'></span>" + esc(p.patientName || "Patient") +
+        " &nbsp; <span class='dot " + (p.observerConnected ? "on" : "") + "'></span>" + esc(p.observerName || "Observer");
+      return "<tr><td><strong>" + esc(p.pair) + "</strong></td><td>" + players + "</td><td><span class='chip " + esc(p.status) + "'>" + esc(p.status) +
+        "</span></td><td class='small'>" + esc(String(p.passage || "").replace(/_/g, " ")) + "</td><td class='num'>" + p.attempt +
+        "</td><td class='num'>" + p.points + "</td><td class='num'>" + p.energy + "</td><td class='num'>" + fmtTime(p.elapsedMs) + "</td></tr>";
+    }).join("") : "<tr><td colspan='8' class='muted'>No pairs yet. Share the link above.</td></tr>";
+  }
+
+  /* ---------- start ---------- */
+  function route() {
+    var code = new URLSearchParams(location.search).get("s");
+    if (code) { openSession(code.trim().toUpperCase()); }
+    else { show($("sessions-card"), true); }
+  }
+  setMode(lload(MODE_KEY) === "all" ? "all" : "best");
+  state.pin = load(PIN_KEY);
+  if (state.pin) {
+    loadSessions().then(function () { show($("signout"), true); route(); }, function () {});
+  } else {
+    show($("pin-card"), true);
+  }
+})();
+</script>
+</body>
+</html>

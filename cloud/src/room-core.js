@@ -25,7 +25,15 @@
  *   inc       — atomic add (counters)
  *   timer     — the room clock (start, pause on pausetimer passages, stop at Final_Report)
  *   reset     — Try Again: new attempt, fresh stats, both devices back to the hub
+ *
+ * handle() also returns `events` for the class leaderboard (sent on by pair-room.js):
+ *   { type: "progress", progress } — status/passage/score changed (join, move, presence)
+ *   { type: "result", result }     — the pair reached Final_Report: the official, server-built
+ *                                    result for this attempt (sent once per attempt)
  */
+
+export const RESULT_PASSAGE = "Final_Report";
+const LOBBY = ["Start", "Role_Selection", "Waiting_Room"];
 
 export const ROLES = ["patient", "observer"];
 export const LOBBY_PASSAGE = "Role_Selection";
@@ -47,6 +55,8 @@ export function createInitialState({ sessionCode, pairCode }) {
         attempt: 1,
         timer: newTimer(),
         once: {}, // roll/op key -> passageSeq it last ran at
+        lost: false, // this attempt hit a Game_Over passage
+        reported: {}, // attempt -> true once its result was sent
         nextPid: 1,
         players: {}, // token -> { pid, role, name }
         roles: { patient: null, observer: null }, // role -> token
@@ -155,6 +165,8 @@ export class RoomCore {
         }
         if (!s.once) s.once = {};
         if (!s.attempt) s.attempt = 1;
+        if (s.lost === undefined) s.lost = false;
+        if (!s.reported) s.reported = {};
     }
 
     get passageSeq() {
@@ -194,6 +206,77 @@ export class RoomCore {
     }
 
     handle(conn, msg, connectedTokens = new Set()) {
+        const before = { passage: this.state.game.currentPassage, attempt: this.state.attempt };
+        const res = this._dispatch(conn, msg, connectedTokens);
+        res.events = [];
+        if (!res.dirty) return res;
+        const tokens = new Set(connectedTokens);
+        if (conn && conn.token) tokens.add(conn.token);
+        const s = this.state;
+        if (msg.t === "navigate" && s.game.currentPassage !== before.passage) {
+            if (String(s.game.currentPassage).startsWith("Game_Over")) s.lost = true;
+            if (s.game.currentPassage === RESULT_PASSAGE && !s.reported[s.attempt]) {
+                s.reported[s.attempt] = true;
+                res.events.push({ type: "result", result: this.result() });
+            }
+        }
+        if (["hello", "navigate", "claimRole", "name", "reset"].includes(msg.t)) {
+            res.events.push({ type: "progress", progress: this.progress(tokens) });
+        }
+        return res;
+    }
+
+    /** Official result for the current attempt, built from server state (clients can't send scores). */
+    result() {
+        const s = this.state;
+        const g = s.game;
+        const energy = num(g.Energy, 0);
+        const inhaler = num(g.Inhaler, 0);
+        return {
+            pair: s.pairCode,
+            attempt: s.attempt,
+            patientName: this._nameFor("patient"),
+            observerName: this._nameFor("observer"),
+            points: num(g.Points, 0),
+            energy,
+            elapsedMs: timerElapsed(s.timer, this.now()),
+            hasMeds: g.hasMedications === true,
+            hasToy: g.hasToy === true,
+            win: !s.lost && energy > 0 && inhaler < 7,
+            finishedAt: this.now(),
+        };
+    }
+
+    /** Live status for the instructor's board. */
+    progress(connectedTokens = new Set()) {
+        const s = this.state;
+        const g = s.game;
+        const passage = g.currentPassage;
+        let status = "playing";
+        if (LOBBY.includes(passage)) status = "waiting";
+        else if (passage === RESULT_PASSAGE || s.reported[s.attempt]) status = "finished";
+        return {
+            pair: s.pairCode,
+            attempt: s.attempt,
+            status,
+            passage,
+            points: num(g.Points, 0),
+            energy: num(g.Energy, 10),
+            elapsedMs: timerElapsed(s.timer, this.now()),
+            patientName: this._nameFor("patient"),
+            observerName: this._nameFor("observer"),
+            patientConnected: !!s.roles.patient && connectedTokens.has(s.roles.patient),
+            observerConnected: !!s.roles.observer && connectedTokens.has(s.roles.observer),
+            updatedAt: this.now(),
+        };
+    }
+
+    _nameFor(role) {
+        const tok = this.state.roles[role];
+        return (tok && this.state.players[tok] && this.state.players[tok].name) || "";
+    }
+
+    _dispatch(conn, msg, connectedTokens) {
         if (!msg || typeof msg.t !== "string") {
             return this._reject(conn, "bad_message", connectedTokens, msg);
         }
@@ -245,9 +328,13 @@ export class RoomCore {
         return copy;
     }
 
-    /** Call when a socket closes, so the partner learns about it. */
+    /** Call when a socket closes, so the partner (and the class board) learn about it. */
     presenceChanged(connectedTokens) {
-        return { out: [{ to: "all", msg: this._stateMsg(connectedTokens) }], dirty: false };
+        return {
+            out: [{ to: "all", msg: this._stateMsg(connectedTokens) }],
+            dirty: false,
+            events: [{ type: "progress", progress: this.progress(connectedTokens) }],
+        };
     }
 
     _hello(conn, msg, connectedTokens) {
@@ -475,6 +562,7 @@ export class RoomCore {
         s.game.passageSeq = this.passageSeq + 1;
         s.attempt += 1;
         s.once = {};
+        s.lost = false;
         s.timer = newTimer();
         s.timer.startedAt = this.now();
         s.seq += 1;

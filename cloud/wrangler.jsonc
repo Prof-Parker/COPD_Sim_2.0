@@ -8,14 +8,34 @@
     // Copies ../index.html, ../Media and ./public into ./dist before every dev/deploy.
     "build": { "command": "node scripts/stage-assets.mjs" },
 
-    // The game and test pages, served as static files from the same *.workers.dev address.
+    // The game, test page and instructor page, served from the same *.workers.dev address.
     "assets": { "directory": "./dist" },
 
     "durable_objects": {
-        "bindings": [{ "name": "PAIR_ROOM", "class_name": "PairRoom" }]
+        "bindings": [
+            { "name": "PAIR_ROOM", "class_name": "PairRoom" },
+            { "name": "CLASS_SESSION", "class_name": "ClassSession" }
+        ]
     },
-    // SQLite-backed Durable Objects (the only kind on the free plan).
-    "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PairRoom"] }],
+    // SQLite-backed Durable Objects (the only kind on the free plan). Never edit an applied tag.
+    "migrations": [
+        { "tag": "v1", "new_sqlite_classes": ["PairRoom"] },
+        { "tag": "v2", "new_sqlite_classes": ["ClassSession"] }
+    ],
+
+    // Permanent results. No database_id yet: the first `npx wrangler deploy` creates the
+    // database and writes its id here (commit that change). Then create the tables with:
+    //   npx wrangler d1 migrations apply copd-sim-results --remote
+    "d1_databases": [
+        {
+            "binding": "DB",
+            "database_name": "copd-sim-results",
+            "migrations_dir": "migrations"
+        }
+    ],
+
+    // Daily retention cleanup (08:00 UTC): deletes results and sessions older than a year.
+    "triggers": { "crons": ["0 8 * * *"] },
 
     "observability": { "enabled": true }
 }
