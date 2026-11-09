@@ -22,12 +22,12 @@ COPD simulation 2.0.17
 <h1>Breakfast Time</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-It's time for breakfast. What would you like to have for breakfast today @@.holland;Mr. Holland@@? As you think about what to have you try figure out which option will give you the most energy for your errands today.
+It's time for breakfast. What would you like to have for breakfast today @@.holland;Mr. Holland@@? As you think about what to have you try to figure out which option will give you the most energy for your errands today.
 <hr>
 <<patient-choices "Breakfast choices" "no-eval"
-	"A 24-once high protein smoothie and a 20-ounce cup of coffee | -2 | warm | red | Too much liquid all at once makes you feel really full and makes it harder to breathe | | Points+=1"
-    "An 8-ounce cup of coffee, cottage cheese with fruit | 1 | warm | green | Just the right amount of food and liquid in one meal is easier for you to eat . You feel refreshed and plan to pack a protein bar as a snack for later | | Points+=1"
-	"An 8-ounce cup of coffee, a glass of orange juice, two slices of toast, two fried eggs, two turkey sausage links and an apple | -2 | warm | red | It was delicious, but your body can't handle eating the way you did as a teenager anymore. All that food and liquid was filling and made it harder to breath | | Points+=1"
+	"A 24-ounce high protein smoothie and a 20-ounce cup of coffee | -2 | warm | red | Too much liquid all at once makes you feel really full and makes it harder to breathe | | Points+=1"
+    "An 8-ounce cup of coffee, cottage cheese with fruit | 1 | warm | green | Just the right amount of food and liquid in one meal is easier for you to eat. You feel refreshed and plan to pack a protein bar as a snack for later | | Points+=1"
+	"An 8-ounce cup of coffee, a glass of orange juice, two slices of toast, two fried eggs, two turkey sausage links and an apple | -2 | warm | red | It was delicious, but your body can't handle eating the way you did as a teenager anymore. All that food and liquid was filling and made it harder to breathe | | Points+=1"
 >>\
 
 <<patient-next "Time to run errands" "Hallway_Out">>\
@@ -37,13 +37,10 @@ It's time for breakfast. What would you like to have for breakfast today @@.holl
 @@.holland;Mr. Holland@@ is going to pick what he wants for breakfast. Here are his options this morning. Which do you think he'll choose? What will give him the most energy for the busy day ahead?
 <hr>
 <ul>
-<li>A 24-once high protein smoothie and a 20-ounce cup of coffee</li>
-<li>An 8-ouncel cup of coffee, cottage cheese with fruit</li>
+<li>A 24-ounce high protein smoothie and a 20-ounce cup of coffee</li>
+<li>An 8-ounce cup of coffee, cottage cheese with fruit</li>
 <li>An 8-ounce cup of coffee, a glass of orange juice, two slices of toast, two fried eggs, two turkey sausage links and an apple</li>
 </ul>
-//There are no activity specific evaluations for this station//
-* An 8-ouncel cup of coffee, cottage cheese with fruit
-* An 8-ounce cup of coffee, a glass of orange juice, two slices of toast, two fried eggs, two turkey sausage links and an apple
 //There are no activity specific evaluations for this station//
 <</if>>
 
@@ -60,7 +57,7 @@ Time to get dressed for the day. <strong>Make sure to put on your socks and shoe
 
 <<else>>\
 
-It's time for @@.holland;Mr Holland@@ to get dressed. Once they are done getting dressed evaluate their performance below.
+It's time for @@.holland;Mr. Holland@@ to get dressed. Once they are done getting dressed evaluate their performance below.
 //Don't forget that you can use your general controls as well to add or subtract additional energy such as if they bend over to put their shoes on//
 <hr>
 <<dynamic-eval "Activity: Getting Dressed"
@@ -77,7 +74,7 @@ It's time for @@.holland;Mr Holland@@ to get dressed. Once they are done getting
 <h1>Whistle Stop Park</h1>\
 <hr>\
 <<if $myRole == "patient">>\
-You've made it to Whistle Stop Park. Choose an errand below, or head home when you are done for the day.
+You're at Whistle Stop Park. Choose an errand below, or head home when you are done for the day.
 
 <<silently>>
 <<set _errandGroceryClass to "eval-wrap errands-cell green-wrap">>
@@ -142,13 +139,13 @@ You've made it to Whistle Stop Park. Choose an errand below, or head home when y
 <h1>Grocery Store</h1>\
 <hr>\
 <<if $myRole == "patient">>\
-@@.holland;Mr. Holland@@, You arrive at the grocery store to pick up a few essentials for the week.
+@@.holland;Mr. Holland@@, you arrive at the grocery store to pick up a few essentials for the week.
 
 The parking lot is completely packed. You walk inside, but all of the motorized shopping carts are already in use. You have no choice but to grab a standard cart and push it through the crowded aisles yourself.
 
 <<patient-choices "What do you want to do?" "no-eval"
-  "Grab a regular shopping cart | -4 | blue | red | Pushing the heavy cart and dodging crowds is exhausting. | | Points+=1 | errandsRun+=1"
-  "It's too much work without a motorized cart. You'll come back tomorrow | 0 | blue | red | Hopefully you'll be able to find a motorized cart tomorrow. | | standing+=1 | Points-=1 | errandsRun+=1"
+  "Grab a regular shopping cart | -4 | blue | red | Pushing the heavy cart and dodging crowds is exhausting. | | Points+=1 | standing+=1 | errandsRun+=1"
+  "It's too much work without a motorized cart. You'll come back tomorrow | 0 | blue | red | Hopefully you'll be able to find a motorized cart tomorrow. | | Points-=1"
 >>\
 
 <<patient-next "Head back to the park" "Errands_Hub">>\
@@ -205,7 +202,7 @@ The store is surprisingly quiet today. Right inside the door, there is a fully c
 @@.holland;Mr. Holland@@, you are at the pharmacy.
 
 <<patient-choices "Time to pick up prescriptions" "no-eval"
-  "You get in line and wait for your turn | -1 | blue | green | You are pleasantly surprised to find the express lane completely empty today! Because you called ahead using the automated system, your prescription is already bagged, paid for, and waiting for you.| | Points+=1 | hasMedications=true | errandsRun+=1"
+  "Head to the express pickup lane | -1 | blue | green | You are pleasantly surprised to find the express lane completely empty today! Because you called ahead using the automated system, your prescription is already bagged, paid for, and waiting for you.| | Points+=1 | hasMedications=true | errandsRun+=1"
 >>
 
 <<patient-next "Head back to the park" "Errands_Hub">>\
@@ -221,10 +218,10 @@ The store is surprisingly quiet today. Right inside the door, there is a fully c
 <h1>Pulmonary Clinic</h1>\
 <hr>\
 <<if $myRole == "patient">>\
-@@.holland;Mr. Holland@@, You arrive at the pulmonary rehab clinic
+@@.holland;Mr. Holland@@, you arrive at the pulmonary rehab clinic.
 
 <<patient-choices "Pulmonary Rehab Appointment" "no-eval"
-  "You get in line and wait for your turn | +2 | blue | green | The nurses at the pulmonary rehab clinic taught you some great energy conservation strategies. You already feel like your breathing easier | | Points+=2 | errandsRun+=1"
+  "Check in for your appointment | +2 | blue | green | The nurses at the pulmonary rehab clinic taught you some great energy conservation strategies. You already feel like you're breathing easier | | Points+=2 | errandsRun+=1"
 >>
 
 <<patient-next "Head back to the park" "Errands_Hub">>\
@@ -246,7 +243,7 @@ The store is surprisingly quiet today. Right inside the door, there is a fully c
 <<if $myRole == "patient">>\
 @@.holland;Mr. Holland@@, you are at the toy store to pick up a gift for your granddaughter.
 
- The store is in total chaos with a weekend sale! To make matters worse, the specific doll she asked for is on the very bottom shelf at the back of the store.
+The store is in total chaos with a weekend sale! To make matters worse, the specific doll she asked for is on the very bottom shelf at the back of the store.
 
 <<patient-choices "Look for a doll" "no-eval"
   "Pick up the doll | -4 | blue | red | Bending down and navigating the chaotic store severely depletes your energy. But you're happy you got your granddaughter the doll she wanted. | | Points+=4 | bentOver+=1 | hasToy=true | errandsRun+=1"
@@ -273,7 +270,7 @@ Observe his pacing and breathing using your general observation controls.
 <<patient-next "Head back to the park" "Errands_Hub">>\
 
 <<else>>\
-@@.holland;Mr. Holland@@ is at the toy store to pick up a gift for his granddaughter. The store is in total chaos with a weekend sale! But a friendly clerk has offered to fetch the doll for @@.holland;Mr. Holland@@. while he waits comfortable in a chair up front.
+@@.holland;Mr. Holland@@ is at the toy store to pick up a gift for his granddaughter. The store is in total chaos with a weekend sale! But a friendly clerk has offered to fetch the doll for @@.holland;Mr. Holland@@ while he waits comfortably near the entrance.
 Observe his pacing and breathing using your general observation controls.
 <</if>>
 
@@ -287,17 +284,17 @@ Observe his pacing and breathing using your general observation controls.
 <<if $myRole == "patient">>\
 You wrap up your errands at Whistle Stop Park and prepare to head back to your apartment. 
 
-As you stand there, the cumulative physical toll of the day's activities suddenly hits you. Pushing through $errandsRun errands in one day has severely drained your reserves. 
+As you stand there, the cumulative physical toll of the day's activities suddenly hits you. <<if $errandsRun >= 2>>Pushing through $errandsRun errands in one day has severely drained your reserves.<</if>><<if $errandsRun == 1>>Even one errand has taken a toll on you.<</if>><<if $errandsRun < 1>>Even just the walk to the park has taken a toll on you.<</if>>
 
-<<patient-choices "Continue inside" "no-eval"
-  "You sit down to rest for a moment | +1 | blue | green | You're exhausted and need a break. You sit down and rest for a moment before continuing your journey. | | satAndRested+=1"
-  "You push through the exhaustion and continue on | -4 | blue | red | You're determined to finish your errands today. You push through the exhaustion and continue on. | | rushed+=1"
+<<patient-choices "Before you head home" "no-eval"
+  "You sit down to rest for a moment | +1 | blue | green | You're exhausted and need a break. You sit down and rest for a moment before heading home. | | satAndRested+=1"
+  "You push through the exhaustion and continue on | -4 | blue | red | You're determined to get home. You push through the exhaustion and keep walking. | | rushed+=1"
 >>
 
-<<patient-next "Continue inside" "Hallway_In">>
+<<patient-next "Walk back to your apartment" "Hallway_In">>
 
 <<else>>\
-@@.holland;Mr. Holland@@ is heading back from Whistle Stop Park after a full day of errands. Observe his pacing and breathing using your general observation controls as he prepares to continue inside.
+@@.holland;Mr. Holland@@ is heading home from Whistle Stop Park. Observe his pacing and breathing using your general observation controls as he heads home.
 <</if>>
 
 
@@ -305,16 +302,16 @@ As you stand there, the cumulative physical toll of the day's activities suddenl
 <h1>Walking back to your apartment</h1>\
 <hr>\
 <<if $myRole == "patient">>\
-@@.holland;Mr. Holland@@ Go ahead and walk back to your apartment for the evening.
+@@.holland;Mr. Holland@@, go ahead and walk back up to your apartment.
 
 <<patient-next "Time for Dinner" "Dinner">>\
 
 <<else>>\
-@@.holland;Mr. Holland@@ is back in his apartment building. Evaluate how he moves through the building on the way back to his apartment.
+@@.holland;Mr. Holland@@ is heading back up to his apartment. Evaluate how he moves through the building.
 
 <<dynamic-eval "Activity: Walking up stairs"
 "They took the elevator | -1 | 1 | elevator | green | Taking the elevator makes it a lot easier | green"
-"They took the stairs | -9 | 1 | stairs | red | You can't believe you made it up all those stairs, especially after a long day of running errands. It felt like climbing a mountain! | red"
+"They took the stairs | -9 | 1 | stairs | red | You can't believe you made it up all those stairs. It felt like climbing a mountain! | red"
 >>
 
 <</if>>
@@ -323,7 +320,7 @@ As you stand there, the cumulative physical toll of the day's activities suddenl
 <h1>Dinnertime</h1>\
 <hr>\
 <<if $myRole == "patient">>\
-You are back at your apartment for the evening. Now that you are home, your thoughts turn towards dinner. You could either order yourself a pizza or cook your own meal.
+Evening has come, and your thoughts turn towards dinner. You could either order yourself a pizza or cook your own meal.
 
 <<patient-choices "Dinner choices" "no-eval"
   "Order a pizza | -1 | blue | red | The food is a little greasy and heavy, and you feel a little guilty spending the extra money instead of cooking. But you feel tired after a long day. And you can't deny that pizza tastes great!| | Points-=3"
@@ -333,7 +330,7 @@ You are back at your apartment for the evening. Now that you are home, your thou
 <<patient-next "One last chore" "Laundry">>\
 
 <<else>>\
-@@.holland;Mr. Holland@@ is back in his apartment and it's time to eat dinner. He has to decide between ordering pizza or cooking his own meal.
+@@.holland;Mr. Holland@@ is in his apartment and it's time to eat dinner. He has to decide between ordering pizza or cooking his own meal.
 <</if>>
 
 :: Laundry [simulation activity] {"position":"2600,700","size":"100,100"}
@@ -343,7 +340,7 @@ You are back at your apartment for the evening. Now that you are home, your thou
 You make your way to the laundry area. The clothes are clean, but they are sitting in a heavy basket on the floor waiting to be folded. You are already feeling the exhaustion of the day settling deep into your chest.
 
 <<patient-choices "Laundry choices" "no-eval"
-  "Fold the clothes | -2 | green | red | You push through the fatigue to get the laundry folded. | Laundry_Fold"
+  "Fold the clothes | -2 | green | red | You decide to push through the fatigue and fold the laundry. | Laundry_Fold"
   "Leave the laundry for tomorrow | 0 | red | red | You decide to leave the laundry in the basket. It's frustrating to let chores pile up, but your body is begging for rest tonight. | Bedtime"
 >>
 
@@ -376,7 +373,7 @@ You push through the fatigue and begin folding the clothes in the basket.
 <<if $myRole == "patient">>
 You finally make it to your bedroom and sit on the edge of the mattress.
     <<if $Energy <= 3>>
-    You're utterly exhausted and feel like you can barely breath, but you made it
+    You're utterly exhausted and feel like you can barely breathe, but you made it
     <<elseif $Energy <= 7>>
     You're a little winded, and glad to be done for the day.
     <<else>>
@@ -389,7 +386,7 @@ You finally make it to your bedroom and sit on the edge of the mattress.
     <</if>>
     You crawl into bed and lay your head on the pillow and close your eyes. As you drift off to sleep you
     <<if $hasToy is true>>
-    think about how excited your grand daughter is going to be when you give her the doll you bought...
+    think about how excited your granddaughter is going to be when you give her the doll you bought...
     <<else>>
     feel guilty about not having a present for your granddaughter's birthday tomorrow...
     <</if>>
@@ -397,7 +394,7 @@ You finally make it to your bedroom and sit on the edge of the mattress.
 <<else>>
     @@.holland;Mr. Holland@@ is back in his bedroom. As he gets ready for bed he reflects on how his breathing is feeling and what he was able to get done today.
     <<if $Energy <= 3>>
-    He is utterly exhausted and feels like he can barely breath, but he made it
+    He is utterly exhausted and feels like he can barely breathe, but he made it
     <<elseif $Energy <= 7>>
     He is a little winded, and glad to be done for the day.
     <<else>>
@@ -410,7 +407,7 @@ You finally make it to your bedroom and sit on the edge of the mattress.
     <</if>>
     He crawls into bed and lays his head on the pillow and closes his eyes. As he drifts off to sleep he
     <<if $hasToy is true>>
-    thinks about how excited his grand daughter is going to be when he gives her the doll he bought...
+    thinks about how excited his granddaughter is going to be when he gives her the doll he bought...
     <<else>>
     feels guilty about not having a present for his granddaughter's birthday tomorrow...
     <</if>>
@@ -463,7 +460,7 @@ You finally make it to your bedroom and sit on the edge of the mattress.
     <</if>>
 <<else>>
     <<if $Energy is 0>>
-    @@color:red;Mr. Holland is in the hospital:@@ You over exerted yourself today. Here is the breakdown of the physical demands of your day:
+    @@color:red;Mr. Holland is in the hospital:@@ You overexerted yourself today. Here is the breakdown of the physical demands of your day:
     <<elseif $Inhaler >= 7>>
     @@color:red;Mr. Holland is in the hospital:@@ You used your inhaler $Inhaler times. Using your inhaler too much increases your risk of tachycardic dysrhythmias due to albuterol's impact on beta-1 adrenergic receptors. Relying on the rescue inhaler instead of energy conservation techniques increases your risk for adverse medication reactions. Here is a breakdown of the physical demands of your day:
     <<else>>
@@ -486,7 +483,7 @@ You finally make it to your bedroom and sit on the edge of the mattress.
 <<if $wildRoll is 1>>
 <h4 class="wild-card-event">Event: Forgot Inhaler</h4>
 <br>
-Realizing you forgot your rescue inhaler could have had devastating consequences. You either had to expend more energy to go back upstairs to your apartment or risk going all day without it. Going without your inhaler leaves you reliant on pacing yourself and using good breathing techniques to manage your energy, but you are only one asthma trigger away from needing an ambulance!
+Realizing you forgot your rescue inhaler could have had devastating consequences. You either had to expend more energy to go back upstairs to your apartment or risk going all day without it. Going without your inhaler leaves you reliant on pacing yourself and using good breathing techniques to manage your energy, but you are only one trigger away from needing an ambulance!
 <<elseif $wildRoll is 2>>
 <h4 class="wild-card-event">Event: Caved to a Craving</h4>
 <br>
@@ -494,7 +491,7 @@ Nicotine addiction is a powerful hurdle. Smoking that cigarette caused immediate
 <<elseif $wildRoll is 3>>
 <h4 class="wild-card-event">Event: Wildfire Smoke</h4>
 <br>
-The heavy particulate matter from the wildfire smoke made every breath a struggle today. Navigating severe environmental hazards requires strict energy conservation and recognizing when it is too dangerous to push forward.
+The heavy particulate matter from the wildfire smoke made the air dangerous to breathe today. Navigating severe environmental hazards requires protecting your airway, strict energy conservation, and recognizing when it is too dangerous to push forward.
 <<elseif $wildRoll is 4>>
 <h4 class="wild-card-event">Event: Freezing Cold Air</h4>
 <br>
@@ -525,7 +522,7 @@ The blooming trees filled the air with allergens, triggering airway inflammation
 <</silently>>\
 <h1>Game Over</h1>\
 <hr>\
-You are very short of breath and can barely breath. You collapse on the ground and someone nearby calls an ambulance to bring you to the hospital.
+You are very short of breath and can barely breathe. You collapse on the ground and someone nearby calls an ambulance to bring you to the hospital.
 <img src="Media/images/ambulance.png" alt="Ambulance with lights and sirens in a tunnel" class="img-center">
 <hr>
 <<link "View debrief">><<run SimApp.prepareFinalReport(false); SimApp.goToSharedPassage("Final_Report")>><</link>>
@@ -537,7 +534,7 @@ You are very short of breath and can barely breath. You collapse on the ground a
 <</silently>>\
 <h1>Game Over</h1>\
 <hr>\
-Your heart is racing and feels like it is about to jump out of your chest. It hurts to breath and move. You curl up on the ground and a bystander calls an ambulance.
+Your heart is racing and feels like it is about to jump out of your chest. It hurts to breathe and move. You curl up on the ground and a bystander calls an ambulance.
 <img src="Media/images/ambulance.png" alt="Ambulance with lights and sirens in a tunnel" class="img-center">
 <hr>
 <<link "View debrief">><<run SimApp.prepareFinalReport(false); SimApp.goToSharedPassage("Final_Report")>><</link>>
@@ -550,11 +547,11 @@ Your heart is racing and feels like it is about to jump out of your chest. It hu
 <h1>Good Morning</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-Your alarm wakes you and its time to get up. You get the strangest feeling that this was the same song you woke up to yesterday morning...
+Your alarm wakes you and it's time to get up. You get the strangest feeling that this was the same song you woke up to yesterday morning...
 
 Before you spend too much time thinking about the radio playlist you remember you've got a lot of things to do today. You hope that you will be able to get it all done.
 <hr>\
-@@.holland;Mr.Holland@@ it's time to start the day. Go ahead and get out of bed now.
+@@.holland;Mr. Holland@@ it's time to start the day. Go ahead and get out of bed now.
     
 Once you are fully standing and ready to start your day, click below to head to the bathroom to get cleaned up.
 
@@ -562,7 +559,7 @@ Once you are fully standing and ready to start your day, click below to head to 
 <hr>
     <<patient-next "Head to the Bathroom (Shower)" "Showering">>\
 <<else>>\
-@@.holland;Mr. Holland's@@ alarm goes off, its time for him to wake up. As he listens to the song playing over the radio he gets the strangest feeling of deja-vu...
+@@.holland;Mr. Holland's@@ alarm goes off, it's time for him to wake up. As he listens to the song playing over the radio he gets the strangest feeling of deja-vu...
 <hr>\
 Tell @@.holland;Mr. Holland@@ to physically get out of bed. Observe their actions carefully as they do this.
     
@@ -581,7 +578,7 @@ Once he is fully standing, click the appropriate evaluation below.
 <<if State.variables.myRole == "patient">>\
 <h1>Walking back to get $yourItem</h1>\
 <hr>\
-@@.holland;Mr. Holland@@ Go ahead and walk back to your apartment to pick up $yourItem. 
+@@.holland;Mr. Holland@@, go ahead and walk back to your apartment to pick up $yourItem. 
 <hr>
 <<patient-next "Back in your apartment" "Item_Pickup">>\
 
@@ -591,7 +588,7 @@ Once he is fully standing, click the appropriate evaluation below.
 @@.holland;Mr. Holland@@ needs to walk back inside to retrieve $hisItem. Evaluate how he moves through the building on the way back to his apartment.
 <hr>
 <<dynamic-eval "Activity: Walking up stairs"
-" They took the elevator | -1 | 1 | elevator | green | Taking the elevator make is a lot easier | green"
+" They took the elevator | -1 | 1 | elevator | green | Taking the elevator makes it a lot easier | green"
 "They took the stairs | -7 | 1 | stairs | red | You can't believe you made it up all those stairs. It felt like climbing a mountain! | red"
 >>
 
@@ -604,7 +601,7 @@ Once he is fully standing, click the appropriate evaluation below.
 <h1>Walking out to the lobby</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-Now that you are done with breakfast it's time to start your day. Go ahead and start walking down stairs to the lobby.
+Now that you are done with breakfast it's time to start your day. Go ahead and start walking downstairs to the lobby.
 <hr>
 <<patient-next "Time to head outside" "Wildcard_Router">>
 
@@ -625,12 +622,12 @@ Now that @@.holland;Mr. Holland@@ is done with his breakfast he is ready to star
 <h1>Walking back downstairs</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-You have $yourItem and head back down stairs. Time to start those errands
+You have $yourItem and head back downstairs. Time to start those errands
 <hr>
 <<patient-next "Time to head outside" "Whistle_Stop_Out">>
 
 <<else>>\
-Now that @@.holland;Mr. Holland@@ has $hisItem its time to head back downstairs again. Use the general observer controls to record if he <strong>sits in a chair to rest</strong> along the way or if he <strong>rushes</strong>. 
+Now that @@.holland;Mr. Holland@@ has $hisItem it's time to head back downstairs again. Use the general observer controls to record if he <strong>sits in a chair to rest</strong> along the way or if he <strong>rushes</strong>. 
 <hr>
 <<dynamic-eval "Activity: Walking down stairs"
 " They took the elevator | -1 | 1 | elevator | green | You're glad your apartment has an elevator | green"
@@ -646,12 +643,12 @@ Now that @@.holland;Mr. Holland@@ has $hisItem its time to head back downstairs 
 <h1>Back Inside</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-You're back at your apartment and grab $yourItem. It's taxing having to retrace your steps, but your glad you did. It could have been dangerous going outside without $yourItem.
+You're back at your apartment and grab $yourItem. It's taxing having to retrace your steps, but you're glad you did. It could have been dangerous going outside without $yourItem.
 
 <<patient-next "Head back downstairs again" "Hallway_Out_Again">>
 
 <<else>>
-@@.holland;Mr. Holland@@ is back in his apartment to pick up $hisItem. It takes a lot of energy to retrace your steps. If your were in @@.holland;Mr. Holland's@@ role would you have gone back for $yourItem or kept going without it?
+@@.holland;Mr. Holland@@ is back in his apartment to pick up $hisItem. It takes a lot of energy to retrace his steps. If you were in @@.holland;Mr. Holland's@@ role would you have gone back for $yourItem or kept going without it?
 
 <</if>>
 
@@ -665,7 +662,7 @@ You're back at your apartment and grab $yourItem. It's taxing having to retrace 
 Your skin has been feeling dry lately. Perhaps some lotion would help your skin feel better. What would you like to do?
 <hr>
 <<patient-choices "Lotion choices"
-	"The lavendar scented lotion from your daughter | -2 | blue | red | It smells lovely, but strong, you immediately start coughing"
+	"The lavender scented lotion from your daughter | -2 | blue | red | It smells lovely, but strong, you immediately start coughing"
     "The generic unscented lotion | 0 | blue | green | It's nothing special, but it doesn't trigger your COPD symptoms"
 	"Skip the lotion, it might trigger your COPD | 0 | blue | red | You're concerned about how your skin is going to feel today without lotion, but you have to prioritize your breathing"
 >>\
@@ -820,7 +817,7 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
 :: Role_Selection [nobr]{"position":"1050,300","size":"100,100"}
 <h1>Choose Your Role</h1>
 <hr>
-Please coordinate with your partner. One of you must be the Mr. Holland, and the other must be the Observer.
+Please coordinate with your partner. One of you must be Mr. Holland, and the other must be the Observer.
 
 <div id="host-invite-slot"></div>
 
@@ -892,7 +889,7 @@ After that, you will need to assess how he performs the activity and how his bre
 <hr>
 
 <<dynamic-eval "Activity: Showering"
-  "He showered sitting down | 0 | 1 | satAndRested | green | You're glad your daughter convinced you to buy the shower chair, it certainely makes things easier in the morning | green"
+  "He showered sitting down | 0 | 1 | satAndRested | green | You're glad your daughter convinced you to buy the shower chair, it certainly makes things easier in the morning | green"
   "He showered standing up | -2 | 1 | standing | red | The day has barely begun and you're already starting to feel a little winded | red"
 >>\
 <</if>>
@@ -927,7 +924,7 @@ This is what your user interface will look like when you start the game. At the 
 <ul>
 <li>The time elapsed in the simulation. //Don't worry about the clock ticking right now it will reset after these tutorial pages when we start the actual simulation//</li>
 <li>@@.holland;Mr. Holland's@@ current energy</li>
-<li>If @@.holland;Mr. Holland@@ has is inhaler</li>
+<li>If @@.holland;Mr. Holland@@ has his inhaler</li>
 <li>How many points he has earned</li>
 </ul>
 
@@ -968,10 +965,10 @@ Welcome to this live augmented reality nursing simulation. You will need a partn
 Before we begin please review the briefing below.
 <hr>
 <h2>Briefing</h2>
-<p>Today you and your partner will be living a day in the life of @@.holland;Mr. Bernard Holland@@, a 75-year-old retired carpet layer who is living with COPD. He is 60-pack-year smoker who is currently trying to quit. He does not wear home oxygen, though he does often have to stop to catch his breath after walking for more than a few minutes on level ground.</p>
+<p>Today you and your partner will be living a day in the life of @@.holland;Mr. Bernard Holland@@, a 75-year-old retired carpet layer who is living with COPD. He is a 60-pack-year smoker who is currently trying to quit. He does not wear home oxygen, though he does often have to stop to catch his breath after walking for more than a few minutes on level ground.</p>
 
 <h3>Home Medications</h3>
-Mr. Holland is prescribed multiple medications to help him manage his COPD including twice daily maintenance inhalers along with on oral maintenance bronchodilator. In addition to his maintenance medications has also been prescribed a <strong>rescue inhaler</strong> to use when he is experiencing a sudden increase in his symptoms.
+Mr. Holland is prescribed multiple medications to help him manage his COPD including twice daily maintenance inhalers along with an oral maintenance bronchodilator. In addition to his maintenance medications he has also been prescribed a <strong>rescue inhaler</strong> to use when he is experiencing a sudden increase in his symptoms.
 <h3>Simulation Goals</h3>   
 <ul>
 <li>Your goal  is to accomplish as many tasks during your day as possible. This is a <strong>timed simulation</strong>. You and your partner will be competing against your classmates!</li>
@@ -981,30 +978,30 @@ Mr. Holland is prescribed multiple medications to help him manage his COPD inclu
 
 <h3>Roles</h3>
 <ul>
-<li>@@.holland;Mr. Holand@@: In this role you will be making choices about what activities to complete and how to perform those activities to conserve your energy. </li>
-<li>@@.observer;The Observer@@:  In this role you will be evaluating  @@.holland;Mr. Holand's@@ performance throughout his daily routine. You will be adding and deducting energy based on how your partner acts out the activities.</li>
+<li>@@.holland;Mr. Holland@@: In this role you will be making choices about what activities to complete and how to perform those activities to conserve your energy. </li>
+<li>@@.observer;The Observer@@:  In this role you will be evaluating  @@.holland;Mr. Holland's@@ performance throughout his daily routine. You will be adding and deducting energy based on how your partner acts out the activities.</li>
 </ul>
 
 <h3>Augmented Reality Approach</h3>
 <ul>
-<li>To give you an understanding of what it is like to live with a chronic illness, the student playing the role of  @@.holland;Mr. Holand@@ will need to act out many of the activities as if you are actually doing them. For example putting on your shoes will require actually putting on your shoes, while folding laundry will require you to fold a pile of laundry.</li>
-<li>@@.observer;The Observer@@ will assign energy additions or substractions based on @@.holland;Mr. Holand's@@ actual physical performance of that task.</li>
-<li>Once you connect to the multiplayer lobby the student playing the role of @@.holland;Mr. Holand@@ wil be controlling the pace of the game and moving from activity station to activity station. The game will tell you where to go next or it may give you options to chose from.</li>
-<li>Meanwhile the @@.observer;The Observer@@ be provided specific scoring buttons for each task.</li>
+<li>To give you an understanding of what it is like to live with a chronic illness, the student playing the role of  @@.holland;Mr. Holland@@ will need to act out many of the activities as if you are actually doing them. For example putting on your shoes will require actually putting on your shoes, while folding laundry will require you to fold a pile of laundry.</li>
+<li>@@.observer;The Observer@@ will assign energy additions or subtractions based on @@.holland;Mr. Holland's@@ actual physical performance of that task.</li>
+<li>Once you connect to the multiplayer lobby the student playing the role of @@.holland;Mr. Holland@@ will be controlling the pace of the game and moving from activity station to activity station. The game will tell you where to go next or it may give you options to choose from.</li>
+<li>Meanwhile, @@.observer;the Observer@@ will be provided specific scoring buttons for each task.</li>
 </ul>
 
 <h3>Energy Management</h3>
 <ul>
-<li>@@.holland;Mr. Holand@@ will start with @@color:green;10 energy@@. and can have a maximum of @@color:green;15 energy@@.</li>
-<li>Each task you perform will cost energy, with certain tasksm or choices costing more than others. </li>
-<li>When you use energy conservation techniques or use your rescue inhaler @@.observer;The Observer@@ will be able to @@color:green; add energy@@. Conversly not using good breathing technique can result in @@color:red; subtracting energy@@</li>
-<li>If @@.holland;Mr. Holand@@ reaches @@color:red; 0 energy@@, its game over and you will have to return to <strong>room 8220 for debriefing.</strong></li>
+<li>@@.holland;Mr. Holland@@ will start with @@color:green;10 energy@@ and can have a maximum of @@color:green;15 energy@@.</li>
+<li>Each task you perform will cost energy, with certain tasks or choices costing more than others. </li>
+<li>When you use energy conservation techniques or use your rescue inhaler @@.observer;The Observer@@ will be able to @@color:green; add energy@@. Conversely not using good breathing technique can result in @@color:red; subtracting energy@@</li>
+<li>If @@.holland;Mr. Holland@@ reaches @@color:red; 0 energy@@, it's game over and you will have to return to <strong>room 8220 for debriefing.</strong></li>
 </ul>
 
 <h3>Today's Itinerary</h3>
-The game will start with  @@.holland;Mr. Holand@@ getting out of bed in the morning, which will start the clock for the simulation. After that, you’ll need to shower, brush your teeth, get dressed, along with other activities of daily living.
+The game will start with  @@.holland;Mr. Holland@@ getting out of bed in the morning, which will start the clock for the simulation. After that, you’ll need to shower, brush your teeth, get dressed, along with other activities of daily living.
 <br>
-It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot of errands on his to-do list including:
+It’s coming up on the end of the month and @@.holland;Mr. Holland@@ has a lot of errands on his to-do list including:
 <ul>
 <li>Go to the grocery store.</li>
 <li>Pick up his prescriptions <strong>(He is almost out of his maintenance medications, fortunately he still has an extra rescue inhaler!)</strong>.</li>
@@ -1015,10 +1012,9 @@ It’s coming up on the end of the month and @@.holland;Mr. Holand@@ has a lot o
 <h2>To start the game</h2>
 <ul>
 <li>Have one player click the <strong><u>Connect to Multiplayer</u></strong> button below. This will connect you to the game lobby.</li>
-<li>Once in the game lobby click the <strong><u>Invite</u></strong> button. This will give you a QR code for your partner to pair up and form a team.. If you leave the lobby before your partner joins, the host can tap <strong><u>Show Invite QR Code</u></strong> on the role selection screen to display it again.</li>
+<li>Once in the game lobby click the <strong><u>Invite</u></strong> button. This will give you a QR code for your partner to pair up and form a team. If you leave the lobby before your partner joins, the host can tap <strong><u>Show Invite QR Code</u></strong> on the role selection screen to display it again.</li>
 <li>Once you've both joined the 1st player can then click the <strong><u>Launch</u></strong> button to enter the briefing area to learn the controls.</li>
 </ul>
-<i>Don't bother spending time customizing your avatar or player names. These won't be used in the game</i>
 
 <!--[[Role_Selection]]-->
 <!--[[Waiting_Room]]-->
@@ -1204,10 +1200,10 @@ Now that you are done showering it is time to brush your teeth. Go ahead and wal
 
 <<else>>\
 
-Now that @@.holland;Mr. Holland@@ is done showering he needs to brush his teeth. Go ahead to assess what technique he uses as he brushes his teeth,
+Now that @@.holland;Mr. Holland@@ is done showering he needs to brush his teeth. Go ahead to assess what technique he uses as he brushes his teeth.
 <hr>
 <<dynamic-eval "Activity: Brushing Teeth" 
-"He brushed sitting down | -1 | +1 | satAndRested | green | sitting down for this task helped conserve your energy | green" 
+"He brushed sitting down | -1 | +1 | satAndRested | green | Sitting down for this task helped conserve your energy | green" 
 "He brushed standing up | -2 | +1 | standing | red | Even small activities of daily living take their toll on your energy | red" >>\
 
 <</if>>
@@ -1231,7 +1227,7 @@ Go ahead and do them now, then tap the button below when you are finished.
 Watch @@.holland;Mr. Holland@@ perform the practice activity. Once they finish, record your assessment below.
 <hr>
 <<dynamic-eval "Practice: Jumping Jacks"
-  "They did 5 jumping jacks | -9 | 0 | none | red | What were you thinking?! You have advanced COPD! You can't exercise like you used to in High School!"
+  "They did 5 jumping jacks | -9 | 0 | none | red | What were you thinking?! You have advanced COPD! You can't exercise like you used to in high school!"
 >>\
 <</if>>
 <!--[[Tutorial_Rest]]-->
@@ -1255,7 +1251,7 @@ Once you are seated and breathing, tap the button below.
 <<dynamic-eval "Practice: Rest & Recovery"
   "Sat and did pursed lip breathing | +4 | 0 | pursedLip | green |That feels a little better. You are still winded, but not as bad. | green| "
 >>\
-Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will start the simulation from their screen.
+Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will start the simulation from his screen.
 <</if>>
 <!--[[Good_Morning_Mr._Holland]]-->
 
@@ -1264,7 +1260,7 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will sta
 <h1>Waiting for Partner...</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>
-    You are the @@.holland;Mr. Holland@@. Please wait for your @@.observer;The Observer@@ to be ready.
+    You are @@.holland;Mr. Holland@@. Please wait for your @@.observer;Observer@@ to be ready.
 <<else>>
     You are @@.observer;The Observer@@. Please wait for your @@.holland;Mr. Holland@@ to be ready.
 <</if>>
@@ -1320,7 +1316,7 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will sta
 <<if $myRole == "patient">>\
 You start walking toward Whistle Stop Park to begin your errands for the day.
 <hr>
-<<patient-next "Continue your errands" "Errands_Hub">>\
+<<patient-next "Arrive at Whistle Stop Park" "Errands_Hub">>\
 
 <<else>>\
 
@@ -1366,13 +1362,13 @@ What do you want to do?
 As you step outside, a strong craving for a cigarette hits you out of nowhere.
 <hr>
 <<patient-choices "Cigarette craving?" "no-eval"
-  "You know you shouldn't, but the urge is overpowering | -5 | red | red | You light up a cigarette and take a couple long slow drags. It doesn't take long for you to start coughing and wheezing. You know you should quit, but sometimes its really hard."
+  "You know you shouldn't, but the urge is overpowering | -5 | red | red | You light up a cigarette and take a couple long slow drags. It doesn't take long for you to start coughing and wheezing. You know you should quit, but sometimes it's really hard."
 >>\
 
 <<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>
 
 <<else>>\
-@@.holland;Mr. Holland@@ suddenly gets an over powering craving for cigarette. He can't resist, and lights one up. Addiction can be hard to overcome even when you know it is hurting you.
+@@.holland;Mr. Holland@@ suddenly gets an overpowering craving for a cigarette. He can't resist, and lights one up. Addiction can be hard to overcome even when you know it is hurting you.
 <hr>
 <</if>>
 
@@ -1389,11 +1385,11 @@ What do you want to do?
 <hr>
 <<patient-choices "What do you want to do?" "no-eval"
   "Push through the smoke and keep going| -7 | blue | red | Your chest burns with every breath, but you force yourself to keep walking"
-  "Go back inside and grab an N95 mask | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back up stairs to your apartment to grab a mask. | Hallway_In_Repeat"
+  "Go back inside and grab an N95 mask | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back upstairs to your apartment to grab a mask. | Hallway_In_Repeat"
 "It's too dangerous to be outside with all this smoke. Skip your errands and stay inside | 0 | blue | yellow | You're sad you won't have a present for your granddaughter tomorrow, and worried about what you'll do without your medications. But wildfire smoke could be deadly to you. | Hallway_In"
 >>\
 
-<<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>\
+<<patient-next "Continue" "Whistle_Stop_Out">>\
 
 <<else>>\
 @@.holland;Mr. Holland@@ steps outside and immediately starts coughing. There is a wildfire somewhere and thick smoke has settled over the town. Watch what he decides.
@@ -1410,20 +1406,20 @@ What do you want to do?
 <h1>Polar Vortex!</h1>\
 <hr>\
 <<if State.variables.myRole == "patient">>\
-You step outside and are hit with a blast of freezing cold air. You immediately feel like it is harder to breath.
+You step outside and are hit with a blast of freezing cold air. You immediately feel like it is harder to breathe.
 
 What do you want to do?
 <hr>
 <<patient-choices "What do you want to do?" "no-eval"
   "Back in my day I used to walk 5 miles in the snow to go to school! I can deal with this!| -6 | blue | red | As you start walking you remember that when you were younger your lungs were also healthier. You sigh as you remember being able to sprint across the playground for what seemed like hours. Now you keep walking and feel your lungs freezing with every breath"
-  "Go back inside and grab a scarf | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back up stairs to your apartment to grab a scarf. | Hallway_In_Repeat"
-"Its too much work to turn back now. Cover your mouth and nose with your hands | -4 | blue | yellow | Covering your mouth and noise to warm up the air before you breath helps some, but it’s still a challenge to breath"
+  "Go back inside and grab a scarf | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back upstairs to your apartment to grab a scarf. | Hallway_In_Repeat"
+"It's too much work to turn back now. Cover your mouth and nose with your hands | -4 | blue | yellow | Covering your mouth and nose to warm up the air before you breathe helps some, but it’s still a challenge to breathe"
 >>\
 
-<<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>\
+<<patient-next "Continue" "Whistle_Stop_Out">>\
 
 <<else>>\
-@@.holland;Mr. Holland@@ steps outside and is hit with a blast of fridgid air. A polar vortex is causing record breaking low temperatures in the area.
+@@.holland;Mr. Holland@@ steps outside and is hit with a blast of frigid air. A polar vortex is causing record-breaking low temperatures in the area.
 //There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
 <hr>
 <</if>>
@@ -1445,7 +1441,7 @@ You step outside and take a breath. It is a completely beautiful, mild, and sunn
 <<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>\
 
 <<else>>
-It's a beautiful day outside. The weather is perfect, and the skies are clear. @@.holland;Mr. Holland@@ takes a deep breath in and smiles before continuing on with his errands.
+It's a beautiful day outside. The weather is perfect, and the skies are clear. @@.holland;Mr. Holland@@ takes a deep breath in and smiles before heading out on his errands.
 //There are no activity specific evaluations for this station — evaluate his movement on the next passage.//
 <hr>
 <</if>>
@@ -1463,11 +1459,11 @@ What do you want to do?
 <hr>
 <<patient-choices "What do you want to do?" "no-eval"
   "Keep going and try and ignore the pollen| -7 | blue | red | Your chest tightens and you find yourself gasping as you walk outside into the clouds of yellow pollen"
-  "Go back inside and grab an N95 mask | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back up stairs to your apartment to grab a mask. | Hallway_In_Repeat"
-"Going outside when there is this much pollen in the air is too much. You decide to stay home for the day | 0 | blue | yellow | You're sad you won't have a present for your granddaughter tomorrow, and worried about what you'll do without your medications. But wildfire smoke could be deadly to you. | Hallway_In"
+  "Go back inside and grab an N95 mask | 0 | blue | white | It takes extra effort to go back, but protecting your lungs is worth it. Walk back upstairs to your apartment to grab a mask. | Hallway_In_Repeat"
+"Going outside when there is this much pollen in the air is too much. You decide to stay home for the day | 0 | blue | yellow | You're sad you won't have a present for your granddaughter tomorrow, and worried about what you'll do without your medications. But with this much pollen in the air, going out could land you in the hospital. | Hallway_In"
 >>\
 
-<<patient-next "Start walking to Whistle Stop Park" "Whistle_Stop_Out">>\
+<<patient-next "Continue" "Whistle_Stop_Out">>\
 
 <<else>>\
 @@.holland;Mr. Holland@@ steps outside and immediately starts coughing. It seems like every tree, bush and flower is in bloom right now. A dusting of yellow pollen is visible on every surface and gusts of wind stir more pollen into the air.
@@ -1488,7 +1484,7 @@ What do you want to do?
     { go: "Wildcard3", set: { yourItem: "a mask", hisItem: "a mask" } },
     { go: "Wildcard4", set: { yourItem: "a scarf", hisItem: "a scarf" } },
     "Wildcard5",
-    "Wildcard6"
+    { go: "Wildcard6", set: { yourItem: "a mask", hisItem: "a mask" } }
 ], "wildCarded")>>
 
 <!--[[Wildcard1]]-->
