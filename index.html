@@ -602,8 +602,41 @@ summary::-webkit-details-marker {
 }
 
 /* Small Invite pill in the HUD (both roles): reopens the invite / rejoin QR */
+/* HUD stats: one line on wide screens; on phones the items wrap onto two
+   centred rows so nothing is clipped beside the QR button. */
+.hud-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    column-gap: 0.5em;
+    row-gap: 2px;
+    min-width: 0;
+    flex: 0 1 auto;
+    line-height: 1.25;
+}
+
+.hud-item {
+    white-space: nowrap;
+}
+
+@media screen and (max-width: 640px) {
+    .hud-bar {
+        font-size: clamp(11px, 3.4vw, 14px);
+        white-space: normal;
+    }
+    .hud-stats {
+        column-gap: 0.9em;
+    }
+    .hud-sep,
+    .hud-invite-word {
+        display: none;
+    }
+}
+
 button.hud-invite-btn {
     display: inline-block;
+    flex: 0 0 auto;
     width: auto !important;
     margin: 0 0 0 10px !important;
     padding: 2px 10px !important;
@@ -5656,18 +5689,22 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
 
     &lt;&lt;if $myRole == &quot;observer&quot;&gt;&gt;
         &lt;div id=&quot;observer-hud&quot; class=&quot;hud-bar&quot;&gt;
-            &lt;strong&gt;Time:&lt;/strong&gt;&amp;nbsp;&lt;span class=&quot;time-display&quot;&gt;00:00&lt;/span&gt; &amp;nbsp;|&amp;nbsp;
-            &lt;strong&gt;Energy:&lt;/strong&gt;&amp;nbsp;&lt;span id=&quot;energy-display&quot;&gt;&lt;&lt;print $Energy&gt;&gt;&lt;/span&gt; / 15 &amp;nbsp;|&amp;nbsp;
-            &lt;strong&gt;Inhaler:&lt;/strong&gt;&amp;nbsp;&lt;span id=&quot;inhaler-display&quot;&gt;&lt;&lt;print $Inhaler&gt;&gt;&lt;/span&gt; &amp;nbsp;|&amp;nbsp;
-            &lt;strong&gt;Points:&lt;/strong&gt;&amp;nbsp;&lt;span id=&quot;points-display&quot;&gt;&lt;&lt;print $Points&gt;&gt;&lt;/span&gt;
-            &lt;button type=&quot;button&quot; class=&quot;hud-invite-btn&quot; aria-label=&quot;Show invite QR code so your partner can join or rejoin&quot; onclick=&quot;SimApp.showInviteModal()&quot;&gt;QR Invite&lt;/button&gt;
+            &lt;span class=&quot;hud-stats&quot;&gt;
+                &lt;span class=&quot;hud-item&quot;&gt;&lt;strong&gt;Time:&lt;/strong&gt;&amp;nbsp;&lt;span class=&quot;time-display&quot;&gt;00:00&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;hud-sep&quot;&gt;|&lt;/span&gt;
+                &lt;span class=&quot;hud-item&quot;&gt;&lt;strong&gt;Energy:&lt;/strong&gt;&amp;nbsp;&lt;span id=&quot;energy-display&quot;&gt;&lt;&lt;print $Energy&gt;&gt;&lt;/span&gt; / 15&lt;/span&gt;&lt;span class=&quot;hud-sep&quot;&gt;|&lt;/span&gt;
+                &lt;span class=&quot;hud-item&quot;&gt;&lt;strong&gt;Inhaler:&lt;/strong&gt;&amp;nbsp;&lt;span id=&quot;inhaler-display&quot;&gt;&lt;&lt;print $Inhaler&gt;&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;hud-sep&quot;&gt;|&lt;/span&gt;
+                &lt;span class=&quot;hud-item&quot;&gt;&lt;strong&gt;Points:&lt;/strong&gt;&amp;nbsp;&lt;span id=&quot;points-display&quot;&gt;&lt;&lt;print $Points&gt;&gt;&lt;/span&gt;&lt;/span&gt;
+            &lt;/span&gt;
+            &lt;button type=&quot;button&quot; class=&quot;hud-invite-btn&quot; aria-label=&quot;Show invite QR code so your partner can join or rejoin&quot; onclick=&quot;SimApp.showInviteModal()&quot;&gt;QR&lt;span class=&quot;hud-invite-word&quot;&gt; Invite&lt;/span&gt;&lt;/button&gt;
         &lt;/div&gt;
     &lt;&lt;else&gt;&gt;
         &lt;div id=&quot;patient-hud&quot; class=&quot;hud-bar&quot;&gt;
-            &lt;strong&gt;Time:&lt;/strong&gt;&amp;nbsp;&lt;span class=&quot;time-display&quot;&gt;00:00&lt;/span&gt; &amp;nbsp;|&amp;nbsp;
-            &lt;strong&gt;Status:&lt;/strong&gt;&amp;nbsp;&lt;span id=&quot;patient-breathing-status&quot;&gt;...&lt;/span&gt; &amp;nbsp;|&amp;nbsp;
-            &lt;strong&gt;Inhaler:&lt;/strong&gt;&amp;nbsp;&lt;span id=&quot;patient-inhaler-status&quot;&gt;...&lt;/span&gt;
-            &lt;button type=&quot;button&quot; class=&quot;hud-invite-btn&quot; aria-label=&quot;Show invite QR code so your partner can join or rejoin&quot; onclick=&quot;SimApp.showInviteModal()&quot;&gt;QR Invite&lt;/button&gt;
+            &lt;span class=&quot;hud-stats&quot;&gt;
+                &lt;span class=&quot;hud-item&quot;&gt;&lt;strong&gt;Time:&lt;/strong&gt;&amp;nbsp;&lt;span class=&quot;time-display&quot;&gt;00:00&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;hud-sep&quot;&gt;|&lt;/span&gt;
+                &lt;span class=&quot;hud-item&quot;&gt;&lt;strong&gt;Status:&lt;/strong&gt;&amp;nbsp;&lt;span id=&quot;patient-breathing-status&quot;&gt;...&lt;/span&gt;&lt;/span&gt;&lt;span class=&quot;hud-sep&quot;&gt;|&lt;/span&gt;
+                &lt;span class=&quot;hud-item&quot;&gt;&lt;strong&gt;Inhaler:&lt;/strong&gt;&amp;nbsp;&lt;span id=&quot;patient-inhaler-status&quot;&gt;...&lt;/span&gt;&lt;/span&gt;
+            &lt;/span&gt;
+            &lt;button type=&quot;button&quot; class=&quot;hud-invite-btn&quot; aria-label=&quot;Show invite QR code so your partner can join or rejoin&quot; onclick=&quot;SimApp.showInviteModal()&quot;&gt;QR&lt;span class=&quot;hud-invite-word&quot;&gt; Invite&lt;/span&gt;&lt;/button&gt;
         &lt;/div&gt;
     &lt;&lt;/if&gt;&gt;
 
