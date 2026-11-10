@@ -773,16 +773,22 @@ Your skin has been feeling dry lately. Perhaps some lotion would help your skin 
 
     <<if $myRole == "observer">>
         <div id="observer-hud" class="hud-bar">
-            <strong>Time:</strong>&nbsp;<span class="time-display">00:00</span> &nbsp;|&nbsp;
-            <strong>Energy:</strong>&nbsp;<span id="energy-display"><<print $Energy>></span> / 15 &nbsp;|&nbsp;
-            <strong>Inhaler:</strong>&nbsp;<span id="inhaler-display"><<print $Inhaler>></span> &nbsp;|&nbsp;
-            <strong>Points:</strong>&nbsp;<span id="points-display"><<print $Points>></span>
+            <span class="hud-stats">
+                <span class="hud-item"><strong>Time:</strong>&nbsp;<span class="time-display">00:00</span></span><span class="hud-sep">|</span>
+                <span class="hud-item"><strong>Energy:</strong>&nbsp;<span id="energy-display"><<print $Energy>></span> / 15</span><span class="hud-sep">|</span>
+                <span class="hud-item"><strong>Inhaler:</strong>&nbsp;<span id="inhaler-display"><<print $Inhaler>></span></span><span class="hud-sep">|</span>
+                <span class="hud-item"><strong>Points:</strong>&nbsp;<span id="points-display"><<print $Points>></span></span>
+            </span>
+            <button type="button" class="hud-invite-btn" aria-label="Show invite QR code so your partner can join or rejoin" onclick="SimApp.showInviteModal()">QR<span class="hud-invite-word"> Invite</span></button>
         </div>
     <<else>>
         <div id="patient-hud" class="hud-bar">
-            <strong>Time:</strong>&nbsp;<span class="time-display">00:00</span> &nbsp;|&nbsp;
-            <strong>Status:</strong>&nbsp;<span id="patient-breathing-status">...</span> &nbsp;|&nbsp;
-            <strong>Inhaler:</strong>&nbsp;<span id="patient-inhaler-status">...</span>
+            <span class="hud-stats">
+                <span class="hud-item"><strong>Time:</strong>&nbsp;<span class="time-display">00:00</span></span><span class="hud-sep">|</span>
+                <span class="hud-item"><strong>Status:</strong>&nbsp;<span id="patient-breathing-status">...</span></span><span class="hud-sep">|</span>
+                <span class="hud-item"><strong>Inhaler:</strong>&nbsp;<span id="patient-inhaler-status">...</span></span>
+            </span>
+            <button type="button" class="hud-invite-btn" aria-label="Show invite QR code so your partner can join or rejoin" onclick="SimApp.showInviteModal()">QR<span class="hud-invite-word"> Invite</span></button>
         </div>
     <</if>>
 
@@ -954,14 +960,8 @@ Once you feel comfortable with the controls and @@.holland;Mr. Holland@@ is comf
 <hr>
 <div class="center-heading2">An interactive augmented reality simulation by Robin Parker, MSN, RN, PCCN</div>
 <div class="center-heading3">Cursor AI was used to assist with coding and debugging</div>
-<div id="loading-overlay">Loading multiplayer services...</div>
-<div id="connect-container" class="hidden">
-    <<button "Connect to Multiplayer">>
-        <<run SimApp.connect()>>
-    <</button>>
-</div>
 Welcome to this live augmented reality nursing simulation. You will need a partner to complete this activity. 
-Before we begin please review the briefing below.
+Before we begin please review the briefing below, then follow the steps under <strong>To start the game</strong> at the bottom of this page.
 <hr>
 <h2>Briefing</h2>
 <p>Today you and your partner will be living a day in the life of @@.holland;Mr. Bernard Holland@@, a 75-year-old retired carpet layer who is living with COPD. He is a 60-pack-year smoker who is currently trying to quit. He does not wear home oxygen, though he does often have to stop to catch his breath after walking for more than a few minutes on level ground.</p>
@@ -1009,11 +1009,18 @@ It’s coming up on the end of the month and @@.holland;Mr. Holland@@ has a lot 
 </ul>
 
 <h2>To start the game</h2>
-<ul>
-<li>Have one player click the <strong><u>Connect to Multiplayer</u></strong> button below. This will connect you to the game lobby.</li>
-<li>Once in the game lobby click the <strong><u>Invite</u></strong> button. This will give you a QR code for your partner to pair up and form a team. If you leave the lobby before your partner joins, the host can tap <strong><u>Show Invite QR Code</u></strong> on the role selection screen to display it again.</li>
-<li>Once you've both joined the 1st player can then click the <strong><u>Launch</u></strong> button to enter the briefing area to learn the controls.</li>
-</ul>
+<ol>
+<li>One member from each team scans the QR code below. This will create your team.</li>
+<li>Invite your partner to join. Have your partner scan the new QR code on your device.</li>
+<li>Choose your roles. One of you will play the role of @@.holland;Mr. Holland@@ while the other will be @@.observer;the Observer@@.</li>
+<li>After you have chosen your roles, follow the instructions on the screen.</li>
+</ol>
+<div id="loading-overlay">Loading multiplayer services...</div>
+<div id="connect-container" class="hidden">
+    <<button "Connect to Multiplayer">>
+        <<run SimApp.connect()>>
+    <</button>>
+</div>
 
 <!--[[Role_Selection]]-->
 <!--[[Waiting_Room]]-->
@@ -1140,7 +1147,7 @@ setTimeout(function () {
 })();
 <</script>>
 <<run UIBar.hide()>>
-<<set $devmode to true>>
+<<set $devmode to false>>
 /* Multiplayer / role fallbacks (offline testing) */
 <<set $myRole to "">>
 <<set $evalComplete to false>>
@@ -1683,6 +1690,7 @@ window.createPlayroomNet = function (P) {
                 return P.onDisconnect(cb);
             }
         },
+        onReconnect: function () { /* Playroom reconnects inside insertCoin; recoverSession clears the banner */ },
         inviteUrl: function () { return null; },
         isRejoin: function () { return null; }
     };
@@ -1731,6 +1739,8 @@ window.createCloudNet = function (opts) {
     var waiters = [];        /* insertCoin promises waiting for "welcome" */
     var joinHandlers = [];
     var disconnectHandlers = [];
+    var reconnectHandlers = [];  /* fired on every "welcome" after the first one */
+    var everWelcomed = false;
     var known = {};          /* pid -> { api, connected, quit: [] } */
     var requests = {};       /* cid -> { resolve, timer } for calls that wait for the server */
     var REQUEST_TIMEOUT_MS = opts.requestTimeoutMs || 6000;
@@ -1913,6 +1923,12 @@ window.createCloudNet = function (opts) {
             updatePlayers();
             startKeepalive();
             settleWaiters(null);
+            if (everWelcomed) {
+                reconnectHandlers.forEach(function (cb) {
+                    try { cb(); } catch (eRe) { console.error(eRe); }
+                });
+            }
+            everWelcomed = true;
             return;
         }
         if (m.t === "state" || m.t === "reject") {
@@ -2117,6 +2133,9 @@ window.createCloudNet = function (opts) {
     };
 
     net.onDisconnect = function (cb) { disconnectHandlers.push(cb); };
+
+    /** Fires each time the socket is back and the server has sent a fresh snapshot. */
+    net.onReconnect = function (cb) { reconnectHandlers.push(cb); };
 
     /* ---- extras ---- */
 
@@ -2629,10 +2648,15 @@ window.SimApp = {
         var html =
             '<div id="sim-sync-banner" class="sim-sync-banner hidden" role="status" aria-live="polite">' +
             '<span id="sim-sync-banner-text"></span>' +
+            '<button type="button" id="sim-sync-banner-invite" class="sim-sync-banner-continue sim-sync-banner-invite hidden">' +
+            "Show QR</button>" +
             '<button type="button" id="sim-sync-banner-continue" class="sim-sync-banner-continue hidden">' +
             "Continue anyway</button>" +
             "</div>";
         $("body").append(html);
+        $("#sim-sync-banner-invite").on("click", function () {
+            self.showInviteModal();
+        });
         $("#sim-sync-banner-continue").on("click", function () {
             self._allowAdvanceWithoutPartner = true;
             self.hideSyncBanner();
@@ -2654,6 +2678,7 @@ window.SimApp = {
         } else {
             $continue.addClass("hidden");
         }
+        $("#sim-sync-banner-invite").toggleClass("hidden", !options.showInvite);
         if (this._syncBannerHideTimer) {
             clearTimeout(this._syncBannerHideTimer);
             this._syncBannerHideTimer = null;
@@ -2670,6 +2695,26 @@ window.SimApp = {
         }
     },
 
+    /** Sticky banner while our own connection is down; cleared by clearReconnectingBanner. */
+    showReconnectingBanner: function () {
+        this._selfReconnecting = true;
+        this.showSyncBanner("Reconnecting…", "info", { sticky: true });
+    },
+
+    clearReconnectingBanner: function () {
+        if (!this._selfReconnecting) {
+            return;
+        }
+        this._selfReconnecting = false;
+        if (this._recovering) {
+            /* recoverSession finishes with "Back in sync" itself */
+            return;
+        }
+        this.showSyncBanner("Back in sync", "ok", { hideAfterMs: 2000 });
+        this.refreshPartnerPresenceBanner();
+        this.refreshPatientNextSlot();
+    },
+
     hideSyncBanner: function () {
         if (this._syncBannerHideTimer) {
             clearTimeout(this._syncBannerHideTimer);
@@ -2677,6 +2722,7 @@ window.SimApp = {
         }
         $("#sim-sync-banner").addClass("hidden");
         $("#sim-sync-banner-continue").addClass("hidden");
+        $("#sim-sync-banner-invite").addClass("hidden");
     },
 
     refreshPartnerPresenceBanner: function () {
@@ -2703,7 +2749,7 @@ window.SimApp = {
         this.showSyncBanner(
             "Partner disconnected — waiting to rejoin…",
             "warn",
-            { sticky: true, showContinue: true }
+            { sticky: true, showContinue: true, showInvite: true }
         );
         this.refreshPatientNextSlot();
     },
@@ -2996,6 +3042,11 @@ window.SimApp = {
         if (loader) {
             loader.classList.add("hidden");
         }
+        var presenting = this.presenterCode();
+        if (presenting) {
+            this.mountPresenterQr(presenting);
+            return;
+        }
         if (this.isCloudNet() && !Net.session) {
             this.mountSessionCodeForm();
             return;
@@ -3003,6 +3054,46 @@ window.SimApp = {
         if (btnContainer) {
             btnContainer.classList.remove("hidden");
         }
+    },
+
+    /**
+     * Presenter view for the projector: /?present=SESSION-CODE (opened from class.html).
+     * Shows the normal welcome page, but never connects or takes a seat, and puts a large
+     * session QR code at the bottom for students to scan once the instructor has gone over it.
+     */
+    presenterCode: function () {
+        var code = "";
+        try {
+            code = String(new URLSearchParams(window.location.search).get("present") || "").trim().toUpperCase();
+        } catch (eParam) { /* old browser */ }
+        return /^[A-Z0-9][A-Z0-9-]{2,23}$/.test(code) ? code : "";
+    },
+
+    mountPresenterQr: function (code) {
+        var $slot = $("#connect-container");
+        if (!$slot.length) {
+            return;
+        }
+        var link = window.location.origin + window.location.pathname + "?s=" + encodeURIComponent(code);
+        $("body").addClass("presenter-view");
+        $slot.removeClass("hidden").empty().append(
+            $("<div>", { class: "presenter-join" }).append(
+                $("<h2>").text("Ready? Pair up and scan to start"),
+                $("<img>", {
+                    class: "presenter-qr",
+                    alt: "QR code to join class session " + code,
+                    src: "https://api.qrserver.com/v1/create-qr-code/?size=480x480&data=" + encodeURIComponent(link)
+                }),
+                $("<p>", { class: "presenter-code" }).append(
+                    $("<span>").text("Class session code: "),
+                    $("<strong>").text(code)
+                ),
+                $("<p>", { class: "presenter-steps" }).text(
+                    "One partner per team scans this code. Then your partner scans the invite QR code on that phone."
+                ),
+                $("<p>", { class: "presenter-link" }).text(link)
+            )
+        );
     },
 
     /**
@@ -3085,10 +3176,17 @@ window.SimApp = {
             '<div class="sim-invite-panel">' +
             '<button type="button" id="sim-invite-close" class="sim-invite-close" aria-label="Close">&times;</button>' +
             '<h2 id="sim-invite-title">Invite Your Partner</h2>' +
-            '<p id="sim-invite-status" class="sim-invite-status">Have your partner scan this QR code to join your room.</p>' +
+            '<p class="sim-invite-subtitle">Have them scan this QR code</p>' +
             '<img id="sim-invite-qr" class="sim-invite-qr" alt="Join room QR code" />' +
             '<p class="sim-invite-room">Room code: <code id="sim-invite-code"></code></p>' +
             '<button type="button" id="sim-invite-copy" class="sim-invite-copy">Copy Join Link</button>' +
+            /* Status indicator: fixed wording, only the count changes (no text shifting) */
+            '<div id="sim-invite-status" class="sim-invite-status" role="status" aria-live="polite">' +
+            '<span class="sim-invite-pulse" aria-hidden="true"></span>' +
+            '<span id="sim-invite-status-text">Waiting for your partner</span>' +
+            '<span class="loading-text" aria-hidden="true"></span>' +
+            '<span id="sim-invite-count" class="sim-invite-count"></span>' +
+            '</div>' +
             "</div></div>";
         $("body").append(html);
 
@@ -3117,22 +3215,75 @@ window.SimApp = {
             return;
         }
         var count = this.getPlayerCount();
+        var $status = $("#sim-invite-status");
         if (count >= 2) {
-            $("#sim-invite-status").text("Partner connected! Close this window and choose your roles.");
-            this.hideInviteModal();
+            /* Close by itself only when a missing partner just arrived. Opened on purpose while
+               both are connected (HUD Invite), it stays up until closed with the ×. */
+            if (this._inviteWaitingForPartner) {
+                this._inviteWaitingForPartner = false;
+                $("#sim-invite-status-text").text("Partner connected!");
+                this.hideInviteModal();
+                return;
+            }
+            $status.addClass("all-connected");
+            if ($("#sim-invite-status-text").text() !== "Both players are connected") {
+                $("#sim-invite-status-text").text("Both players are connected");
+            }
+            $("#sim-invite-count").text("");
             return;
         }
-        $("#sim-invite-status").html(
-            "Waiting for your partner <span class='loading-text'>Loading</span> (" + count + " of 2 connected). Have them scan this QR code."
-        );
+        this._inviteWaitingForPartner = true;
+        $status.removeClass("all-connected");
+        var info = this.inviteMode();
+        var waiting = info.mode === "reconnect"
+            ? "Waiting for " + this._roleLabel(info.role) + " to rejoin"
+            : "Waiting for your partner";
+        if ($("#sim-invite-status-text").text() !== waiting) {
+            $("#sim-invite-status-text").text(waiting);
+        }
+        /* Only the count changes, so the animated dots never move the rest of the line */
+        var countText = "(" + count + " of 2 connected)";
+        if ($("#sim-invite-count").text() !== countText) {
+            $("#sim-invite-count").text(countText);
+        }
     },
 
+    /**
+     * Who the QR code is for: a brand-new partner ("invite") or a partner who joined
+     * earlier and is offline now ("reconnect": closed tab, dead battery, new phone).
+     */
+    inviteMode: function () {
+        if (this.isCloudNet() && Net.snapshot && Net.you) {
+            var mine = Net.you.pid;
+            var other = (Net.snapshot.players || []).filter(function (p) {
+                return p.pid !== mine;
+            })[0];
+            if (other && !other.connected) {
+                return { mode: "reconnect", role: other.role || "" };
+            }
+        }
+        return { mode: "invite", role: "" };
+    },
+
+    _roleLabel: function (role) {
+        if (role === "patient") {
+            return "Mr. Holland";
+        }
+        if (role === "observer") {
+            return "the Observer";
+        }
+        return "your partner";
+    },
+
+    /** Opens the invite / rejoin QR pop-up. Either player can use it (HUD Invite button, banner Show QR). */
     showInviteModal: function () {
-        if (!this.isPlayroomHost()) {
-            alert("Only the room host can show the invite QR code.");
+        if (typeof Net === "undefined" || !Net.myPlayer()) {
+            this.showSyncBanner("Not connected yet. Try again in a moment.", "warn", { hideAfterMs: 2500 });
             return;
         }
         this.ensureInviteModal();
+        var info = this.inviteMode();
+        $("#sim-invite-title").text(info.mode === "reconnect" ? "Reconnect Your Partner" : "Invite Your Partner");
         var url = this.getInviteUrl();
         var code = typeof Net !== "undefined" ? Net.getRoomCode() : "";
         $("#sim-invite-code").text(code || "—");
@@ -3142,6 +3293,7 @@ window.SimApp = {
         );
         /* Show first, then refresh: refresh closes the modal if the partner is already here
            (it skips hidden modals, so refreshing first left it open over the game). */
+        this._inviteWaitingForPartner = false;
         $("#sim-invite-modal").removeClass("hidden");
         this.refreshInviteModal();
     },
@@ -3211,15 +3363,25 @@ window.SimApp = {
                 },
                 undefined,
                 function () {
-                    self.showSyncBanner("Reconnecting…", "info", { sticky: true });
+                    self.showReconnectingBanner();
                 }
             );
 
             if (typeof Net.onDisconnect === "function" && !self._disconnectHandlerRegistered) {
                 self._disconnectHandlerRegistered = true;
                 Net.onDisconnect(function () {
-                    self.showSyncBanner("Reconnecting…", "info", { sticky: true });
+                    self.showReconnectingBanner();
                 });
+                /*
+                 * CloudNet reconnects on its own (backoff / phone unlock). Without this the sticky
+                 * "Reconnecting…" banner stayed up after the socket was back, e.g. when iOS reported
+                 * the old socket closed only after the wake-up recovery had already finished.
+                 */
+                if (typeof Net.onReconnect === "function") {
+                    Net.onReconnect(function () {
+                        self.clearReconnectingBanner();
+                    });
+                }
             }
 
             self._hasJoinedRoom = true;
@@ -3534,6 +3696,7 @@ window.SimApp = {
                 Engine.play("Role_Selection");
             }
 
+            this._selfReconnecting = false;
             this.showSyncBanner("Back in sync", "ok", { hideAfterMs: 2000 });
             this.refreshPartnerPresenceBanner();
             this.refreshPatientNextSlot();
@@ -5226,6 +5389,27 @@ if (simChooseBackend() === "cf") {
 }
 
 :: StoryStylesheet [stylesheet]
+/* Presenter view (/?present=CODE): large session QR at the bottom of the welcome page */
+.presenter-join {
+    margin: 1.5em auto 2em;
+    padding: 1.25em;
+    max-width: 560px;
+    text-align: center;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+}
+.presenter-join h2 { margin-top: 0; }
+.presenter-qr {
+    width: min(80vw, 420px);
+    height: auto;
+    aspect-ratio: 1 / 1;
+    background: #fff;
+    padding: 12px;
+    border-radius: 10px;
+}
+.presenter-code { font-size: 1.6em; margin: 0.5em 0 0.25em; letter-spacing: 0.04em; }
+.presenter-steps { font-size: 1.15em; }
+.presenter-link { font-size: 0.85em; opacity: 0.75; word-break: break-all; }
 /* Team name (generated by the class session) shown in the lobby */
 .team-name-banner:empty { display: none; }
 .team-name-banner {
@@ -5606,10 +5790,58 @@ summary::-webkit-details-marker {
     font-size: 1.25em;
 }
 
+.sim-invite-subtitle {
+    margin: 0 0 14px;
+    font-size: 1em;
+}
+
+/* Status indicator at the bottom of the invite panel */
 .sim-invite-status {
-    margin: 0 0 16px;
-    font-size: 0.95em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0 6px;
+    margin: 18px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 0.9em;
     line-height: 1.4;
+    opacity: 0.9;
+}
+
+/* Fixed-width dots box, left-aligned, so the animation never shifts the text */
+.sim-invite-status .loading-text {
+    width: 3ch;
+    min-width: 3ch;
+    text-align: left;
+    margin-left: -6px;
+}
+
+.sim-invite-pulse {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #f0c060;
+    flex: 0 0 auto;
+    animation: sim-invite-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes sim-invite-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.35; transform: scale(0.75); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sim-invite-pulse { animation: none; }
+}
+
+.sim-invite-status.all-connected .sim-invite-pulse {
+    background: #27ae60;
+    animation: none;
+}
+.sim-invite-status.all-connected .loading-text {
+    display: none;
 }
 
 .sim-invite-qr {
@@ -5642,7 +5874,7 @@ summary::-webkit-details-marker {
     font-size: 1.5em !important;
     line-height: 1;
     background: transparent !important;
-    color: #555 !important;
+    color: #d0d0d0 !important;
     box-shadow: none !important;
 }
 
@@ -5652,6 +5884,60 @@ summary::-webkit-details-marker {
 
 .sim-invite-copy:hover {
     background-color: #219a52 !important;
+}
+
+/* Small Invite pill in the HUD (both roles): reopens the invite / rejoin QR */
+/* HUD stats: one line on wide screens; on phones the items wrap onto two
+   centred rows so nothing is clipped beside the QR button. */
+.hud-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    column-gap: 0.5em;
+    row-gap: 2px;
+    min-width: 0;
+    flex: 0 1 auto;
+    line-height: 1.25;
+}
+
+.hud-item {
+    white-space: nowrap;
+}
+
+@media screen and (max-width: 640px) {
+    .hud-bar {
+        font-size: clamp(11px, 3.4vw, 14px);
+        white-space: normal;
+    }
+    .hud-stats {
+        column-gap: 0.9em;
+    }
+    .hud-sep,
+    .hud-invite-word {
+        display: none;
+    }
+}
+
+button.hud-invite-btn {
+    display: inline-block;
+    flex: 0 0 auto;
+    width: auto !important;
+    margin: 0 0 0 10px !important;
+    padding: 2px 10px !important;
+    min-height: 0 !important;
+    font-size: 0.85em !important;
+    line-height: 1.5;
+    border-radius: 999px !important;
+    border: 1px solid #3498db !important;
+    background-color: transparent !important;
+    color: #8ec5ff !important;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+button.hud-invite-btn:hover {
+    background-color: rgba(52, 152, 219, 0.2) !important;
 }
 
 button.host-invite-btn {
