@@ -51,6 +51,22 @@ describe("CloudNet client", () => {
         assert.equal(a.id, "p1");
     });
 
+    it("onReconnect fires when the socket comes back, not on the first connect", async () => {
+        const room = createRoom();
+        const a = await room.createClientView();
+        let reconnects = 0;
+        a.onReconnect(() => {
+            reconnects += 1;
+        });
+        await room.createClientView();
+        assert.equal(reconnects, 0);
+        a.disconnect();
+        assert.equal(reconnects, 0);
+        await a.reconnect();
+        assert.equal(reconnects, 1);
+        assert.equal(a.connected, true);
+    });
+
     it("a refused role claim falls back to the server's answer", async () => {
         const room = createRoom();
         const a = await room.createClientView();
