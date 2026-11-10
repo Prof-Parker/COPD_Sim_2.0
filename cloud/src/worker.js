@@ -10,6 +10,7 @@
  *   POST /api/session   {code?, course?}    create a class session (random code if none)
  *   POST /api/session/<code>/close          stop new pairs joining
  *   POST /api/session/<code>/reopen
+ *   DELETE /api/session/<code>              delete the session, its results and its pair rooms
  *   GET  /api/session/<code>/export.csv     every attempt, ranked
  *   GET  /ws/class?s=<code>                 live board WebSocket (PIN sent as first message)
  *
@@ -75,6 +76,12 @@ async function handleApi(request, env, url) {
             if (res.ok) return json({ ...res, code });
         }
         return json({ ok: false, reason: "no_free_code" }, 500);
+    }
+
+    if (request.method === "DELETE" && parts[1] === "session" && parts.length === 3) {
+        const code = normalizeCode(decodeURIComponent(parts[2]));
+        if (!SESSION_RE.test(code)) return json({ ok: false, reason: "bad_code" }, 400);
+        return json(await classStub(env, code).remove(code));
     }
 
     if (parts[1] === "session" && parts.length === 4) {

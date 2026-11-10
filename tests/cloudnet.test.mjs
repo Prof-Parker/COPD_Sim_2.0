@@ -210,3 +210,62 @@ describe("CloudNet client", () => {
         assert.equal(replaced, `/?s=regn-1109&net=cf&p=${net.pair}`);
     });
 });
+
+describe("CloudNet session deleted", () => {
+    it("a session_deleted refusal stops reconnecting and fires onSessionEnded once", async () => {
+        const sockets = [];
+        class CtlSocket {
+            constructor() {
+                this.readyState = 0;
+                this.sent = [];
+                sockets.push(this);
+                setTimeout(() => {
+                    this.readyState = 1;
+                    this.onopen && this.onopen();
+                }, 0);
+            }
+            send(text) {
+                this.sent.push(text);
+                const m = text === "ping" ? null : JSON.parse(text);
+                if (m && m.t === "hello") {
+                    this.push({
+                        t: "welcome", token: "tok1", you: { pid: "p1", role: null, name: "" },
+                        snapshot: { game: {}, players: [{ pid: "p1", connected: true }] }, seq: 1,
+                    });
+                }
+            }
+            push(m) { this.onmessage && this.onmessage({ data: JSON.stringify(m) }); }
+            close() {
+                if (this.readyState === 3) return;
+                this.readyState = 3;
+                this.onclose && this.onclose({ code: 1000 });
+            }
+        }
+        const timers = [];
+        const create = loadCloudNetFactory();
+        const store = new Map();
+        const net = create({
+            WebSocket: CtlSocket,
+            storage: { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, v), removeItem: (k) => store.delete(k) },
+            location: { search: "?s=TEST1&p=AB12", protocol: "http:", host: "test", pathname: "/", hash: "" },
+            history: { replaceState() {} },
+            setTimeout: (fn) => { timers.push(fn); return timers.length; },
+            clearTimeout: () => {},
+            listenVisibility: false,
+            now: () => 0,
+        });
+        await net.insertCoin();
+        assert.equal(net.connected, true);
+        const ended = [];
+        const drops = [];
+        net.onSessionEnded((r) => ended.push(r));
+        net.onDisconnect(() => drops.push(1));
+        sockets[0].push({ t: "reject", reason: "session_deleted" });
+        sockets[0].close();
+        assert.deepEqual(ended, ["session_deleted"]);
+        assert.equal(drops.length, 1);
+        assert.equal(net.connected, false);
+        net.wake();
+        assert.equal(sockets.length, 1, "no reconnect after the session was deleted");
+    });
+});

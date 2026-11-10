@@ -63,6 +63,44 @@ export class ClassSession extends DurableObject {
         return { ok: true, board: board(this.session) };
     }
 
+    /**
+     * Deletes everything about this session: live board, D1 rows and every pair room in it.
+     * Students still connected are disconnected and told the session is gone; the code can be
+     * created again afterwards. Works even when only the D1 rows are left (e.g. after retention).
+     */
+    async remove(code) {
+        const existed = !!this.session;
+        const pairs = this.session ? Object.keys(this.session.pairs) : [];
+        // Forget the session first so no new pair can register while the rest is cleaned up.
+        this.session = null;
+        await this.ctx.storage.deleteAlarm();
+        await this.ctx.storage.deleteAll();
+
+        for (const ws of this.ctx.getWebSockets()) {
+            try {
+                ws.send(JSON.stringify({ t: "error", reason: "deleted" }));
+                ws.close(4004, "deleted");
+            } catch {
+                /* already gone */
+            }
+        }
+
+        let roomsWiped = 0;
+        if (this.env.PAIR_ROOM) {
+            const wipes = pairs.map((pair) =>
+                this.env.PAIR_ROOM.get(this.env.PAIR_ROOM.idFromName(`${code}:${pair}`))
+                    .wipe()
+                    .then(() => { roomsWiped += 1; })
+                    .catch((e) => console.error(`wipe ${code}:${pair} failed:`, e && e.message))
+            );
+            await Promise.all(wipes);
+        }
+
+        await this.d1("DELETE FROM results WHERE session_code = ?", code);
+        await this.d1("DELETE FROM sessions WHERE code = ?", code);
+        return { ok: true, existed, pairs: pairs.length, roomsWiped };
+    }
+
     async getBoard() {
         return board(this.session);
     }

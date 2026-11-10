@@ -257,6 +257,7 @@ These differences from the tables above were made during implementation:
 - **Projector mode:** full-screen, big type, top 10, and "X of Y pairs finished". Exit with Esc.
 - **Export CSV:** every attempt, ranked. Names that could act as spreadsheet formulas are neutralised.
 - **Close / Reopen session:** closing stops *new* pairs. Pairs already playing can finish and their results still count.
+- **Delete session:** from the session list or inside a session; you confirm by typing the code. It permanently erases the live board, the D1 rows and every pair room in the session. Students still playing are disconnected and sent back to the session-code box with a message. The code can be reused afterwards. API: `DELETE /api/session/<code>`.
 
 **Who decides what**
 
