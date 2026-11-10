@@ -1691,6 +1691,7 @@ window.createPlayroomNet = function (P) {
             }
         },
         onReconnect: function () { /* Playroom reconnects inside insertCoin; recoverSession clears the banner */ },
+        onSessionEnded: function () { /* class sessions are Cloudflare-only */ },
         inviteUrl: function () { return null; },
         isRejoin: function () { return null; }
     };
@@ -1740,6 +1741,7 @@ window.createCloudNet = function (opts) {
     var joinHandlers = [];
     var disconnectHandlers = [];
     var reconnectHandlers = [];  /* fired on every "welcome" after the first one */
+    var endedHandlers = [];      /* fired when the room refuses us for good after we had joined */
     var everWelcomed = false;
     var known = {};          /* pid -> { api, connected, quit: [] } */
     var requests = {};       /* cid -> { resolve, timer } for calls that wait for the server */
@@ -1940,6 +1942,18 @@ window.createCloudNet = function (opts) {
                     wanted = false;
                     settleWaiters(new Error(m.reason));
                     try { sock.close(); } catch (eClose) { /* ignore */ }
+                    /* A background reconnect has no insertCoin waiting: tell the game instead. */
+                    if (everWelcomed && (m.reason === "no_session" || m.reason === "session_closed")) {
+                        fireEnded(m.reason);
+                    }
+                    return;
+                }
+                /* The instructor deleted the session: stop for good, no reconnect loop. */
+                if (m.reason === "session_deleted") {
+                    wanted = false;
+                    try { sock.close(); } catch (eClose2) { /* ignore */ }
+                    onClosed(sock);
+                    fireEnded(m.reason);
                     return;
                 }
             }
@@ -1951,6 +1965,12 @@ window.createCloudNet = function (opts) {
             }
             updatePlayers();
         }
+    }
+
+    function fireEnded(reason) {
+        endedHandlers.forEach(function (cb) {
+            try { cb(reason); } catch (eEnd) { console.error(eEnd); }
+        });
     }
 
     /** Resolves server calls up to `ack`; the one that was refused gets { ok:false, reason }. */
@@ -2136,6 +2156,10 @@ window.createCloudNet = function (opts) {
 
     /** Fires each time the socket is back and the server has sent a fresh snapshot. */
     net.onReconnect = function (cb) { reconnectHandlers.push(cb); };
+
+    /** Fires with a reason when the room refuses this player for good after they had joined
+     *  (e.g. "session_deleted", "session_closed" on a seat that was never admitted). */
+    net.onSessionEnded = function (cb) { endedHandlers.push(cb); };
 
     /* ---- extras ---- */
 
@@ -2693,6 +2717,24 @@ window.SimApp = {
                 self.hideSyncBanner();
             }, hideMs);
         }
+    },
+
+    /** The room refused us for good mid-game (instructor deleted the session, etc.). */
+    handleSessionEnded: function (reason) {
+        this._selfReconnecting = false;
+        var msgText = reason === "session_deleted" || reason === "no_session"
+            ? "This class session was deleted by your instructor. Ask for the current session code."
+            : reason === "session_closed"
+                ? "This class session has been closed by your instructor. Ask for the current session code."
+                : "You were disconnected from this session. Ask your instructor for the current session code.";
+        this.showSyncBanner(msgText, "error", { sticky: true });
+        alert(msgText);
+        /* Back to the session-code box */
+        var q = new URLSearchParams(window.location.search);
+        q.delete("s");
+        q.delete("p");
+        var rest = q.toString();
+        window.location.search = rest ? "?" + rest : "";
     },
 
     /** Sticky banner while our own connection is down; cleared by clearReconnectingBanner. */
@@ -3380,6 +3422,11 @@ window.SimApp = {
                 if (typeof Net.onReconnect === "function") {
                     Net.onReconnect(function () {
                         self.clearReconnectingBanner();
+                    });
+                }
+                if (typeof Net.onSessionEnded === "function") {
+                    Net.onSessionEnded(function (reason) {
+                        self.handleSessionEnded(reason);
                     });
                 }
             }

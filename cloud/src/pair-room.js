@@ -106,6 +106,23 @@ export class PairRoom extends DurableObject {
         }
     }
 
+    /**
+     * Called by ClassSession when the instructor deletes the session: tell connected players,
+     * disconnect them and erase this room's stored state.
+     */
+    async wipe() {
+        for (const s of this.ctx.getWebSockets()) {
+            try {
+                s.send(JSON.stringify({ t: "reject", reason: "session_deleted" }));
+                s.close(4004, "session_deleted");
+            } catch {
+                /* already gone */
+            }
+        }
+        await this.ctx.storage.deleteAll();
+        this.room = new RoomCore(null, {});
+    }
+
     async webSocketClose(ws) {
         this.afterSocketGone(ws);
     }
