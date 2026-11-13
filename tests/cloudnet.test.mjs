@@ -269,3 +269,113 @@ describe("CloudNet session deleted", () => {
         assert.equal(sockets.length, 1, "no reconnect after the session was deleted");
     });
 });
+
+/* Classroom reconnect failures (Nov 2026): students who dropped could never get back in. */
+describe("CloudNet keeps its seat without browser storage", () => {
+    /** A scripted server: the first hello gets "tok1"; later hellos are answered by `onHello`. */
+    function scripted({ storage = null } = {}) {
+        const sockets = [];
+        const ctl = { sockets, hellos: [], onHello: null };
+        class CtlSocket {
+            constructor() {
+                this.readyState = 0;
+                sockets.push(this);
+                setTimeout(() => {
+                    this.readyState = 1;
+                    this.onopen && this.onopen();
+                }, 0);
+            }
+            send(text) {
+                if (text === "ping") return;
+                const m = JSON.parse(text);
+                if (m.t !== "hello") return;
+                ctl.hellos.push(m);
+                if (ctl.onHello) return ctl.onHello(this, m);
+                this.push({
+                    t: "welcome", token: "tok1", you: { pid: "p1", role: "observer", name: "" },
+                    snapshot: { game: {}, players: [{ pid: "p1", connected: true }] }, seq: 1,
+                });
+            }
+            push(m) { this.onmessage && this.onmessage({ data: JSON.stringify(m) }); }
+            close() {
+                if (this.readyState === 3) return;
+                this.readyState = 3;
+                this.onclose && this.onclose({ code: 1006 });
+            }
+        }
+        const timers = [];
+        ctl.net = loadCloudNetFactory()({
+            WebSocket: CtlSocket,
+            storage,
+            location: { search: "?s=TEST1&p=AB12", protocol: "http:", host: "test", pathname: "/", hash: "" },
+            history: { replaceState() {} },
+            setTimeout: (fn) => { timers.push(fn); return timers.length; },
+            clearTimeout: () => {},
+            listenVisibility: false,
+            now: () => 0,
+        });
+        /** Runs the reconnect that CloudNet scheduled after a drop. */
+        ctl.runRetry = () => timers.splice(0).forEach((fn) => { try { fn(); } catch { /* stale timer */ } });
+        return ctl;
+    }
+    const settle = () => new Promise((r) => setTimeout(r, 5));
+
+    it("a reconnect sends the token from memory when storage is unavailable", async () => {
+        const ctl = scripted({ storage: null });
+        await ctl.net.insertCoin();
+        assert.equal(ctl.hellos[0].token, null);
+        ctl.sockets[0].close(); // phone slept / Wi-Fi blip
+        ctl.runRetry();
+        await settle();
+        assert.equal(ctl.hellos.length, 2);
+        assert.equal(ctl.hellos[1].token, "tok1", "must not look like a third player (room_full)");
+        assert.equal(ctl.net.connected, true);
+    });
+
+    it("storage that throws is treated like no storage", async () => {
+        const boom = () => { throw new Error("SecurityError"); };
+        const ctl = scripted({ storage: { getItem: boom, setItem: boom, removeItem: boom } });
+        await ctl.net.insertCoin();
+        ctl.sockets[0].close();
+        ctl.runRetry();
+        await settle();
+        assert.equal(ctl.hellos[1].token, "tok1");
+    });
+
+    it("seat_taken (seat opened on another device) stops for good and tells the game", async () => {
+        const ctl = scripted();
+        await ctl.net.insertCoin();
+        const ended = [];
+        ctl.net.onSessionEnded((r) => ended.push(r));
+        ctl.sockets[0].push({ t: "reject", reason: "seat_taken" });
+        ctl.sockets[0].close();
+        ctl.runRetry();
+        await settle();
+        assert.deepEqual(ended, ["seat_taken"]);
+        assert.equal(ctl.sockets.length, 1, "no reconnect loop");
+    });
+
+    it("a background reconnect refused with room_full tells the game instead of hanging", async () => {
+        const ctl = scripted();
+        await ctl.net.insertCoin();
+        const ended = [];
+        ctl.net.onSessionEnded((r) => ended.push(r));
+        ctl.onHello = (sock) => sock.push({ t: "reject", reason: "room_full" });
+        ctl.sockets[0].close();
+        ctl.runRetry();
+        await settle();
+        assert.deepEqual(ended, ["room_full"]);
+    });
+
+    it("room_full during an explicit takeover rejects the call without ending the session", async () => {
+        const ctl = scripted();
+        await ctl.net.insertCoin();
+        const ended = [];
+        ctl.net.onSessionEnded((r) => ended.push(r));
+        ctl.onHello = (sock) => sock.push({ t: "reject", reason: "room_full" });
+        ctl.net._drop();
+        await assert.rejects(ctl.net.takeoverSeat(), /room_full/);
+        assert.equal(ctl.hellos.at(-1).takeover, true);
+        assert.deepEqual(ended, []);
+    });
+});

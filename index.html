@@ -1400,6 +1400,15 @@ window.createCloudNet = function (opts) {
     var CONNECT_TIMEOUT_MS = opts.connectTimeoutMs || 12000;
     var KEEPALIVE_MS = opts.keepaliveMs || 25000;
     var storage = opts.storage;
+    /* Per-tab copy of the seat token: survives a refresh in private tabs and in browsers
+       that don't keep localStorage. (Off when a test supplies its own storage.) */
+    var tabStorage = opts.tabStorage;
+    if (tabStorage === undefined) {
+        tabStorage = null;
+        if (storage === undefined) {
+            try { tabStorage = window.sessionStorage; } catch (eTab) { tabStorage = null; }
+        }
+    }
     if (storage === undefined) {
         try { storage = window.localStorage; } catch (eStore) { storage = null; }
     }
@@ -1464,13 +1473,27 @@ window.createCloudNet = function (opts) {
     }
 
     function tokenKey() { return "copdnet:" + net.session + ":" + net.pair; }
+    function readStore(st) {
+        if (!st) { return null; }
+        try { return st.getItem(tokenKey()); } catch (e) { return null; }
+    }
+    function writeStore(st, t) {
+        if (!st) { return; }
+        try { st.setItem(tokenKey(), t); } catch (e) { /* private mode / storage blocked */ }
+    }
+    /*
+     * The seat token, from wherever it survived: localStorage, this tab's sessionStorage, or
+     * memory. Memory matters: with storage blocked or cleared, a reconnect used to say "hello"
+     * with no token, the server took it for a third player and refused it (room_full), and the
+     * student could never get back in.
+     */
     function storedToken() {
-        if (!storage || !net.session) { return null; }
-        try { return storage.getItem(tokenKey()); } catch (e) { return null; }
+        if (!net.session) { return null; }
+        return readStore(storage) || readStore(tabStorage) || net.token || null;
     }
     function saveToken(t) {
-        if (!storage) { return; }
-        try { storage.setItem(tokenKey(), t); } catch (e) { /* private mode */ }
+        writeStore(storage, t);
+        writeStore(tabStorage, t);
     }
 
     function sendRaw(msg) {
@@ -1629,17 +1652,20 @@ window.createCloudNet = function (opts) {
                 /* Refusals before "welcome" end this connect attempt (no retry loop). */
                 var fatal = ["room_full", "no_session", "session_closed", "session_unavailable"];
                 if (fatal.indexOf(m.reason) !== -1 && !net.connected) {
+                    var hadWaiters = waiters.length > 0;
                     wanted = false;
                     settleWaiters(new Error(m.reason));
                     try { sock.close(); } catch (eClose) { /* ignore */ }
-                    /* A background reconnect has no insertCoin waiting: tell the game instead. */
-                    if (everWelcomed && (m.reason === "no_session" || m.reason === "session_closed")) {
+                    /* A background reconnect has no insertCoin waiting: tell the game instead
+                       of leaving "Reconnecting…" up for ever. */
+                    if (!hadWaiters && everWelcomed && m.reason !== "session_unavailable") {
                         fireEnded(m.reason);
                     }
                     return;
                 }
-                /* The instructor deleted the session: stop for good, no reconnect loop. */
-                if (m.reason === "session_deleted") {
+                /* The instructor deleted the session, or this seat moved to another device:
+                   stop for good, no reconnect loop. */
+                if (m.reason === "session_deleted" || m.reason === "seat_taken") {
                     wanted = false;
                     try { sock.close(); } catch (eClose2) { /* ignore */ }
                     onClosed(sock);
@@ -2010,6 +2036,7 @@ window.SimApp = {
     GAME_OVER_SECONDS: 8,
     PASSAGE_COMMIT_TIMEOUT_MS: 2000,
     RECOVER_DEBOUNCE_MS: 1000,
+    TAKEOVER_WINDOW_MS: 90000,
     RECONNECT_GRACE_MS: 600000,
     GAME_OVER_MESSAGES: {
         Game_Over_Energy: "You have pushed your body too far...",
@@ -2412,6 +2439,15 @@ window.SimApp = {
     /** The room refused us for good mid-game (instructor deleted the session, etc.). */
     handleSessionEnded: function (reason) {
         this._selfReconnecting = false;
+        if (reason === "seat_taken" || reason === "room_full") {
+            /* This seat was opened somewhere else. Stay on the page: a refresh takes it back. */
+            this.showSyncBanner(
+                "This game is now open on another device or tab. Keep playing there, or refresh this page to play here.",
+                "warn",
+                { sticky: true }
+            );
+            return;
+        }
         var msgText = reason === "session_deleted" || reason === "no_session"
             ? "This class session was deleted by your instructor. Ask for the current session code."
             : reason === "session_closed"
@@ -3122,6 +3158,7 @@ window.SimApp = {
             }
 
             self._hasJoinedRoom = true;
+            self._connectRetries = 0;
 
             var roomCode = Net.getRoomCode && Net.getRoomCode();
             self.persistRoomJoinHint(roomCode);
@@ -3173,28 +3210,24 @@ window.SimApp = {
                 window.location.search = rest ? "?" + rest : "";
                 return;
             }
-            if (e && e.message === "session_unavailable") {
-                self.showSyncBanner("Could not reach the class session — try again in a moment.", "error", { sticky: true });
-                return;
-            }
             if (e && e.message === "room_full") {
-                var mine = window.confirm(
-                    "This pair already has two players.\n\n" +
-                    "If you ARE one of them and changed phones or browsers, tap OK to take your seat back " +
-                    "(only works while your old device is offline).\n\n" +
-                    "Otherwise tap Cancel and ask your instructor for a new pair link."
-                );
-                if (mine) {
-                    self._pendingTakeover = true;
-                } else {
-                    self.showSyncBanner("This pair already has two players.", "error", { sticky: true });
-                }
-                return;
+                /*
+                 * The pair has two players and this browser has no seat token (new tab in private
+                 * mode, different browser, in-app QR scanner, cleared storage). Take back whichever
+                 * seat is offline — below, AFTER this try block. (A `return` here used to skip
+                 * that step entirely and left students on "Joining room…" for good.)
+                 */
+                self._pendingTakeover = true;
+            } else if (e && (e.message === "connect_timeout" || e.message === "session_unavailable") &&
+                (self._connectRetries || 0) < 20) {
+                /* Slow or flaky Wi-Fi: keep trying instead of stopping with an alert. */
+                self._connectRetries = (self._connectRetries || 0) + 1;
+                self._retryConnectSoon = true;
+            } else {
+                self.showSyncBanner("Could not connect. Check your Wi-Fi, then refresh this page.", "error", {
+                    sticky: true
+                });
             }
-            self.showSyncBanner("Connection error. Please refresh and try again.", "error", {
-                sticky: true
-            });
-            alert("Connection error. Please refresh and try again.");
         } finally {
             self._connectInFlight = false;
             self._recovering = false;
@@ -3204,21 +3237,50 @@ window.SimApp = {
         if (self._pendingTakeover) {
             self._pendingTakeover = false;
             await self.takeOverSeat();
+        } else if (self._retryConnectSoon) {
+            self._retryConnectSoon = false;
+            self.showSyncBanner("Connection is slow — still trying…", "info", { sticky: true });
+            setTimeout(function () {
+                self.connect();
+            }, 2000);
         }
     },
 
-    /** Cloudflare: claim the offline seat in a full pair, then continue like a normal connect. */
+    /**
+     * Cloudflare: claim the offline seat in a full pair, then continue like a normal connect.
+     * Keeps trying for a while: when a phone sleeps or changes network the server can take up
+     * to about a minute to notice the old connection is dead.
+     */
     takeOverSeat: async function () {
         if (!this.isCloudNet()) {
             return false;
         }
-        try {
-            await Net.takeoverSeat();
-        } catch (eTake) {
-            this.showSyncBanner("Both players are still connected — ask your instructor for a new pair link.", "error", {
-                sticky: true
-            });
-            return false;
+        var started = Date.now();
+        var attempt = 0;
+        for (;;) {
+            attempt += 1;
+            this.showSyncBanner(
+                attempt < 3 ? "Rejoining your team…" : "Rejoining your team… this can take up to a minute",
+                "info",
+                { sticky: true }
+            );
+            try {
+                await Net.takeoverSeat();
+                break;
+            } catch (eTake) {
+                if (Date.now() - started > this.TAKEOVER_WINDOW_MS) {
+                    this.showSyncBanner(
+                        "Both players in this team are still connected. If you switched phones or browsers, " +
+                        "close the game on the old one and refresh this page. Otherwise ask your instructor for a new link.",
+                        "error",
+                        { sticky: true }
+                    );
+                    return false;
+                }
+                await new Promise(function (resolve) {
+                    setTimeout(resolve, 4000);
+                });
+            }
         }
         await this.connect();
         return true;
@@ -6265,6 +6327,12 @@ Once @@.holland;Mr. Holland@@ is lying comfortably in bed and ready, he will sta
 
     /* We attach the interval to the window object so the button script can clear it safely */
     window.waitingInterval = setInterval(function() {
+        /* The partner&#39;s device may already have moved the room on. Without this check, this
+           leftover timer fired once more and pulled the room back to the tutorial screen. */
+        if (passage() !== &quot;Waiting_Room&quot;) {
+            clearInterval(window.waitingInterval);
+            return;
+        }
         if (SimApp.checkReadyState()) {
             clearInterval(window.waitingInterval);
             SimApp.goToSharedPassage(&quot;Simulation_Hub&quot;);

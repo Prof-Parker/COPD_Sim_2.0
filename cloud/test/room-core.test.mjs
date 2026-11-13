@@ -364,7 +364,8 @@ test("takeover: a new device can claim an offline seat (keeping its role), never
     const plain = room.handle({ token: null }, { t: "hello" }, new Set(["tok2"]));
     assert.equal(plain.out[0].msg.reason, "room_full");
     const conn = { token: null };
-    const { out } = room.handle(conn, { t: "hello", takeover: true }, new Set(["tok2"]));
+    const { out, kicked } = room.handle(conn, { t: "hello", takeover: true }, new Set(["tok2"]));
+    assert.equal(kicked, "tok1"); // pair-room closes any socket still using the old token
     assert.equal(out[0].msg.t, "welcome");
     assert.deepEqual(out[0].msg.you, { pid: "p1", role: "patient", name: "Robin" });
     assert.equal(room.state.roles.patient, conn.token);

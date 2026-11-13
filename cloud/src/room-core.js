@@ -343,6 +343,7 @@ export class RoomCore {
     _hello(conn, msg, connectedTokens) {
         const s = this.state;
         let token = typeof msg.token === "string" ? msg.token : null;
+        let kicked = null;
         if (!token || !s.players[token]) {
             if (Object.keys(s.players).length >= MAX_PLAYERS) {
                 /*
@@ -363,6 +364,7 @@ export class RoomCore {
                 for (const r of ROLES) {
                     if (s.roles[r] === old) s.roles[r] = token;
                 }
+                kicked = old; // pair-room.js closes any socket still holding the old token
             } else {
                 token = this.makeToken();
                 s.players[token] = { pid: `p${s.nextPid++}`, role: null, name: "" };
@@ -389,6 +391,7 @@ export class RoomCore {
                 { to: "others", msg: this._stateMsg(tokens) },
             ],
             dirty: true,
+            kicked,
         };
     }
 

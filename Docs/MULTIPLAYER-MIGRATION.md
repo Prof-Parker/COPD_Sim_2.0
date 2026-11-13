@@ -231,7 +231,7 @@ These differences from the tables above were made during implementation:
 **Lobby changes**
 - **Session code:** without `?s=`, the Start screen shows a "Class session code" box instead of Connect.
 - **Team name** (replaces the earlier optional nickname box): when a pair first joins, the class session gives it a generated name such as "Steady Otters", unique within that session. Students see it on Role Selection, Waiting Room and the debrief, so they can find themselves on the projector. No student names are collected.
-- **Taking back a seat:** if a pair is full, a student who switched device or browser can take back whichever seat is offline, keeping its role (`hello {takeover:true}`). They're asked to confirm first. An online seat can never be taken.
+- **Taking back a seat:** if a pair is full, a student whose browser no longer has their seat (new device or browser, private tab, in-app QR scanner, cleared storage) automatically takes back whichever seat is offline, keeping its role (`hello {takeover:true}`). A seat with a live connection can never be taken. See §6.5.
 
 **Where the game connects**
 - Cloudflare is the default backend.
@@ -289,6 +289,21 @@ These differences from the tables above were made during implementation:
 **Tests:** 42 resync, 14 client, 8 gameplay, 41 server (now including ranking, class sessions, results, CSV, PIN), plus the flow validator.
 
 **Later change: team names.** The class session generates each pair's team name (adjective + animal, 900 combinations, unique per session) and the pair room keeps a copy for the game screens. The leaderboard, live pairs table and CSV (`team` column) show it. D1 migration `0002_team_name.sql` adds `results.team_name`; run `npx wrangler d1 migrations apply copd-sim-results --remote` once after deploying. Pairs from before the change get a team name the next time a player joins; finished results from before show as "Pair XXXX".
+
+### 6.5 Reconnect fixes after the first class run (Nov 2026)
+
+In the first class run, about one pair in every group of 3–4 dropped and could not get back in. Three causes were reproduced and fixed:
+
+| Cause | Fix |
+|---|---|
+| The seat token lived only in `localStorage`. With storage blocked, cleared or not shared (private tabs, in-app QR scanners), a reconnect sent no token, the server took it for a third player and refused it (`room_full`), and the page sat on "Reconnecting…". | The token is also kept in memory and in the tab's `sessionStorage`; the reconnect uses whichever survives. |
+| The "take your seat back" step never ran: a `return` inside the `catch` skipped it, leaving "Joining room…" up for good. | The takeover now runs, automatically and without a dialog, and retries for 90 s. |
+| A phone that sleeps or changes network can leave a dead connection the server still counts as online, which blocked the takeover. | For takeovers, a connection silent for 70 s (no keepalive ping) counts as gone. The old connection is then closed with `seat_taken`. |
+
+Also fixed:
+- **Leftover lobby timer:** a timer on the second player's Waiting Room screen could pull the room back to the tutorial if the patient advanced within a second.
+- **Messages instead of endless spinners:** a slow first connect keeps retrying ("Connection is slow — still trying…"), and a seat opened elsewhere says so.
+- **Logging:** the server writes one line per join attempt (`join`, `rejoin`, `seat_takeover`, `hello_refused` with the reason) to Workers Logs, so the next classroom problem can be traced.
 
 ## 7. Client changes
 
