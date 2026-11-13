@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Team Troubleshooting</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --surface: #ffffff; --fg: #1b2129; --muted: #5d6874; --line: #dde2e8;
+    --accent: #2457c5; --accent-fg: #ffffff; --good: #1f7a3d; --bad: #b3261e; --warn: #8a5a00;
+    --chip: #eef1f5; --bad-bg: #fdecea; --warn-bg: #fff4d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12161b; --surface: #1b2129; --fg: #e8ecf1; --muted: #9aa6b2; --line: #2f3843;
+      --accent: #8ab0ff; --accent-fg: #0d1420; --good: #5cc983; --bad: #ff8a80; --warn: #f0c060;
+      --chip: #252d37; --bad-bg: #3a1d1b; --warn-bg: #3a2f12;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 640px; margin: 0 auto; padding: 12px 12px calc(32px + env(safe-area-inset-bottom)); display: grid; gap: 12px; }
+  main > * { min-width: 0; }
+  h1 { font-size: 19px; margin: 0; }
+  h2 { font-size: 16px; margin: 0 0 8px; }
+  .hidden { display: none !important; }
+  .muted { color: var(--muted); }
+  .small { font-size: 13px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .spread { justify-content: space-between; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  input { font: inherit; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--fg); min-width: 0; flex: 1 1 160px; }
+  button { font: inherit; font-weight: 600; min-height: 46px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-fg); cursor: pointer; }
+  button.ghost { background: transparent; color: var(--accent); }
+  button.danger { background: transparent; color: var(--bad); border-color: var(--bad); }
+  button.small-btn { min-height: 36px; padding: 6px 10px; font-size: 14px; }
+  button:disabled { opacity: .5; }
+  .err { color: var(--bad); font-weight: 600; }
+  .chip { display: inline-block; padding: 2px 9px; border-radius: 999px; background: var(--chip); font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .chip.playing { color: var(--accent); } .chip.finished { color: var(--good); } .chip.waiting { color: var(--muted); }
+  #live.ok { color: var(--good); } #live.bad { color: var(--bad); }
+
+  /* Summary + filter */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 4px; }
+  .stat b { display: block; font-size: 22px; line-height: 1.1; }
+  .stat span { font-size: 11px; color: var(--muted); }
+  .stat.alert b { color: var(--bad); }
+  .seg { display: flex; }
+  .seg button { flex: 1; border-radius: 0; min-height: 40px; }
+  .seg button:first-child { border-radius: 10px 0 0 10px; } .seg button:last-child { border-radius: 0 10px 10px 0; }
+
+  /* Team cards */
+  .team { display: block; width: 100%; text-align: left; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-left: 6px solid var(--line); border-radius: 14px; padding: 12px; font-weight: 400; }
+  .team.bad { border-left-color: var(--bad); } .team.warn { border-left-color: var(--warn); } .team.ok { border-left-color: var(--good); }
+  .team .name { font-size: 17px; font-weight: 700; }
+  .team .issue { margin-top: 6px; padding: 6px 8px; border-radius: 8px; font-size: 14px; font-weight: 600; }
+  .team.bad .issue { background: var(--bad-bg); color: var(--bad); }
+  .team.warn .issue { background: var(--warn-bg); color: var(--warn); }
+  .seats { display: flex; gap: 14px; margin-top: 6px; font-size: 14px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; background: var(--muted); }
+  .dot.on { background: var(--good); } .dot.off { background: var(--bad); } .dot.none { background: transparent; border: 2px solid var(--muted); }
+
+  /* One team */
+  .advice { padding: 10px 12px; border-radius: 10px; font-size: 15px; }
+  .advice.bad { background: var(--bad-bg); } .advice.warn { background: var(--warn-bg); } .advice.ok { background: var(--chip); }
+  .advice b { display: block; margin-bottom: 2px; }
+  .qr-wrap { text-align: center; }
+  .qr-wrap img { width: min(78vw, 340px); height: min(78vw, 340px); background: #fff; border-radius: 12px; image-rendering: pixelated; }
+  .qr-wrap .for { font-size: 18px; font-weight: 700; margin: 8px 0 2px; }
+  .link { word-break: break-all; }
+  .actions { display: grid; gap: 8px; }
+  .seat-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .seat-row:first-of-type { border-top: none; }
+  details summary { cursor: pointer; font-weight: 700; padding: 4px 0; }
+  details li { margin-bottom: 8px; }
+  #toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-weight: 600; font-size: 14px; max-width: 92vw; z-index: 10; }
+</style>
+</head>
+<body>
+<main>
+  <div class="row spread">
+    <h1 id="title">Team Troubleshooting</h1>
+    <span id="live" class="small"></span>
+  </div>
+
+  <!-- 1. PIN -->
+  <section id="pin-card" class="card hidden">
+    <h2>Instructor sign-in</h2>
+    <form id="pin-form" class="row">
+      <input id="pin" type="password" autocomplete="current-password" placeholder="Instructor PIN" aria-label="Instructor PIN" required>
+      <button type="submit">Sign in</button>
+    </form>
+    <p id="pin-error" class="err hidden"></p>
+  </section>
+
+  <!-- 2. Pick a session -->
+  <section id="sessions-card" class="card hidden">
+    <h2>Choose a session</h2>
+    <div id="sessions-list" class="actions"><p class="muted">Loading…</p></div>
+    <p class="muted small" style="margin-bottom:0">Create and close sessions on the <a href="/class.html">class page</a>.</p>
+  </section>
+
+  <!-- 3. All teams -->
+  <section id="teams-view" class="hidden" style="display:grid; gap:12px">
+    <div class="row spread">
+      <div><strong id="tv-code"></strong> <span id="tv-course" class="muted small"></span></div>
+      <button id="change-session" class="ghost small-btn" type="button">Change</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="st-teams">0</b><span>teams</span></div>
+      <div class="stat"><b id="st-playing">0</b><span>playing</span></div>
+      <div class="stat" id="st-alert-box"><b id="st-alert">0</b><span>need help</span></div>
+      <div class="stat"><b id="st-finished">0</b><span>finished</span></div>
+    </div>
+    <div class="seg" role="group" aria-label="Which teams">
+      <button id="f-all" type="button">All teams</button>
+      <button id="f-help" type="button" class="ghost">Need help</button>
+    </div>
+    <div id="teams-list" style="display:grid; gap:10px"></div>
+    <button id="class-qr" class="ghost" type="button">Show class join QR (new teams)</button>
+  </section>
+
+  <!-- 4. One team -->
+  <section id="team-view" class="hidden" style="display:grid; gap:12px">
+    <button id="back" class="ghost" type="button">‹ All teams</button>
+    <div class="card">
+      <div class="row spread">
+        <div><span id="d-name" style="font-size:20px; font-weight:800"></span> <span id="d-pair" class="muted small"></span></div>
+        <span id="d-status" class="chip"></span>
+      </div>
+      <div id="d-where" class="muted small" style="margin-top:4px"></div>
+      <div id="d-seats" style="margin-top:8px"></div>
+    </div>
+
+    <div id="d-advice" class="advice ok"></div>
+
+    <div class="card qr-wrap">
+      <div class="seg" role="group" aria-label="Which QR code" style="margin-bottom:10px">
+        <button id="q-team" type="button">Either player</button>
+        <button id="q-patient" type="button" class="ghost">Mr. Holland</button>
+        <button id="q-observer" type="button" class="ghost">Observer</button>
+      </div>
+      <img id="d-qr" alt="QR code to rejoin this team">
+      <div id="d-qr-for" class="for"></div>
+      <div id="d-qr-note" class="muted small"></div>
+      <div class="row" style="justify-content:center; margin-top:8px">
+        <button id="copy-link" class="ghost small-btn" type="button">Copy link</button>
+      </div>
+    </div>
+
+    <div class="card actions">
+      <h2 style="margin:0">If a phone is frozen or out of step</h2>
+      <button id="a-nudge" type="button">Resync both phones</button>
+      <p class="muted small" style="margin:0">Puts every connected phone in this team back on the team's current screen. Safe to press at any time.</p>
+      <button id="a-kick-patient" class="ghost" type="button">Disconnect Mr. Holland's phone</button>
+      <button id="a-kick-observer" class="ghost" type="button">Disconnect the Observer's phone</button>
+      <p class="muted small" style="margin:0">Use when a seat shows online but the student's phone is stuck or gone. It frees the seat so they can scan a QR above. Refreshing the old phone also brings it back.</p>
+    </div>
+
+    <div class="card">
+      <details>
+        <summary>What to try, by problem</summary>
+        <ul class="small" style="padding-left:18px; margin:8px 0 0">
+          <li><b>One student dropped.</b> They usually reconnect on their own within a few seconds of unlocking the phone. If not: refresh the page, or scan the partner's <b>QR Invite</b> button or the QR above. Meanwhile the partner can tap <b>Continue anyway</b>.</li>
+          <li><b>Both students dropped.</b> Show <b>Mr. Holland</b>'s QR to the patient and the <b>Observer</b>'s QR to the observer, so each gets their own role back.</li>
+          <li><b>Phone died or was swapped.</b> Scan that role's QR on the replacement phone. It takes over the seat with the score and screen intact.</li>
+          <li><b>"Rejoining your team…" won't finish.</b> The old phone still counts as connected. Press <b>Disconnect</b> for that role, and the waiting phone gets in within a few seconds.</li>
+          <li><b>The two phones show different screens,</b> or a button won't respond. Press <b>Resync both phones</b>.</li>
+          <li><b>A student is on the wrong team</b> (scanned the class QR again). Have them scan their own team's QR here, then remove the stray team below.</li>
+        </ul>
+      </details>
+    </div>
+
+    <button id="a-remove" class="danger" type="button">Remove this team</button>
+  </section>
+
+  <!-- Class join QR -->
+  <section id="class-qr-view" class="hidden" style="display:grid; gap:12px">
+    <button id="class-qr-back" class="ghost" type="button">‹ All teams</button>
+    <div class="card qr-wrap">
+      <img id="c-qr" alt="QR code to join this class session">
+      <div class="for">Start a new team</div>
+      <div class="muted small">For a pair that hasn't joined yet. One student scans this; their partner scans the QR on that student's phone.</div>
+    </div>
+  </section>
+</main>
+<div id="toast" class="hidden" role="status" aria-live="polite"></div>
+
+<script src="/vendor/qrcode.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var PIN_KEY = "copdClassPin";
+  var state = { pin: null, code: null, board: null, pair: null, qr: "team", filter: "all", ws: null, retry: 0, retryTimer: null };
+
+  function store(k, v) { try { v === null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) {} }
+  function load(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function show(el, on) { el.classList.toggle("hidden", !on); }
+  function ago(ms) {
+    if (!ms) return "";
+    var s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+    if (s < 10) return "just now";
+    if (s < 60) return s + "s ago";
+    if (s < 3600) return Math.floor(s / 60) + " min ago";
+    return Math.floor(s / 3600) + " h ago";
+  }
+  function fmtTime(ms) { var t = Math.max(0, Math.floor((ms || 0) / 1000)); var m = Math.floor(t / 60), s = t % 60; return m + ":" + (s < 10 ? "0" : "") + s; }
+  function screenName(p) { return String(p || "").replace(/_/g, " "); }
+  /* QR codes are drawn on this page (vendor/qrcode.js), so they work even when outside
+     websites are blocked or down. Falls back to the image service the game uses. */
+  function qrSrc(link) {
+    try {
+      var qr = qrcode(0, "M");
+      qr.addData(link);
+      qr.make();
+      return qr.createDataURL(8, 16);
+    } catch (e) {
+      return "https://api.qrserver.com/v1/create-qr-code/?size=480x480&data=" + encodeURIComponent(link);
+    }
+  }
+  function teamLink(pair, seat) {
+    return location.origin + "/?s=" + encodeURIComponent(state.code) + "&p=" + encodeURIComponent(pair) + (seat ? "&seat=" + seat : "");
+  }
+  var toastTimer = null;
+  function toast(text) {
+    $("toast").textContent = text; show($("toast"), true);
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { show($("toast"), false); }, 3200);
+  }
+
+  async function api(method, path, body) {
+    var res = await fetch(path, {
+      method: method,
+      headers: Object.assign({ Authorization: "Bearer " + state.pin }, body ? { "Content-Type": "application/json" } : {}),
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (res.status === 401) { signOut("That PIN was not accepted."); throw new Error("bad_pin"); }
+    return res;
+  }
+
+  /* ---------- what is wrong with a team, and what to do about it ---------- */
+  function assess(p) {
+    var known = typeof p.seats === "number";           // teams from before this page existed lack the counts
+    var seats = known ? p.seats : (p.patientConnected ? 1 : 0) + (p.observerConnected ? 1 : 0);
+    var online = known ? p.online : seats;
+    var pOn = !!p.patientConnected, oOn = !!p.observerConnected;
+    if (p.status === "finished") {
+      return { level: "ok", issue: "", head: "Finished", advice: "This team has reached the debrief. Nothing to do." };
+    }
+    if (p.status === "waiting") {
+      if (online === 0) {
+        return { level: "warn", issue: "Nobody connected", head: "Nobody is connected to this team",
+          advice: "If it's a stray team (a student scanned the class QR twice), remove it below. Otherwise have each student scan the QR here." };
+      }
+      if (seats < 2) {
+        return { level: "warn", issue: "Waiting for a partner", head: "Only one student has joined",
+          advice: "Their partner scans the QR below, or the QR on the first student's phone." };
+      }
+      if (online < 2) {
+        return { level: "warn", issue: "One student offline in the lobby", head: "One student dropped before the game started",
+          advice: "Have them scan the QR below." };
+      }
+      return { level: "ok", issue: "", head: "Choosing roles", advice: "Both students are in and picking roles. Nothing to do." };
+    }
+    /* playing */
+    if (!pOn && !oOn) {
+      return { level: "bad", issue: "Both players offline", head: "Both players are offline",
+        advice: "Show the Mr. Holland QR to the patient and the Observer QR to the observer, so each gets their own role back. Their score and screen are kept." };
+    }
+    if (!pOn || !oOn) {
+      var who = !pOn ? "Mr. Holland" : "The Observer";
+      return { level: "bad", issue: (!pOn ? "Mr. Holland" : "Observer") + " offline", head: who + " is offline",
+        advice: "Unlocking the phone usually reconnects it in a few seconds. If not, have that student scan the " + (!pOn ? "Mr. Holland" : "Observer") +
+          " QR below. Until then the partner can tap Continue anyway.", seat: !pOn ? "patient" : "observer" };
+    }
+    return { level: "ok", issue: "", head: "Both players connected", advice: "If a phone looks frozen or the two screens differ, press Resync both phones." };
+  }
+
+  /* ---------- sign in / sessions ---------- */
+  function signOut(message) {
+    state.pin = null; store(PIN_KEY, null); disconnect();
+    ["sessions-card", "teams-view", "team-view", "class-qr-view"].forEach(function (id) { show($(id), false); });
+    show($("pin-card"), true);
+    $("pin-error").textContent = message || ""; show($("pin-error"), !!message);
+  }
+  $("pin-form").addEventListener("submit", async function (ev) {
+    ev.preventDefault();
+    state.pin = $("pin").value; $("pin").value = "";
+    try { await loadSessions(); } catch (e) { return; }
+    store(PIN_KEY, state.pin); show($("pin-card"), false);
+    route();
+  });
+  async function loadSessions() {
+    var res = await api("GET", "/api/sessions");
+    var data = await res.json();
+    var list = data.sessions || [];
+    $("sessions-list").innerHTML = list.length ? list.map(function (s) {
+      return "<button class='ghost' data-open='" + esc(s.code) + "' style='text-align:left'><strong>" + esc(s.code) + "</strong> " +
+        "<span class='small'>" + esc(s.course || "") + (s.closedAt ? " · closed" : "") + "</span></button>";
+    }).join("") : "<p class='muted'>No sessions yet. Create one on the class page.</p>";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-open]"), function (b) {
+      b.addEventListener("click", function () { openSession(b.getAttribute("data-open")); });
+    });
+    return list;
+  }
+  function openSession(code) {
+    state.code = code; state.pair = null; state.board = null;
+    history.replaceState(null, "", "?s=" + encodeURIComponent(code));
+    show($("sessions-card"), false); showView("teams");
+    $("tv-code").textContent = code; $("tv-course").textContent = "";
+    $("teams-list").innerHTML = "<p class='muted'>Connecting…</p>";
+    connect();
+  }
+  $("change-session").addEventListener("click", function () {
+    disconnect(); state.code = null; state.board = null; state.pair = null;
+    history.replaceState(null, "", location.pathname);
+    showView(null); show($("sessions-card"), true); setLive("", "");
+    loadSessions().catch(function () {});
+  });
+
+  /* ---------- views ---------- */
+  function showView(which) {
+    show($("teams-view"), which === "teams");
+    show($("team-view"), which === "team");
+    show($("class-qr-view"), which === "classqr");
+    window.scrollTo(0, 0);
+  }
+  $("back").addEventListener("click", function () { state.pair = null; showView("teams"); render(); });
+  $("class-qr").addEventListener("click", function () {
+    $("c-qr").src = qrSrc(location.origin + "/?s=" + encodeURIComponent(state.code));
+    showView("classqr");
+  });
+  $("class-qr-back").addEventListener("click", function () { showView("teams"); });
+  function setFilter(f) {
+    state.filter = f;
+    $("f-all").classList.toggle("ghost", f !== "all");
+    $("f-help").classList.toggle("ghost", f !== "help");
+    render();
+  }
+  $("f-all").addEventListener("click", function () { setFilter("all"); });
+  $("f-help").addEventListener("click", function () { setFilter("help"); });
+
+  function seatHtml(label, joined, on) {
+    var cls = !joined ? "none" : on ? "on" : "off";
+    var text = !joined ? "not joined" : on ? "online" : "offline";
+    return "<span><span class='dot " + cls + "'></span>" + label + " <span class='muted'>" + text + "</span></span>";
+  }
+  function seatsFor(p) {
+    var known = typeof p.seats === "number";
+    var pJoined = known ? !!p.patientSeat : !!p.patientConnected || p.status !== "waiting";
+    var oJoined = known ? !!p.observerSeat : !!p.observerConnected || p.status !== "waiting";
+    return { pJoined: pJoined, oJoined: oJoined };
+  }
+
+  function render() {
+    var b = state.board;
+    if (!b) return;
+    $("tv-course").textContent = (b.course || "") + (b.closedAt ? " · closed" : "");
+    var rows = b.pairs.map(function (p) { return { p: p, a: assess(p) }; });
+    var order = { bad: 0, warn: 1, ok: 2 };
+    rows.sort(function (x, y) {
+      return (order[x.a.level] - order[y.a.level]) || String(x.p.label).localeCompare(String(y.p.label));
+    });
+    var needHelp = rows.filter(function (r) { return r.a.level !== "ok"; });
+    $("st-teams").textContent = b.pairs.length;
+    $("st-playing").textContent = b.pairs.filter(function (p) { return p.status === "playing"; }).length;
+    $("st-alert").textContent = needHelp.length;
+    $("st-alert-box").classList.toggle("alert", needHelp.length > 0);
+    $("st-finished").textContent = b.pairs.filter(function (p) { return p.status === "finished"; }).length;
+    $("f-help").textContent = "Need help" + (needHelp.length ? " (" + needHelp.length + ")" : "");
+
+    var shown = state.filter === "help" ? needHelp : rows;
+    $("teams-list").innerHTML = shown.length ? shown.map(function (r) {
+      var p = r.p, s = seatsFor(p);
+      var lobbyNoRoles = p.status === "waiting" && typeof p.seats === "number" && !p.patientSeat && !p.observerSeat;
+      var seatLine = lobbyNoRoles
+        ? "<span class='muted'>" + p.online + " of " + p.seats + " joined online · no roles yet</span>"
+        : seatHtml("Mr. Holland", s.pJoined, p.patientConnected) + seatHtml("Observer", s.oJoined, p.observerConnected);
+      return "<button class='team " + r.a.level + "' data-pair='" + esc(p.pair) + "'>" +
+        "<div class='row spread'><span class='name'>" + esc(p.label) + "</span><span class='chip " + esc(p.status) + "'>" + esc(p.status) + "</span></div>" +
+        "<div class='muted small'>" + esc(screenName(p.passage) || "Lobby") + " · " + esc(ago(p.updatedAt)) + "</div>" +
+        "<div class='seats'>" + seatLine + "</div>" +
+        (r.a.issue ? "<div class='issue'>" + esc(r.a.issue) + "</div>" : "") +
+        "</button>";
+    }).join("") : "<p class='muted' style='text-align:center'>" +
+      (state.filter === "help" ? "No team needs help right now." : "No teams yet. Students join from the class page's QR.") + "</p>";
+    Array.prototype.forEach.call(document.querySelectorAll("[data-pair]"), function (el) {
+      el.addEventListener("click", function () { openTeam(el.getAttribute("data-pair")); });
+    });
+    if (state.pair) renderTeam();
+  }
+
+  /* ---------- one team ---------- */
+  function currentPair() {
+    var b = state.board;
+    if (!b || !state.pair) return null;
+    for (var i = 0; i < b.pairs.length; i++) if (b.pairs[i].pair === state.pair) return b.pairs[i];
+    return null;
+  }
+  function openTeam(pair) {
+    state.pair = pair;
+    var p = currentPair();
+    var a = p ? assess(p) : {};
+    setQr(a.seat || (a.level === "bad" && p && !p.patientConnected && !p.observerConnected ? "patient" : "team"));
+    showView("team");
+    renderTeam();
+  }
+  function setQr(which) {
+    state.qr = which;
+    $("q-team").classList.toggle("ghost", which !== "team");
+    $("q-patient").classList.toggle("ghost", which !== "patient");
+    $("q-observer").classList.toggle("ghost", which !== "observer");
+    if (!state.pair) return;
+    var link = teamLink(state.pair, which === "team" ? "" : which);
+    if ($("d-qr").getAttribute("data-link") !== link) { $("d-qr").src = qrSrc(link); $("d-qr").setAttribute("data-link", link); }
+    $("d-qr-for").textContent = which === "team" ? "Rejoin this team" : which === "patient" ? "Rejoin as Mr. Holland" : "Rejoin as the Observer";
+    $("d-qr-note").textContent = which === "team"
+      ? "A student who dropped gets the seat that is offline. If both dropped, use the role buttons instead."
+      : "Only the student playing this role should scan it. They keep the team's score and screen.";
+  }
+  $("q-team").addEventListener("click", function () { setQr("team"); });
+  $("q-patient").addEventListener("click", function () { setQr("patient"); });
+  $("q-observer").addEventListener("click", function () { setQr("observer"); });
+  $("copy-link").addEventListener("click", function () {
+    var link = $("d-qr").getAttribute("data-link");
+    (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(function () { toast("Link copied"); },
+      function () { window.prompt("Copy this link:", link); });
+  });
+
+  function renderTeam() {
+    var p = currentPair();
+    if (!p) {
+      toast("That team is no longer in the session.");
+      state.pair = null; showView("teams");
+      return;
+    }
+    var a = assess(p), s = seatsFor(p);
+    $("d-name").textContent = p.label; $("d-pair").textContent = p.pair;
+    $("d-status").textContent = p.status; $("d-status").className = "chip " + p.status;
+    $("d-where").textContent = (screenName(p.passage) || "Lobby") + " · attempt " + p.attempt + " · " + p.points + " pts · " +
+      fmtTime(p.elapsedMs) + " · updated " + ago(p.updatedAt);
+    $("d-seats").innerHTML =
+      "<div class='seat-row'>" + seatHtml("Mr. Holland", s.pJoined, p.patientConnected) + "</div>" +
+      "<div class='seat-row'>" + seatHtml("Observer", s.oJoined, p.observerConnected) + "</div>";
+    $("d-advice").className = "advice " + a.level;
+    $("d-advice").innerHTML = "<b>" + esc(a.head) + "</b>" + esc(a.advice);
+    $("a-kick-patient").disabled = !p.patientConnected;
+    $("a-kick-observer").disabled = !p.observerConnected;
+    $("a-nudge").disabled = !(p.patientConnected || p.observerConnected);
+    setQr(state.qr);
+  }
+
+  async function teamAction(path, body, okText) {
+    try {
+      var res = await api(body === null ? "DELETE" : "POST", "/api/session/" + encodeURIComponent(state.code) + "/pair/" + encodeURIComponent(state.pair) + path, body || undefined);
+      var data = await res.json().catch(function () { return {}; });
+      if (!data.ok) { toast("Didn't work (" + (data.reason || res.status) + ")"); return null; }
+      toast(typeof okText === "function" ? okText(data) : okText);
+      return data;
+    } catch (e) { if (e.message !== "bad_pin") toast("Network problem. Try again."); return null; }
+  }
+  $("a-nudge").addEventListener("click", function () {
+    teamAction("/nudge", {}, function (d) { return d.sent ? "Resync sent to " + d.sent + " phone" + (d.sent === 1 ? "" : "s") : "No phone is connected to resync"; });
+  });
+  function kick(role, label) {
+    if (!confirm("Disconnect " + label + " phone from this team?\n\nThe seat is freed so the student can scan a QR here. Score and screen are kept.")) return;
+    teamAction("/kick", { role: role }, function (d) { return d.closed ? "Disconnected. They can scan the QR now." : "That seat was already offline"; });
+  }
+  $("a-kick-patient").addEventListener("click", function () { kick("patient", "Mr. Holland's"); });
+  $("a-kick-observer").addEventListener("click", function () { kick("observer", "the Observer's"); });
+  $("a-remove").addEventListener("click", async function () {
+    var p = currentPair();
+    if (!p) return;
+    if (!confirm("Remove team " + p.label + " (" + p.pair + ")?\n\nThis erases its game and any results, and disconnects its players. It cannot be undone.")) return;
+    if (await teamAction("", null, "Team removed")) { state.pair = null; showView("teams"); }
+  });
+
+  /* ---------- live board ---------- */
+  function setLive(text, cls) { $("live").textContent = text; $("live").className = "small " + (cls || ""); }
+  function disconnect() {
+    clearTimeout(state.retryTimer);
+    if (state.ws) { state.ws.onclose = null; state.ws.close(); state.ws = null; }
+  }
+  function connect() {
+    disconnect();
+    var proto = location.protocol === "https:" ? "wss:" : "ws:";
+    var ws = new WebSocket(proto + "//" + location.host + "/ws/class?s=" + encodeURIComponent(state.code));
+    state.ws = ws;
+    setLive("connecting…");
+    ws.onopen = function () { ws.send(JSON.stringify({ t: "auth", pin: state.pin })); };
+    ws.onmessage = function (ev) {
+      var m = JSON.parse(ev.data);
+      if (m.t === "board") { state.retry = 0; state.board = m.board; setLive("● live", "ok"); render(); }
+      else if (m.t === "error") {
+        ws.onclose = null;
+        if (m.reason === "bad_pin") signOut("That PIN was not accepted.");
+        else { setLive("", ""); toast(m.reason === "deleted" ? "This session was deleted." : "Session not found."); $("change-session").click(); }
+      }
+    };
+    ws.onclose = function () {
+      setLive("reconnecting…", "bad");
+      state.retry = Math.min(state.retry + 1, 6);
+      state.retryTimer = setTimeout(connect, Math.min(500 * Math.pow(2, state.retry), 10000));
+    };
+  }
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && state.code && (!state.ws || state.ws.readyState > 1)) connect();
+  });
+  setInterval(function () { if (state.board && document.visibilityState === "visible") render(); }, 15000); // keeps "2 min ago" fresh
+
+  /* ---------- start ---------- */
+  function route() {
+    var code = new URLSearchParams(location.search).get("s");
+    if (code) openSession(code.trim().toUpperCase());
+    else show($("sessions-card"), true);
+  }
+  setFilter("all");
+  state.pin = load(PIN_KEY);
+  if (state.pin) loadSessions().then(route, function () {});
+  else show($("pin-card"), true);
+})();
+</script>
+</body>
+</html>

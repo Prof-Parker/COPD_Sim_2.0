@@ -267,8 +267,20 @@ export class RoomCore {
             elapsedMs: timerElapsed(s.timer, this.now()),
             patientConnected: !!s.roles.patient && connectedTokens.has(s.roles.patient),
             observerConnected: !!s.roles.observer && connectedTokens.has(s.roles.observer),
+            // For the instructor's troubleshooting page: who has joined and picked a role.
+            patientSeat: !!s.roles.patient,
+            observerSeat: !!s.roles.observer,
+            seats: Object.keys(s.players).length,
+            online: Object.keys(s.players).filter((t) => connectedTokens.has(t)).length,
             updatedAt: this.now(),
         };
+    }
+
+    /** Tokens to disconnect for an instructor "disconnect this phone": a role, or "all". */
+    tokensFor(role) {
+        const s = this.state;
+        if (role === "all") return Object.keys(s.players);
+        return ROLES.includes(role) && s.roles[role] ? [s.roles[role]] : [];
     }
 
     /** Set by pair-room.js from the class session's answer; returns true if it changed. */
@@ -351,9 +363,17 @@ export class RoomCore {
                  * take back a seat whose owner is offline: { takeover: true }. They inherit that
                  * seat's id, role and nickname; the old device's token stops working.
                  */
-                const offline = msg.takeover
+                let offline = msg.takeover
                     ? Object.keys(s.players).filter((t) => !connectedTokens.has(t))
                     : [];
+                /*
+                 * { role } — the instructor's "Rejoin as Mr. Holland / Observer" QR. When that
+                 * role has an owner, only that seat may be taken, so two students who both
+                 * dropped each get their own role back instead of whichever seat is first.
+                 */
+                if (msg.takeover && ROLES.includes(msg.role) && s.roles[msg.role]) {
+                    offline = offline.filter((t) => t === s.roles[msg.role]);
+                }
                 if (!offline.length) {
                     return this._reject(conn, "room_full", connectedTokens, msg);
                 }

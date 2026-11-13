@@ -51,7 +51,7 @@
   .rank { font-weight: 800; }
   .rank.r1 { color: var(--gold); }
   .join { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; }
-  .join img { width: 132px; height: 132px; border-radius: 8px; background: #fff; padding: 6px; }
+  .join img { width: 132px; height: 132px; border-radius: 8px; background: #fff; }
   .join code { font-size: 26px; font-weight: 800; letter-spacing: .04em; }
   .link { word-break: break-all; }
   .stats { display: flex; gap: 20px; flex-wrap: wrap; }
@@ -150,6 +150,20 @@
     </div>
 
     <div class="card not-projector" style="margin-bottom:16px">
+      <details id="manage-box">
+        <summary style="cursor:pointer; font-weight:600">Troubleshooting page for your phone</summary>
+        <div class="join" style="margin-top:12px">
+          <img id="manage-qr" alt="QR code for the troubleshooting page" loading="lazy">
+          <div>
+            <p style="margin:0 0 6px">Scan this with your own phone to carry around during the simulation. It shows every team's connection status, redisplays any team's QR code, and can free a stuck seat or resync a team's phones.</p>
+            <a id="manage-link" class="link small" target="_blank" rel="noopener"></a>
+            <p class="muted small" style="margin:6px 0 0">You'll sign in with the instructor PIN there too. Don't show this QR to students.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card not-projector" style="margin-bottom:16px">
       <div class="stats">
         <div class="stat"><b id="st-pairs">0</b><span class="muted small">pairs joined</span></div>
         <div class="stat"><b id="st-playing">0</b><span class="muted small">playing now</span></div>
@@ -191,9 +205,21 @@
   </section>
 </main>
 
+<script src="/vendor/qrcode.js"></script>
 <script>
 (function () {
   "use strict";
+  /* QR codes are drawn on this page (vendor/qrcode.js), so they don't depend on an outside website. */
+  function qrSrc(link) {
+    try {
+      var qr = qrcode(0, "M");
+      qr.addData(link);
+      qr.make();
+      return qr.createDataURL(8, 16);
+    } catch (e) {
+      return "https://api.qrserver.com/v1/create-qr-code/?size=480x480&data=" + encodeURIComponent(link);
+    }
+  }
   var $ = function (id) { return document.getElementById(id); };
   var PIN_KEY = "copdClassPin";
   var MODE_KEY = "copdBoardMode";
@@ -302,7 +328,13 @@
     $("sv-code").textContent = code;
     var link = joinUrl(code);
     $("sv-link").textContent = link; $("sv-link").href = link;
-    $("sv-qr").src = "https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=" + encodeURIComponent(link);
+    $("sv-qr").src = qrSrc(link);
+    var manage = location.origin + "/manage.html?s=" + encodeURIComponent(code);
+    $("manage-link").textContent = manage; $("manage-link").href = manage;
+    $("manage-box").open = false;
+    $("manage-box").ontoggle = function () {
+      if ($("manage-box").open) $("manage-qr").src = qrSrc(manage);
+    };
     connect();
   }
   function backToList() {
