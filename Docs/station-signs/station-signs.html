@@ -7,7 +7,15 @@
   @page { size: letter portrait; margin: 0.5in; }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
-  body { font-family: "Helvetica Neue", Arial, sans-serif; color: #111; }
+  /* Arial (or its metric twin Liberation Sans) embeds in PDFs as a standard TrueType font.
+     Ligatures are off so letter pairs such as "ct" and "fi" never join. */
+  body {
+    font-family: Arial, "Liberation Sans", Helvetica, sans-serif;
+    color: #111;
+    font-variant-ligatures: none;
+    font-feature-settings: "liga" 0, "clig" 0, "dlig" 0, "calt" 0;
+    letter-spacing: 0.01em;
+  }
   .sign {
     height: 10in;               /* 11in page minus 0.5in margins */
     border: 6px solid #1e3a5f;
@@ -23,7 +31,7 @@
   }
   .sign:last-child { page-break-after: auto; break-after: auto; }
   .label { font-size: 22pt; letter-spacing: .25em; text-transform: uppercase; color: #1e3a5f; font-weight: 700; margin-bottom: .35in; }
-  h1 { font-size: 104pt; line-height: 1.02; margin: 0; font-weight: 900; }
+  h1 { font-size: 104pt; line-height: 1.02; margin: 0; font-weight: 700; }
   h1.long { font-size: 92pt; }
   .rule { width: 40%; height: 6px; background: #1e3a5f; border-radius: 3px; margin: .5in 0; }
   p { font-size: 28pt; line-height: 1.35; margin: 0; max-width: 6.2in; }
