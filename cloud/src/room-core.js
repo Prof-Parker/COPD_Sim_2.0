@@ -343,6 +343,7 @@ export class RoomCore {
     _hello(conn, msg, connectedTokens) {
         const s = this.state;
         let token = typeof msg.token === "string" ? msg.token : null;
+        let kicked = null;
         if (!token || !s.players[token]) {
             if (Object.keys(s.players).length >= MAX_PLAYERS) {
                 /*
@@ -363,6 +364,7 @@ export class RoomCore {
                 for (const r of ROLES) {
                     if (s.roles[r] === old) s.roles[r] = token;
                 }
+                kicked = old; // pair-room.js closes any socket still holding the old token
             } else {
                 token = this.makeToken();
                 s.players[token] = { pid: `p${s.nextPid++}`, role: null, name: "" };
@@ -389,6 +391,7 @@ export class RoomCore {
                 { to: "others", msg: this._stateMsg(tokens) },
             ],
             dirty: true,
+            kicked,
         };
     }
 
@@ -496,14 +499,22 @@ export class RoomCore {
     }
 
     /**
-     * { t:"roll", key, sides } — one shared dice roll per key per passage.
+     * { t:"roll", key, sides, expectSeq } — one shared dice roll per key per passage.
      * Both devices call this when a router passage renders; the first call rolls,
      * the second gets the same number. game[key] = 1..sides.
+     *
+     * expectSeq is the passageSeq of the router visit the device is on. If the room has already
+     * moved on (the partner rolled and navigated first), the request is refused with "stale_seq"
+     * and the device follows the room. Without this, the late device's request counted as a new
+     * visit: the server rolled AGAIN and the two players landed on different wild cards.
      */
     _roll(conn, msg, connectedTokens) {
         const { key, sides } = msg;
         if (!validKey(key) || !Number.isInteger(sides) || sides < 2 || sides > 20) {
             return this._reject(conn, "bad_roll", connectedTokens, msg);
+        }
+        if (msg.expectSeq !== undefined && msg.expectSeq !== this.passageSeq) {
+            return this._reject(conn, "stale_seq", connectedTokens, msg);
         }
         const s = this.state;
         if (s.once[`roll:${key}`] !== this.passageSeq || s.game[key] === undefined) {
@@ -523,6 +534,10 @@ export class RoomCore {
         const s = this.state;
         if (msg.name !== "errandsDrain") {
             return this._reject(conn, "bad_op", connectedTokens, msg);
+        }
+        // Same rule as _roll: a request from a visit the room has left must not run again.
+        if (msg.expectSeq !== undefined && msg.expectSeq !== this.passageSeq) {
+            return this._reject(conn, "stale_seq", connectedTokens, msg);
         }
         const guard = `op:${msg.name}`;
         if (s.once[guard] !== this.passageSeq) {
