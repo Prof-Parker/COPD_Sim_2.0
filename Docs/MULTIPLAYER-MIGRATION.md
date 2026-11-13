@@ -326,7 +326,7 @@ A phone-sized page to carry during the simulation, alongside `/class.html` on th
 | **Remove team** | A stray one-player team (class QR scanned twice) | `DELETE /api/session/<code>/pair/<pair>` wipes the pair room, its row and its results |
 | **Class join QR** | A pair hasn't joined yet | `?s=` |
 
-QR codes on this page are drawn in the browser (`cloud/public/vendor/qrcode.js`, MIT), so they don't depend on an outside website.
+Every QR code (game invite, welcome screen, class page, this page) is drawn in the browser with the vendored MIT `qrcode-generator` (`cloud/public/vendor/qrcode.js`; the game embeds its own copy between `QRCODE:BEGIN`/`END`), so none depends on an outside website.
 
 ## 7. Client changes
 

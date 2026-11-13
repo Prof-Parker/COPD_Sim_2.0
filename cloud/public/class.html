@@ -51,7 +51,7 @@
   .rank { font-weight: 800; }
   .rank.r1 { color: var(--gold); }
   .join { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; }
-  .join img { width: 132px; height: 132px; border-radius: 8px; background: #fff; padding: 6px; }
+  .join img { width: 132px; height: 132px; border-radius: 8px; background: #fff; }
   .join code { font-size: 26px; font-weight: 800; letter-spacing: .04em; }
   .link { word-break: break-all; }
   .stats { display: flex; gap: 20px; flex-wrap: wrap; }
@@ -205,9 +205,21 @@
   </section>
 </main>
 
+<script src="/vendor/qrcode.js"></script>
 <script>
 (function () {
   "use strict";
+  /* QR codes are drawn on this page (vendor/qrcode.js), so they don't depend on an outside website. */
+  function qrSrc(link) {
+    try {
+      var qr = qrcode(0, "M");
+      qr.addData(link);
+      qr.make();
+      return qr.createDataURL(8, 16);
+    } catch (e) {
+      return "https://api.qrserver.com/v1/create-qr-code/?size=480x480&data=" + encodeURIComponent(link);
+    }
+  }
   var $ = function (id) { return document.getElementById(id); };
   var PIN_KEY = "copdClassPin";
   var MODE_KEY = "copdBoardMode";
@@ -316,12 +328,12 @@
     $("sv-code").textContent = code;
     var link = joinUrl(code);
     $("sv-link").textContent = link; $("sv-link").href = link;
-    $("sv-qr").src = "https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=" + encodeURIComponent(link);
+    $("sv-qr").src = qrSrc(link);
     var manage = location.origin + "/manage.html?s=" + encodeURIComponent(code);
     $("manage-link").textContent = manage; $("manage-link").href = manage;
     $("manage-box").open = false;
     $("manage-box").ontoggle = function () {
-      if ($("manage-box").open) $("manage-qr").src = "https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=" + encodeURIComponent(manage);
+      if ($("manage-box").open) $("manage-qr").src = qrSrc(manage);
     };
     connect();
   }
