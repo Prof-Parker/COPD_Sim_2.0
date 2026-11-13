@@ -141,6 +141,49 @@ export class PairRoom extends DurableObject {
         }
     }
 
+    /* ---------------- instructor troubleshooting (called by the Worker after the PIN check) ---------------- */
+
+    /**
+     * "Disconnect this phone": closes the sockets of one role's seat (or "all"). The seat is
+     * then offline, so the student can rejoin from any device with the team or role QR.
+     * The closed page stops reconnecting ("seat_taken") and says a refresh brings it back.
+     */
+    async adminKick(role) {
+        if (!Object.keys(this.room.state.players).length) return { ok: false, reason: "no_pair" };
+        const tokens = this.room.tokensFor(role);
+        if (!tokens.length) return { ok: false, reason: "no_seat" };
+        let closed = 0;
+        for (const s of this.ctx.getWebSockets()) {
+            const a = s.deserializeAttachment();
+            if (!a || !tokens.includes(a.token)) continue;
+            try {
+                s.send(JSON.stringify({ t: "reject", reason: "seat_taken" }));
+                s.close(4005, "seat_taken");
+                closed += 1;
+            } catch {
+                /* already gone */
+            }
+        }
+        console.log(JSON.stringify({ ev: "admin_kick", s: this.room.state.sessionCode, p: this.room.state.pairCode, role, closed }));
+        return { ok: true, closed };
+    }
+
+    /** "Resync both phones": every connected device re-applies the room's screen and state. */
+    async adminNudge() {
+        if (!Object.keys(this.room.state.players).length) return { ok: false, reason: "no_pair" };
+        let sent = 0;
+        for (const s of this.ctx.getWebSockets()) {
+            try {
+                s.send(JSON.stringify({ t: "nudge" }));
+                sent += 1;
+            } catch {
+                /* already gone */
+            }
+        }
+        console.log(JSON.stringify({ ev: "admin_nudge", s: this.room.state.sessionCode, p: this.room.state.pairCode, sent }));
+        return { ok: true, sent };
+    }
+
     /**
      * Called by ClassSession when the instructor deletes the session: tell connected players,
      * disconnect them and erase this room's stored state.

@@ -101,6 +101,34 @@ export class ClassSession extends DurableObject {
         return { ok: true, existed, pairs: pairs.length, roomsWiped };
     }
 
+    /**
+     * Removes one team from the session (e.g. a student scanned the class QR twice and made a
+     * stray one-player team): its row, its results and its pair room. Players still connected
+     * to it are sent back to the session-code box.
+     */
+    async removePair(pair) {
+        if (!this.session) return { ok: false, reason: "no_session" };
+        if (!this.session.pairs[pair]) return { ok: false, reason: "no_pair" };
+        const code = this.session.code;
+        delete this.session.pairs[pair];
+        this.session.results = this.session.results.filter((r) => r.pair !== pair);
+        await this.save();
+        if (this.env.PAIR_ROOM) {
+            try {
+                await this.env.PAIR_ROOM.get(this.env.PAIR_ROOM.idFromName(`${code}:${pair}`)).wipe();
+            } catch (e) {
+                console.error(`wipe ${code}:${pair} failed:`, e && e.message);
+            }
+        }
+        await this.d1("DELETE FROM results WHERE session_code = ? AND pair_code = ?", code, pair);
+        this.broadcast();
+        return { ok: true };
+    }
+
+    async hasPair(pair) {
+        return !!(this.session && this.session.pairs[pair]);
+    }
+
     async getBoard() {
         return board(this.session);
     }

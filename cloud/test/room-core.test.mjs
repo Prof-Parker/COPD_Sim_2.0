@@ -412,3 +412,34 @@ test("a late errandsDrain from a passage the room has left does not drain energy
     assert.equal(late.out[0].msg.reason, "stale_seq");
     assert.equal(room.state.game.Energy, 6);
 });
+
+/* ---- Instructor troubleshooting page ---- */
+test("role-directed takeover: each dropped student gets their own role back", () => {
+    const { room, a, b } = makeRoomC();
+    room.handle(a.conn, { t: "claimRole", role: "patient" });
+    room.handle(b.conn, { t: "claimRole", role: "observer" });
+    // Both dropped. The observer scans first, using the Observer QR: must NOT get the patient's seat.
+    const obs = { token: null };
+    const first = room.handle(obs, { t: "hello", takeover: true, role: "observer" }, new Set());
+    assert.deepEqual(first.out[0].msg.you, { pid: "p2", role: "observer", name: "" });
+    assert.equal(first.kicked, "tok2");
+    const pat = { token: null };
+    const second = room.handle(pat, { t: "hello", takeover: true, role: "patient" }, new Set([obs.token]));
+    assert.equal(second.out[0].msg.you.role, "patient");
+    // The role's seat is online: refused, and the other (offline) seat is not handed out instead.
+    const third = room.handle({ token: null }, { t: "hello", takeover: true, role: "patient" }, new Set([pat.token]));
+    assert.equal(third.out[0].msg.reason, "room_full");
+});
+
+test("progress reports who has joined and who is online, for the troubleshooting page", () => {
+    const { room, a, b } = makeRoomC();
+    room.handle(a.conn, { t: "claimRole", role: "patient" });
+    let p = room.progress(new Set(["tok1", "tok2"]));
+    assert.deepEqual([p.seats, p.online, p.patientSeat, p.observerSeat], [2, 2, true, false]);
+    room.handle(b.conn, { t: "claimRole", role: "observer" });
+    p = room.progress(new Set(["tok2"]));
+    assert.deepEqual([p.seats, p.online, p.patientConnected, p.observerConnected], [2, 1, false, true]);
+    assert.deepEqual(room.tokensFor("observer"), ["tok2"]);
+    assert.deepEqual(room.tokensFor("all").sort(), ["tok1", "tok2"]);
+    assert.deepEqual(room.tokensFor("nobody"), []);
+});

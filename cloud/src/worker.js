@@ -11,6 +11,9 @@
  *   POST /api/session/<code>/close          stop new pairs joining
  *   POST /api/session/<code>/reopen
  *   DELETE /api/session/<code>              delete the session, its results and its pair rooms
+ *   POST /api/session/<code>/pair/<pair>/kick  {role: patient|observer|all}  disconnect a seat's phone
+ *   POST /api/session/<code>/pair/<pair>/nudge    both phones re-apply the room's screen
+ *   DELETE /api/session/<code>/pair/<pair>        remove one team (row, results, pair room)
  *   GET  /api/session/<code>/export.csv     every attempt, ranked
  *   GET  /ws/class?s=<code>                 live board WebSocket (PIN sent as first message)
  *
@@ -82,6 +85,35 @@ async function handleApi(request, env, url) {
         const code = normalizeCode(decodeURIComponent(parts[2]));
         if (!SESSION_RE.test(code)) return json({ ok: false, reason: "bad_code" }, 400);
         return json(await classStub(env, code).remove(code));
+    }
+
+    // Troubleshooting one team: /api/session/<code>/pair/<pair>[/kick|/nudge]
+    if (parts[1] === "session" && parts[3] === "pair" && (parts.length === 5 || parts.length === 6)) {
+        const code = normalizeCode(decodeURIComponent(parts[2]));
+        const pair = normalizeCode(decodeURIComponent(parts[4]));
+        if (!SESSION_RE.test(code) || !PAIR_RE.test(pair)) return json({ ok: false, reason: "bad_code" }, 400);
+        const session = classStub(env, code);
+        if (request.method === "DELETE" && parts.length === 5) {
+            const res = await session.removePair(pair);
+            return json(res, res.ok ? 200 : 404);
+        }
+        if (request.method === "POST" && parts.length === 6) {
+            // Only teams on the board: never wake a pair room for a made-up code.
+            if (!(await session.hasPair(pair))) return json({ ok: false, reason: "no_pair" }, 404);
+            const room = env.PAIR_ROOM.get(env.PAIR_ROOM.idFromName(`${code}:${pair}`));
+            if (parts[5] === "nudge") return json(await room.adminNudge());
+            if (parts[5] === "kick") {
+                let body = {};
+                try {
+                    body = await request.json();
+                } catch {
+                    /* role is required; handled below */
+                }
+                if (!["patient", "observer", "all"].includes(body.role)) return json({ ok: false, reason: "bad_role" }, 400);
+                return json(await room.adminKick(body.role));
+            }
+        }
+        return json({ ok: false, reason: "not_found" }, 404);
     }
 
     if (parts[1] === "session" && parts.length === 4) {

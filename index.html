@@ -1382,6 +1382,7 @@ window.createPlayroomNet = function (P) {
         },
         onReconnect: function () { /* Playroom reconnects inside insertCoin; recoverSession clears the banner */ },
         onSessionEnded: function () { /* class sessions are Cloudflare-only */ },
+        onNudge: function () { /* instructor troubleshooting is Cloudflare-only */ },
         inviteUrl: function () { return null; },
         isRejoin: function () { return null; }
     };
@@ -1441,6 +1442,7 @@ window.createCloudNet = function (opts) {
     var disconnectHandlers = [];
     var reconnectHandlers = [];  /* fired on every "welcome" after the first one */
     var endedHandlers = [];      /* fired when the room refuses us for good after we had joined */
+    var nudgeHandlers = [];      /* fired when the instructor asks both phones to resync */
     var everWelcomed = false;
     var known = {};          /* pid -> { api, connected, quit: [] } */
     var requests = {};       /* cid -> { resolve, timer } for calls that wait for the server */
@@ -1461,6 +1463,9 @@ window.createCloudNet = function (opts) {
         var q = new URLSearchParams(loc.search || "");
         net.session = normalize(q.get("s"));
         net.pair = normalize(q.get("p"));
+        /* ?seat=patient|observer — the instructor's "rejoin as …" QR: take back that role's seat. */
+        var seat = String(q.get("seat") || "").toLowerCase();
+        net.seatHint = seat === "patient" || seat === "observer" ? seat : "";
         if (net.session && !net.pair) {
             /* First player of a pair: make a pair code and put it in the URL so refresh
                and the invite link both land in the same room. */
@@ -1646,6 +1651,13 @@ window.createCloudNet = function (opts) {
             everWelcomed = true;
             return;
         }
+        if (m.t === "nudge") {
+            /* The instructor pressed "Resync both phones" on the troubleshooting page. */
+            nudgeHandlers.forEach(function (cb) {
+                try { cb(); } catch (eNudge) { console.error(eNudge); }
+            });
+            return;
+        }
         if (m.t === "state" || m.t === "reject") {
             if (m.t === "reject") {
                 net.lastError = m.reason || "rejected";
@@ -1773,6 +1785,7 @@ window.createCloudNet = function (opts) {
             var hello = { t: "hello", token: storedToken() };
             if (takeoverNext) {
                 hello.takeover = true;
+                if (net.seatHint) { hello.role = net.seatHint; }
                 takeoverNext = false;
             }
             sock.send(JSON.stringify(hello));
@@ -1876,6 +1889,9 @@ window.createCloudNet = function (opts) {
     /** Fires with a reason when the room refuses this player for good after they had joined
      *  (e.g. "session_deleted", "session_closed" on a seat that was never admitted). */
     net.onSessionEnded = function (cb) { endedHandlers.push(cb); };
+
+    /** Fires when the instructor asks this pair's phones to re-apply the room's screen. */
+    net.onNudge = function (cb) { nudgeHandlers.push(cb); };
 
     /* ---- extras ---- */
 
@@ -3176,6 +3192,13 @@ window.SimApp = {
                 if (typeof Net.onSessionEnded === "function") {
                     Net.onSessionEnded(function (reason) {
                         self.handleSessionEnded(reason);
+                    });
+                }
+                if (typeof Net.onNudge === "function") {
+                    Net.onNudge(function () {
+                        /* Instructor's "Resync both phones": the room's screen and state win. */
+                        self._passageCommitInFlight = false;
+                        self.recoverSession({ reason: "connect" });
                     });
                 }
             }

@@ -306,6 +306,28 @@ Also fixed:
 - **Messages instead of endless spinners:** a slow first connect keeps retrying ("Connection is slow — still trying…"), and a seat opened elsewhere says so.
 - **Logging:** the server writes one line per join attempt (`join`, `rejoin`, `seat_takeover`, `hello_refused` with the reason) to Workers Logs, so the next classroom problem can be traced.
 
+### 6.6 Instructor troubleshooting page (`/manage.html`)
+
+A phone-sized page to carry during the simulation, alongside `/class.html` on the lectern. Same PIN. Open it from the class page ("Troubleshooting page for your phone" shows its QR).
+
+**What it shows** (live, from the same board WebSocket)
+- Every team, with those needing help first: a player offline, both offline, nobody connected, or still waiting for a partner.
+- Per team: current screen, attempt, points, when it last changed, and whether each role has joined and is online.
+- Advice for the team's current problem.
+
+**What it can do**
+
+| Action | Use it when | How it works |
+|---|---|---|
+| **Team QR** | One student dropped | `?s=&p=`: takes whichever seat is offline |
+| **Mr. Holland / Observer QR** | Both dropped, or a phone was replaced | `?s=&p=&seat=patient|observer` → `hello {takeover:true, role}`: only that role's seat can be taken |
+| **Disconnect a phone** | A seat shows online but the phone is frozen or gone | `POST /api/session/<code>/pair/<pair>/kick {role}` closes that seat's sockets with `seat_taken`, freeing it at once |
+| **Resync both phones** | Screens differ or a button won't respond | `POST …/pair/<pair>/nudge` sends `{t:"nudge"}`; each phone re-applies the room's screen and state |
+| **Remove team** | A stray one-player team (class QR scanned twice) | `DELETE /api/session/<code>/pair/<pair>` wipes the pair room, its row and its results |
+| **Class join QR** | A pair hasn't joined yet | `?s=` |
+
+QR codes on this page are drawn in the browser (`cloud/public/vendor/qrcode.js`, MIT), so they don't depend on an outside website.
+
 ## 7. Client changes
 
 ### 7.1 Network adapter

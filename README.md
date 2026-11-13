@@ -4,6 +4,7 @@ A two-player nursing simulation about a day in the life of a patient with COPD. 
 
 **Play:** <https://copd-sim.rparker-d61.workers.dev>
 **Instructor page:** <https://copd-sim.rparker-d61.workers.dev/class.html>
+**Troubleshooting page (for your phone):** <https://copd-sim.rparker-d61.workers.dev/manage.html>
 
 ## Running a class
 
@@ -14,6 +15,8 @@ A two-player nursing simulation about a day in the life of a patient with COPD. 
 5. **Wrap up.** Use **Export CSV** to save results, **Close session** to stop new pairs joining, or **Delete** to erase the session for good.
 
 **Optional:** before play, the **Welcome screen** button opens the game's briefing with the join QR code at the bottom, so you can go over it with the whole class.
+
+**If a team gets stuck:** open the **troubleshooting page** on your phone (the class page shows a QR for it). It lists every team with the ones needing help first, redisplays any team's QR code, and can free a stuck seat or resync a team's phones.
 
 **Tips**
 - If a phone locks or a student refreshes, they rejoin automatically in the same role.
