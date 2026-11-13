@@ -1923,13 +1923,18 @@ window.createCloudNet = function (opts) {
     };
 
     /** One shared dice roll per key per passage; read the result with getState(key). */
-    net.roll = function (key, sides) {
-        return request({ t: "roll", key: key, sides: sides });
+    net.roll = function (key, sides, expectSeq) {
+        var msg = { t: "roll", key: key, sides: sides };
+        /* The router visit this roll belongs to; the server refuses it if the room moved on. */
+        if (typeof expectSeq === "number") { msg.expectSeq = expectSeq; }
+        return request(msg);
     };
 
     /** Named once-per-passage calculation on the server (e.g. "errandsDrain"). */
-    net.op = function (name) {
-        return request({ t: "op", name: name });
+    net.op = function (name, expectSeq) {
+        var msg = { t: "op", name: name };
+        if (typeof expectSeq === "number") { msg.expectSeq = expectSeq; }
+        return request(msg);
     };
 
     net.timerReset = function () {
@@ -2627,10 +2632,24 @@ window.SimApp = {
                 this.applyRoomPassage(false);
                 return null;
             }
-            var res = await Net.roll(rollKey, sides);
+            /*
+             * The roll and the move both name this router visit (routerSeq). If the partner's
+             * device got there first, the server refuses ours and we follow the room. Before,
+             * a late roll made the server roll a second time and the two players ended up on
+             * different wild cards (and the debrief showed the second roll).
+             */
+            var res = await Net.roll(rollKey, sides, routerSeq);
+            if (!res.ok && res.reason === "stale_seq") {
+                this.applyRoomPassage(true);
+                return null;
+            }
             roll = Number(Net.getState(rollKey));
             if (!res.ok || !(roll >= 1 && roll <= sides)) {
                 this.showSyncBanner("Could not sync — check connection", "error", { sticky: true });
+                return null;
+            }
+            if (Net.getState("currentPassage") !== routerPassage || this.getRoomPassageSeq() !== routerSeq) {
+                this.applyRoomPassage(true);
                 return null;
             }
         } else if (typeof Net !== "undefined" && Net.isHost()) {
@@ -2652,7 +2671,11 @@ window.SimApp = {
                 self.setVal(k, target.set[k], true);
             });
         }
-        await this.goToSharedPassage(dest);
+        await this.commitPassageChange(dest, {
+            resetEval: false,
+            playLocal: true,
+            expectSeq: this.isCloudNet() ? routerSeq : undefined
+        });
         return dest;
     },
 
@@ -2666,7 +2689,7 @@ window.SimApp = {
             }
         }
         if (this.isCloudNet()) {
-            Net.op("errandsDrain").then(function (res) {
+            Net.op("errandsDrain", this.getRoomPassageSeq()).then(function (res) {
                 if (res.ok) {
                     after(Number(Net.getState("Energy")));
                 }
@@ -3626,7 +3649,7 @@ window.SimApp = {
      * If the partner moved the room first, follow the room instead.
      */
     _commitPassageCloud: async function (passageName, options) {
-        var expectSeq = this.getRoomPassageSeq();
+        var expectSeq = typeof options.expectSeq === "number" ? options.expectSeq : this.getRoomPassageSeq();
         var patch = options.resetEval ? { evalComplete: false } : null;
         if (patch) {
             State.variables.evalComplete = false;

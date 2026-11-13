@@ -301,6 +301,7 @@ In the first class run, about one pair in every group of 3–4 dropped and could
 | A phone that sleeps or changes network can leave a dead connection the server still counts as online, which blocked the takeover. | For takeovers, a connection silent for 70 s (no keepalive ping) counts as gone. The old connection is then closed with `seat_taken`. |
 
 Also fixed:
+- **Different wild cards for the two players:** the server rolled once per router visit, but a roll that arrived after the partner's device had already moved the pair on counted as a new visit and rolled again. The slower device then went to a different card, and the debrief showed the second roll. `roll` and `op` now carry `expectSeq` (the visit they belong to) and are refused with `stale_seq` once the room has moved; the router's own move uses the same `expectSeq`. This affected all four routers (grocery, pharmacy, toy store, wild card).
 - **Leftover lobby timer:** a timer on the second player's Waiting Room screen could pull the room back to the tutorial if the patient advanced within a second.
 - **Messages instead of endless spinners:** a slow first connect keeps retrying ("Connection is slow — still trying…"), and a seat opened elsewhere says so.
 - **Logging:** the server writes one line per join attempt (`join`, `rejoin`, `seat_takeover`, `hello_refused` with the reason) to Workers Logs, so the next classroom problem can be traced.

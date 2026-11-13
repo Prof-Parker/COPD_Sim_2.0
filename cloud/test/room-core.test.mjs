@@ -372,3 +372,43 @@ test("takeover: a new device can claim an offline seat (keeping its role), never
     assert.equal(room.state.players.tok1, undefined); // old token no longer works
     assert.equal(room.handle({ token: null }, { t: "hello", token: "tok1" }, new Set([conn.token, "tok2"])).out[0].msg.reason, "room_full");
 });
+
+/* Classroom bug (Nov 2026): patient and observer landed on different wild cards. */
+test("a late roll from a router visit the room has left is refused, not rolled again", () => {
+    const rolls = [0.0, 0.99, 0.99]; // first roll -> 1; any second roll would give 6
+    const { room, a, b } = makeRoomC({ random: () => rolls.shift() });
+    room.handle(a.conn, { t: "navigate", passage: "Wildcard_Router", expectSeq: 0 });
+    // Patient's device: roll for visit 1, then move the pair to that card.
+    assert.equal(room.handle(a.conn, { t: "roll", key: "wildRoll", sides: 6, expectSeq: 1 }).out[0].msg.t, "state");
+    assert.equal(room.state.game.wildRoll, 1);
+    room.handle(a.conn, { t: "navigate", passage: "Wildcard1", expectSeq: 1 });
+    // Observer's device was slower: its roll for visit 1 arrives after the room moved on.
+    const late = room.handle(b.conn, { t: "roll", key: "wildRoll", sides: 6, expectSeq: 1, cid: 7 });
+    assert.equal(late.out[0].msg.reason, "stale_seq");
+    assert.equal(room.state.game.wildRoll, 1, "the roll both players use must not change");
+    // ...and its move to "its" card loses too, so it follows the room to Wildcard1.
+    const move = room.handle(b.conn, { t: "navigate", passage: "Wildcard6", expectSeq: 1 });
+    assert.equal(move.out[0].msg.reason, "stale_seq");
+    assert.equal(room.state.game.currentPassage, "Wildcard1");
+});
+
+test("two devices rolling for the same visit get one number", () => {
+    const rolls = [0.5, 0.0];
+    const { room, a, b } = makeRoomC({ random: () => rolls.shift() });
+    room.handle(a.conn, { t: "navigate", passage: "Wildcard_Router", expectSeq: 0 });
+    room.handle(b.conn, { t: "roll", key: "wildRoll", sides: 6, expectSeq: 1 });
+    room.handle(a.conn, { t: "roll", key: "wildRoll", sides: 6, expectSeq: 1 });
+    assert.equal(room.state.game.wildRoll, 4);
+});
+
+test("a late errandsDrain from a passage the room has left does not drain energy again", () => {
+    const { room, a, b } = makeRoomC();
+    room.handle(a.conn, { t: "set", patch: { Energy: 10, errandsRun: 2 } });
+    room.handle(a.conn, { t: "navigate", passage: "Whistle_Stop_In", expectSeq: 0 });
+    room.handle(a.conn, { t: "op", name: "errandsDrain", expectSeq: 1 });
+    assert.equal(room.state.game.Energy, 6);
+    room.handle(a.conn, { t: "navigate", passage: "Hallway_In", expectSeq: 1 });
+    const late = room.handle(b.conn, { t: "op", name: "errandsDrain", expectSeq: 1 });
+    assert.equal(late.out[0].msg.reason, "stale_seq");
+    assert.equal(room.state.game.Energy, 6);
+});
